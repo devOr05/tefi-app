@@ -5,12 +5,13 @@ import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, Exter
 import { getSolanaExplorerUrl } from '../solana/connection';
 
 export const CustomerLibretaView: React.FC = () => {
-  const { customer, fiados, repayFiado } = useTefi();
+  const { customer, fiados, repayFiado, exchangeRate } = useTefi();
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const [justPaidId, setJustPaidId] = useState<string | null>(null);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const pastFiados = fiados.filter(f => f.status === 'PAID');
+  const rate = exchangeRate.rate || 1615;
 
   const handlePay = (fiadoId: string) => {
     const res = repayFiado(fiadoId);
@@ -33,7 +34,7 @@ export const CustomerLibretaView: React.FC = () => {
           <span className="text-sm font-semibold text-emerald-400">USDC</span>
         </div>
         <p className="text-[11px] text-gray-400 mt-1">
-          Aprox. ${(customer.currentDebt * 1300).toLocaleString('es-AR')} ARS en {activeFiados.length} comercios
+          Aprox. ${(customer.currentDebt * rate).toLocaleString('es-AR')} ARS en {activeFiados.length} comercios ({exchangeRate.source})
         </p>
       </div>
 

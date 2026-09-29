@@ -15,6 +15,7 @@ export interface CustomerProfile {
   loyaltyPoints: number; // Puntos Tefi acumulados
   tier: LoyaltyTier;
   avatarUrl?: string;
+  solanaBalanceSol?: number;
 }
 
 export interface MerchantProfile {
@@ -29,6 +30,8 @@ export interface MerchantProfile {
   currentInsuranceFee: number; // % ajustado por riesgo (aumenta si tiene muchos incobrables)
   isInsured: boolean;
   activeClaimsCount: number;
+  fiadoNonce?: number;
+  solanaBalanceSol?: number;
 }
 
 export interface FiadoRecord {
@@ -44,6 +47,7 @@ export interface FiadoRecord {
   createdAt: string;
   dueDate: string;
   status: FiadoStatus;
+  nonce?: number;
   txSignature?: string;
   repaidAt?: string;
 }

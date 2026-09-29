@@ -21,24 +21,59 @@ const PRESET_PHOTOS = [
   }
 ];
 
+// Utilidad para comprimir fotos en el navegador evitando desbordar el localStorage
+const compressImage = (fileOrDataUrl: File | string, maxWidth = 800, quality = 0.72): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } else {
+        resolve(typeof fileOrDataUrl === 'string' ? fileOrDataUrl : '');
+      }
+    };
+    if (typeof fileOrDataUrl === 'string') {
+      img.src = fileOrDataUrl;
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(fileOrDataUrl);
+    }
+  });
+};
+
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, initialPhoto }) => {
   const [photoUrl, setPhotoUrl] = useState<string>(initialPhoto || '');
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // 1. Manejo de archivo o cámara nativa móvil
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 1. Manejo de archivo o cámara nativa móvil con compresión automática
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPhotoUrl(result);
-        onCapture(result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsCompressing(true);
+        const compressed = await compressImage(file);
+        setPhotoUrl(compressed);
+        onCapture(compressed);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -109,7 +144,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, initial
         className="hidden"
       />
 
-      {isCameraActive ? (
+      {isCompressing ? (
+        <div className="border border-emerald-200 rounded-2xl p-8 text-center bg-emerald-50/50 flex flex-col items-center justify-center gap-2">
+          <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-xs font-bold text-emerald-800">Optimizando y comprimiendo foto...</span>
+          <span className="text-[10px] text-emerald-600">Asegurando rendimiento y compatibilidad móvil</span>
+        </div>
+      ) : isCameraActive ? (
         <div className="relative rounded-2xl overflow-hidden bg-black aspect-4/3 flex items-center justify-center border-2 border-emerald-500 shadow-md">
           <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
           <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-4">

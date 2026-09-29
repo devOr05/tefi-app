@@ -15,12 +15,22 @@
       ]
     },
     {
+      "name": "initializeCustomer",
+      "accounts": [
+        { "name": "customer", "isMut": true, "isSigner": true },
+        { "name": "customerProfile", "isMut": true, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": []
+    },
+    {
       "name": "issueFiado",
       "accounts": [
         { "name": "merchant", "isMut": true, "isSigner": true },
+        { "name": "customer", "isMut": true, "isSigner": true },
+        { "name": "merchantProfile", "isMut": true, "isSigner": false },
         { "name": "customerProfile", "isMut": true, "isSigner": false },
         { "name": "fiadoRecord", "isMut": true, "isSigner": false },
-        { "name": "insurancePool", "isMut": true, "isSigner": false },
         { "name": "systemProgram", "isMut": false, "isSigner": false }
       ],
       "args": [
@@ -33,7 +43,6 @@
       "name": "repayFiado",
       "accounts": [
         { "name": "customer", "isMut": true, "isSigner": true },
-        { "name": "merchant", "isMut": true, "isSigner": false },
         { "name": "customerProfile", "isMut": true, "isSigner": false },
         { "name": "fiadoRecord", "isMut": true, "isSigner": false },
         { "name": "systemProgram", "isMut": false, "isSigner": false }
@@ -46,9 +55,7 @@
         { "name": "merchant", "isMut": true, "isSigner": true },
         { "name": "merchantProfile", "isMut": true, "isSigner": false },
         { "name": "customerProfile", "isMut": true, "isSigner": false },
-        { "name": "fiadoRecord", "isMut": true, "isSigner": false },
-        { "name": "insurancePool", "isMut": true, "isSigner": false },
-        { "name": "insuranceVault", "isMut": true, "isSigner": false }
+        { "name": "fiadoRecord", "isMut": true, "isSigner": false }
       ],
       "args": []
     }
@@ -62,10 +69,11 @@
           { "name": "owner", "type": "publicKey" },
           { "name": "businessName", "type": "string" },
           { "name": "category", "type": "string" },
-          { "name": "totalSales", "type": "u64" },
-          { "name": "totalDefaulted", "type": "u64" },
-          { "name": "riskTier", "type": "u8" },
-          { "name": "insuranceFeeBps", "type": "u16" }
+          { "name": "totalSalesUsdc", "type": "u64" },
+          { "name": "totalDefaultedUsdc", "type": "u64" },
+          { "name": "defaultRateBps", "type": "u16" },
+          { "name": "insuranceFeeBps", "type": "u16" },
+          { "name": "fiadoNonce", "type": "u64" }
         ]
       }
     },
@@ -93,6 +101,7 @@
           { "name": "amountUsdc", "type": "u64" },
           { "name": "dueTimestamp", "type": "i64" },
           { "name": "receiptHash", "type": "string" },
+          { "name": "nonce", "type": "u64" },
           { "name": "status", "type": "u8" }
         ]
       }

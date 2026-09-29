@@ -6,15 +6,15 @@ import { FiadoRecord } from '../types/tefi';
 import { ArrowLeft, Sparkles, QrCode, AlertCircle, ShoppingBag } from 'lucide-react';
 
 export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { createFiado, customer } = useTefi();
+  const { createFiado, customer, exchangeRate } = useTefi();
   const [amountArs, setAmountArs] = useState<string>('');
   const [itemsDescription, setItemsDescription] = useState<string>('');
   const [photoUrl, setPhotoUrl] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [createdFiado, setCreatedFiado] = useState<FiadoRecord | null>(null);
 
-  const RATE_USDC_ARS = 1300; // Tasa de conversión de referencia
-  const calculatedUsdc = amountArs ? +(parseFloat(amountArs) / RATE_USDC_ARS).toFixed(2) : 0;
+  const rate = exchangeRate.rate || 1615;
+  const calculatedUsdc = amountArs ? +(parseFloat(amountArs) / rate).toFixed(2) : 0;
   const availableLimit = Math.max(0, +(customer.maxCreditLimit - customer.currentDebt).toFixed(1));
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -68,7 +68,7 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="bg-emerald-50/80 border border-emerald-100 rounded-2xl p-3 flex items-center justify-between text-xs">
         <div>
           <span className="text-[10px] text-emerald-800 font-semibold block">Crédito disponible de {customer.name}</span>
-          <span className="text-xs text-emerald-950 font-extrabold">{availableLimit} USDC (${(availableLimit * RATE_USDC_ARS).toLocaleString('es-AR')} ARS)</span>
+          <span className="text-xs text-emerald-950 font-extrabold">{availableLimit} USDC (${(availableLimit * rate).toLocaleString('es-AR')} ARS)</span>
         </div>
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900">
           Score: {customer.creditScore} pts
@@ -92,7 +92,7 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               ≈ {calculatedUsdc} USDC
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1">Fijado a 1 USDC = ${RATE_USDC_ARS} ARS (protegido contra devaluación)</p>
+          <p className="text-[10px] text-gray-400 mt-1">Cotización en vivo: 1 USDC = ${rate.toLocaleString('es-AR')} ARS ({exchangeRate.source})</p>
         </div>
 
         {/* Descripción de artículos */}

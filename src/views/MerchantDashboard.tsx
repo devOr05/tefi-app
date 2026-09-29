@@ -5,13 +5,14 @@ import { DollarSign, ShieldAlert, Users, Clock, AlertTriangle, CheckCircle, Imag
 import { QrModal } from '../components/QrModal';
 
 export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ onNavigateToNew }) => {
-  const { merchant, fiados, claimInsurance } = useTefi();
+  const { merchant, fiados, claimInsurance, exchangeRate } = useTefi();
   const [selectedFiadoForQr, setSelectedFiadoForQr] = useState<FiadoRecord | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const paidFiados = fiados.filter(f => f.status === 'PAID');
   const totalPendingUsdc = activeFiados.reduce((acc, f) => acc + f.amountUsdc, 0);
+  const rate = exchangeRate.rate || 1615;
 
   const handleClaim = (fiadoId: string) => {
     if (confirm('¿Deseas reclamar el seguro de este fiado? El fondo de garantía de Solana te reembolsará el monto, pero tu prima de riesgo del comercio aumentará.')) {
@@ -34,7 +35,7 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
               <span className="text-sm font-semibold text-emerald-200">USDC</span>
             </div>
             <p className="text-[11px] text-emerald-100/90 mt-1">
-              Equiv. aprox: ${(totalPendingUsdc * 1300).toLocaleString('es-AR')} ARS
+              Equiv. aprox: ${(totalPendingUsdc * rate).toLocaleString('es-AR')} ARS
             </p>
           </div>
 

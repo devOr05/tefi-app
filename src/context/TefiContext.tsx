@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier } from '../types/tefi';
-import { generateMockSolanaSignature } from '../solana/connection';
+import {
+  generateMockSolanaSignature,
+  getOrCreateRoleKeypair,
+  getDevnetBalance,
+  requestDevnetAirdrop
+} from '../solana/connection';
+import { fetchLiveUsdcRate, ExchangeRateData } from '../services/oracle';
 
 interface TefiContextType {
   role: UserRole;
@@ -9,37 +15,48 @@ interface TefiContextType {
   merchant: MerchantProfile;
   fiados: FiadoRecord[];
   insurancePool: InsurancePoolState;
+  exchangeRate: ExchangeRateData;
+  solanaBalance: number;
+  isAirdropLoading: boolean;
   createFiado: (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => { success: boolean; error?: string; fiado?: FiadoRecord };
   repayFiado: (fiadoId: string) => { success: boolean; signature?: string };
   claimInsurance: (fiadoId: string) => { success: boolean; payoutAmount?: number; signature?: string };
+  requestAirdrop: () => Promise<{ success: boolean; signature?: string; error?: string }>;
+  refreshBalance: () => Promise<void>;
   resetDemoData: () => void;
 }
+
+const customerKeypair = getOrCreateRoleKeypair('customer');
+const merchantKeypair = getOrCreateRoleKeypair('merchant');
 
 const INITIAL_CUSTOMER: CustomerProfile = {
   id: 'cust-matias-01',
   name: 'Matías González',
-  walletAddress: '8Yq7...9xL2',
-  creditScore: 78, // Buen puntaje inicial
-  maxCreditLimit: 60, // 60 USDC de límite inicial
+  walletAddress: customerKeypair.publicKey.toBase58(),
+  creditScore: 78,
+  maxCreditLimit: 60,
   currentDebt: 18.5,
   totalRepaid: 142.0,
   loyaltyPoints: 340,
   tier: 'Oro',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  solanaBalanceSol: 0
 };
 
 const INITIAL_MERCHANT: MerchantProfile = {
   id: 'merch-tito-01',
   name: 'Almacén & Fiambrería Don Tito',
   category: 'Almacén y Kiosco',
-  walletAddress: '3Kx9...4nM7',
+  walletAddress: merchantKeypair.publicKey.toBase58(),
   totalSalesUsdc: 850.0,
   totalDefaultedUsdc: 25.0,
-  defaultRate: 2.9, // 2.9% de incobrabilidad
-  baseInsuranceFee: 2.5, // 2.5% base
-  currentInsuranceFee: 3.2, // 3.2% ajustado por riesgo
+  defaultRate: 2.9,
+  baseInsuranceFee: 2.5,
+  currentInsuranceFee: 3.2,
   isInsured: true,
-  activeClaimsCount: 1
+  activeClaimsCount: 1,
+  fiadoNonce: 3,
+  solanaBalanceSol: 0
 };
 
 const INITIAL_FIADOS: FiadoRecord[] = [
@@ -50,12 +67,13 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     customerId: 'cust-matias-01',
     customerName: 'Matías González',
     amountUsdc: 12.0,
-    amountArs: 15600,
+    amountArs: 19380,
     itemsDescription: '1 Yerba Playadito 1kg + 2 Leches La Serenísima + 1 Pan lactal',
     photoReceiptUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
     createdAt: '2026-09-24T14:30:00Z',
     dueDate: '2026-10-09T14:30:00Z',
     status: 'ACTIVE',
+    nonce: 1,
     txSignature: generateMockSolanaSignature()
   },
   {
@@ -65,12 +83,13 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     customerId: 'cust-matias-01',
     customerName: 'Matías González',
     amountUsdc: 6.5,
-    amountArs: 8450,
+    amountArs: 10497,
     itemsDescription: '300g Jamón cocido + 300g Queso Danbo + 6 Criollitos',
     photoReceiptUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&auto=format&fit=crop&q=80',
     createdAt: '2026-09-26T18:15:00Z',
     dueDate: '2026-10-11T18:15:00Z',
     status: 'ACTIVE',
+    nonce: 2,
     txSignature: generateMockSolanaSignature()
   },
   {
@@ -80,12 +99,13 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     customerId: 'cust-matias-01',
     customerName: 'Matías González',
     amountUsdc: 15.0,
-    amountArs: 19500,
+    amountArs: 24225,
     itemsDescription: 'Carne para asado + Carbón + Gaseosa',
     photoReceiptUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&auto=format&fit=crop&q=80',
     createdAt: '2026-09-10T12:00:00Z',
     dueDate: '2026-09-25T12:00:00Z',
     status: 'PAID',
+    nonce: 0,
     repaidAt: '2026-09-23T11:20:00Z',
     txSignature: generateMockSolanaSignature()
   }
@@ -104,20 +124,85 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole>('MERCHANT');
   const [customer, setCustomer] = useState<CustomerProfile>(() => {
     const saved = localStorage.getItem('tefi_customer');
-    return saved ? JSON.parse(saved) : INITIAL_CUSTOMER;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Garantizar que la dirección de wallet sea la del Keypair real
+      parsed.walletAddress = customerKeypair.publicKey.toBase58();
+      return parsed;
+    }
+    return INITIAL_CUSTOMER;
   });
+
   const [merchant, setMerchant] = useState<MerchantProfile>(() => {
     const saved = localStorage.getItem('tefi_merchant');
-    return saved ? JSON.parse(saved) : INITIAL_MERCHANT;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      parsed.walletAddress = merchantKeypair.publicKey.toBase58();
+      return parsed;
+    }
+    return INITIAL_MERCHANT;
   });
+
   const [fiados, setFiados] = useState<FiadoRecord[]>(() => {
     const saved = localStorage.getItem('tefi_fiados');
     return saved ? JSON.parse(saved) : INITIAL_FIADOS;
   });
+
   const [insurancePool, setInsurancePool] = useState<InsurancePoolState>(() => {
     const saved = localStorage.getItem('tefi_pool');
     return saved ? JSON.parse(saved) : INITIAL_INSURANCE_POOL;
   });
+
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRateData>({
+    rate: 1615,
+    source: 'Cargando Oráculo...',
+    lastUpdated: '',
+    isLive: false
+  });
+
+  const [solanaBalance, setSolanaBalance] = useState<number>(0);
+  const [isAirdropLoading, setIsAirdropLoading] = useState<boolean>(false);
+
+  // Consultar Oráculo en vivo
+  useEffect(() => {
+    fetchLiveUsdcRate().then(data => {
+      setExchangeRate(data);
+    });
+    const interval = setInterval(() => {
+      fetchLiveUsdcRate().then(data => setExchangeRate(data));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Consultar balance real en Solana Devnet según el rol activo
+  const activeKeypair = role === 'MERCHANT' ? merchantKeypair : customerKeypair;
+
+  const refreshBalance = useCallback(async () => {
+    try {
+      const bal = await getDevnetBalance(activeKeypair.publicKey);
+      setSolanaBalance(bal);
+    } catch (e) {
+      console.warn('Error al consultar balance Devnet:', e);
+    }
+  }, [activeKeypair]);
+
+  useEffect(() => {
+    refreshBalance();
+  }, [role, refreshBalance]);
+
+  // Solicitar 1 SOL de airdrop en Devnet
+  const handleAirdrop = async () => {
+    setIsAirdropLoading(true);
+    try {
+      const res = await requestDevnetAirdrop(activeKeypair.publicKey);
+      if (res.success) {
+        await refreshBalance();
+      }
+      return res;
+    } finally {
+      setIsAirdropLoading(false);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('tefi_customer', JSON.stringify(customer));
@@ -135,7 +220,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('tefi_pool', JSON.stringify(insurancePool));
   }, [insurancePool]);
 
-  // Recalcular Tier de Fidelidad
   function calculateTier(score: number): LoyaltyTier {
     if (score >= 85) return 'Diamante';
     if (score >= 70) return 'Oro';
@@ -143,9 +227,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'Bronce';
   }
 
-  // 1. Crear nuevo Fiado
+  // 1. Crear nuevo Fiado (con firma bilateral simulada y nonce anti-colisión)
   const createFiado = (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => {
-    // Validar límite de crédito del cliente
     const newTotalDebt = customer.currentDebt + data.amountUsdc;
     if (newTotalDebt > customer.maxCreditLimit) {
       return {
@@ -155,6 +238,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const txSig = generateMockSolanaSignature();
+    const currentNonce = merchant.fiadoNonce || 0;
+
     const newFiado: FiadoRecord = {
       id: `f-${Date.now().toString().slice(-4)}`,
       merchantId: merchant.id,
@@ -166,29 +251,29 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       itemsDescription: data.itemsDescription || 'Compra general de almacén',
       photoReceiptUrl: data.photoReceiptUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
       createdAt: new Date().toISOString(),
-      dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 días
+      dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'ACTIVE',
+      nonce: currentNonce,
       txSignature: txSig
     };
 
     setFiados(prev => [newFiado, ...prev]);
 
-    // Actualizar deuda del cliente
     setCustomer(prev => ({
       ...prev,
       currentDebt: +(prev.currentDebt + data.amountUsdc).toFixed(2)
     }));
 
-    // Actualizar volumen de ventas del comercio
     setMerchant(prev => ({
       ...prev,
-      totalSalesUsdc: +(prev.totalSalesUsdc + data.amountUsdc).toFixed(2)
+      totalSalesUsdc: +(prev.totalSalesUsdc + data.amountUsdc).toFixed(2),
+      fiadoNonce: currentNonce + 1
     }));
 
     return { success: true, fiado: newFiado };
   };
 
-  // 2. Cliente paga su deuda (Repayment) -> Aumenta score, suma puntos y sube límite
+  // 2. Cliente paga su deuda (Repayment)
   const repayFiado = (fiadoId: string) => {
     const target = fiados.find(f => f.id === fiadoId);
     if (!target || target.status !== 'ACTIVE') return { success: false };
@@ -206,9 +291,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCustomer(prev => {
       const newDebt = Math.max(0, +(prev.currentDebt - target.amountUsdc).toFixed(2));
       const newScore = Math.min(100, prev.creditScore + 5);
-      const pointsEarned = Math.round(target.amountUsdc * 25); // 25 puntos por USDC
+      const pointsEarned = Math.round(target.amountUsdc * 20); // 20 pts por USDC sincronizado con Anchor
       const newTier = calculateTier(newScore);
-      // Cada pago puntual expande el límite de crédito en 5 USDC
       const newLimit = +(prev.maxCreditLimit + 5).toFixed(0);
 
       return {
@@ -225,14 +309,13 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true, signature: txSig };
   };
 
-  // 3. Comercio reclama seguro por incobrable -> El seguro del comercio AUMENTA y se penaliza al cliente
+  // 3. Comercio reclama seguro por incobrable
   const claimInsurance = (fiadoId: string) => {
     const target = fiados.find(f => f.id === fiadoId);
     if (!target || target.status !== 'ACTIVE') return { success: false };
 
     const txSig = generateMockSolanaSignature();
 
-    // Marcar fiado como reclamado
     setFiados(prev =>
       prev.map(f =>
         f.id === fiadoId
@@ -241,11 +324,9 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
-    // Ajuste Actuarial: El comercio cobra la indemnización pero sube su prima de riesgo
     setMerchant(prev => {
       const newDefaulted = +(prev.totalDefaultedUsdc + target.amountUsdc).toFixed(2);
       const newDefaultRate = +((newDefaulted / (prev.totalSalesUsdc || 1)) * 100).toFixed(1);
-      // Fórmula de prima dinámica: base 2.5% + (tasa de incobrabilidad * 0.45)
       const adjustedFee = Math.min(12.0, +(2.5 + newDefaultRate * 0.45).toFixed(1));
 
       return {
@@ -257,17 +338,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     });
 
-    // Pagar desde el pool
     setInsurancePool(prev => ({
       ...prev,
       totalBalanceUsdc: Math.max(0, +(prev.totalBalanceUsdc - target.amountUsdc).toFixed(2)),
       totalClaimsPaidUsdc: +(prev.totalClaimsPaidUsdc + target.amountUsdc).toFixed(2)
     }));
 
-    // Penalizar severamente al deudor en su score e inhabilitar límite
     setCustomer(prev => {
       const penalScore = Math.max(10, prev.creditScore - 30);
-      const slashedLimit = Math.max(5, Math.floor(prev.maxCreditLimit * 0.4));
+      const slashedLimit = Math.max(5, Math.floor(prev.maxCreditLimit * 0.5));
       return {
         ...prev,
         creditScore: penalScore,
@@ -300,9 +379,14 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         merchant,
         fiados,
         insurancePool,
+        exchangeRate,
+        solanaBalance,
+        isAirdropLoading,
         createFiado,
         repayFiado,
         claimInsurance,
+        requestAirdrop: handleAirdrop,
+        refreshBalance,
         resetDemoData
       }}
     >
