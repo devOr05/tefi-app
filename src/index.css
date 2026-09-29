@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ocultar barra de desplazamiento en listas horizontales de mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Efectos de tarjeta estilo Fintech */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+.gradient-tefi {
+  background: linear-gradient(135deg, #00A650 0%, #008740 100%);
+}
+
+.gradient-solana {
+  background: linear-gradient(135deg, #9945FF 0%, #14F195 100%);
+}

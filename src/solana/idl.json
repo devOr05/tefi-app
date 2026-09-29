@@ -1,0 +1,101 @@
+{
+  "version": "0.1.0",
+  "name": "tefi_program",
+  "instructions": [
+    {
+      "name": "initializeMerchant",
+      "accounts": [
+        { "name": "merchant", "isMut": true, "isSigner": true },
+        { "name": "merchantProfile", "isMut": true, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "businessName", "type": "string" },
+        { "name": "category", "type": "string" }
+      ]
+    },
+    {
+      "name": "issueFiado",
+      "accounts": [
+        { "name": "merchant", "isMut": true, "isSigner": true },
+        { "name": "customerProfile", "isMut": true, "isSigner": false },
+        { "name": "fiadoRecord", "isMut": true, "isSigner": false },
+        { "name": "insurancePool", "isMut": true, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "amountUsdc", "type": "u64" },
+        { "name": "dueTimestamp", "type": "i64" },
+        { "name": "receiptHash", "type": "string" }
+      ]
+    },
+    {
+      "name": "repayFiado",
+      "accounts": [
+        { "name": "customer", "isMut": true, "isSigner": true },
+        { "name": "merchant", "isMut": true, "isSigner": false },
+        { "name": "customerProfile", "isMut": true, "isSigner": false },
+        { "name": "fiadoRecord", "isMut": true, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": []
+    },
+    {
+      "name": "claimInsurance",
+      "accounts": [
+        { "name": "merchant", "isMut": true, "isSigner": true },
+        { "name": "merchantProfile", "isMut": true, "isSigner": false },
+        { "name": "customerProfile", "isMut": true, "isSigner": false },
+        { "name": "fiadoRecord", "isMut": true, "isSigner": false },
+        { "name": "insurancePool", "isMut": true, "isSigner": false },
+        { "name": "insuranceVault", "isMut": true, "isSigner": false }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MerchantProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "owner", "type": "publicKey" },
+          { "name": "businessName", "type": "string" },
+          { "name": "category", "type": "string" },
+          { "name": "totalSales", "type": "u64" },
+          { "name": "totalDefaulted", "type": "u64" },
+          { "name": "riskTier", "type": "u8" },
+          { "name": "insuranceFeeBps", "type": "u16" }
+        ]
+      }
+    },
+    {
+      "name": "CustomerProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "owner", "type": "publicKey" },
+          { "name": "creditScore", "type": "u8" },
+          { "name": "creditLimitUsdc", "type": "u64" },
+          { "name": "activeDebtUsdc", "type": "u64" },
+          { "name": "totalRepaidUsdc", "type": "u64" },
+          { "name": "loyaltyPoints", "type": "u32" }
+        ]
+      }
+    },
+    {
+      "name": "FiadoRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "merchant", "type": "publicKey" },
+          { "name": "customer", "type": "publicKey" },
+          { "name": "amountUsdc", "type": "u64" },
+          { "name": "dueTimestamp", "type": "i64" },
+          { "name": "receiptHash", "type": "string" },
+          { "name": "status", "type": "u8" }
+        ]
+      }
+    }
+  ]
+}
