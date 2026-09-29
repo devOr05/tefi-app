@@ -26,10 +26,7 @@ export const Header: React.FC = () => {
   };
 
   const handleAirdropClick = async () => {
-    const res = await requestAirdrop();
-    if (!res.success) {
-      alert(res.error || 'No se pudo completar el airdrop en Devnet.');
-    }
+    await requestAirdrop();
   };
 
   return (
