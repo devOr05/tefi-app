@@ -115,7 +115,7 @@ const INITIAL_INSURANCE_POOL: InsurancePoolState = {
   totalBalanceUsdc: 12450.0,
   totalClaimsPaidUsdc: 1820.0,
   totalActivePolicies: 48,
-  solanaVaultAddress: 'TefiVault1111111111111111111111111111111111'
+  solanaVaultAddress: 'HvmJdEQD7ZrU6jMVZjpUyLkNtJmQitRGxDPJsRhX3rE6'
 };
 
 const TefiContext = createContext<TefiContextType | undefined>(undefined);

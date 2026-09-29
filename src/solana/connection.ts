@@ -2,8 +2,9 @@
 import { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 export const SOLANA_DEVNET_RPC = 'https://api.devnet.solana.com';
-export const TEFI_PROGRAM_ID = new PublicKey('TefiProg111111111111111111111111111111111111');
-export const INSURANCE_VAULT_PDA = 'TefiVault1111111111111111111111111111111111';
+export const PROGRAM_ID_STR = 'H7afUaQecBwFRLRahfAQSM7ZdGXRfX5TiBEPQgahMHdr';
+export const TEFI_PROGRAM_ID = new PublicKey(PROGRAM_ID_STR);
+export const INSURANCE_VAULT_PDA = 'HvmJdEQD7ZrU6jMVZjpUyLkNtJmQitRGxDPJsRhX3rE6';
 
 // Instancia de conexión RPC a Solana Devnet
 export const solanaConnection = new Connection(SOLANA_DEVNET_RPC, 'confirmed');
@@ -19,19 +20,26 @@ export function getSolanaAccountUrl(pubkey: string): string {
 // Billetera criptográfica embebida en el dispositivo (Keypair real persistente)
 export function getOrCreateRoleKeypair(role: 'merchant' | 'customer'): Keypair {
   const storageKey = `tefi_keypair_${role}`;
-  const existing = localStorage.getItem(storageKey);
-
-  if (existing) {
-    try {
-      const secretKey = Uint8Array.from(JSON.parse(existing));
-      return Keypair.fromSecretKey(secretKey);
-    } catch (e) {
-      console.warn('Error al restaurar Keypair, generando uno nuevo...', e);
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const existing = window.localStorage.getItem(storageKey);
+      if (existing) {
+        const secretKey = Uint8Array.from(JSON.parse(existing));
+        return Keypair.fromSecretKey(secretKey);
+      }
     }
+  } catch (e) {
+    console.warn('Error al restaurar Keypair, generando uno nuevo...', e);
   }
 
   const newKeypair = Keypair.generate();
-  localStorage.setItem(storageKey, JSON.stringify(Array.from(newKeypair.secretKey)));
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(storageKey, JSON.stringify(Array.from(newKeypair.secretKey)));
+    }
+  } catch (e) {
+    console.warn('No se pudo persistir el keypair en localStorage:', e);
+  }
   return newKeypair;
 }
 
