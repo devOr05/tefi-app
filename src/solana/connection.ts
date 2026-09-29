@@ -14,7 +14,7 @@ export function getSolanaExplorerUrl(signature: string): string {
 }
 
 export function getSolanaAccountUrl(pubkey: string): string {
-  return `https://explorer.solana.com/address/${pubkey}?cluster=devnet`;
+  return `https://solscan.io/account/${pubkey}?cluster=devnet`;
 }
 
 // Billetera criptográfica embebida en el dispositivo (Keypair real persistente)
