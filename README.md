@@ -1,12 +1,19 @@
-# 🥩 Tefi.app ("Te Fío") — El Fiado Digital en Solana
+# 🥩 Tefi.app ("Te Fío") — El Primer Banco Digital de Alimentos en Solana
 
-> **Proyecto desarrollado para el Superteam Argentina Hackathon | Road to Colosseum (Crypto World's Fair)**  
+> **Primer protocolo descentralizado de financiamiento de alimentos y canasta básica del mundo.**  
+> *Proyecto desarrollado para el Superteam Argentina Hackathon | Road to Colosseum (Crypto World's Fair).*  
 > *Track Oficial de Superteam Argentina — 10.000 USD en Premios.*
 
 [![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?style=flat&logo=solana)](https://solana.com)
 [![Anchor](https://img.shields.io/badge/Anchor-0.30.1-50E3C2?style=flat)](https://anchor-lang.com)
 [![PWA](https://img.shields.io/badge/PWA-Ready-00A650?style=flat&logo=pwa)](https://web.dev/progressive-web-apps/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+---
+
+## 🎯 La Visión: El Primer Banco Digital de Alimentos Descentralizado
+
+> *"Tefi es el primer protocolo de financiamiento de alimentos y canasta básica del mundo: una PWA en Solana que digitaliza la histórica 'libreta del almacén' con fotos inmutables, score crediticio y un fondo de garantía mancomunado que asegura tanto el plato de comida de las familias como el capital de trabajo de los comerciantes."*
 
 ---
 
