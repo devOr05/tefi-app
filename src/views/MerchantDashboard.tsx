@@ -132,7 +132,10 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
                   </button>
 
                   <div>
-                    <h4 className="text-xs font-bold text-gray-900">{f.customerName}</h4>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-bold text-gray-900">{f.customerName}</h4>
+                      <span className="text-[9px] bg-purple-100 text-purple-700 font-extrabold px-1.5 py-0.2 rounded-md">DID</span>
+                    </div>
                     <p className="text-[11px] text-gray-500 line-clamp-1 max-w-[170px]">{f.itemsDescription}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-400">
                       <Clock className="w-3 h-3 text-amber-500" />

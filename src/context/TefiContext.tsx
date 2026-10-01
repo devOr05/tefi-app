@@ -132,6 +132,11 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const parsed = JSON.parse(saved);
       // Garantizar que la dirección de wallet sea la del Keypair real
       parsed.walletAddress = customerKeypair.publicKey.toBase58();
+      if (parsed.isDidVerified === undefined) {
+        parsed.isDidVerified = true;
+        parsed.didUri = `did:sol:devnet:${customerKeypair.publicKey.toBase58()}`;
+        parsed.biometricHash = 'bio_7a8f9b2c3d4e5f60';
+      }
       return parsed;
     }
     return INITIAL_CUSTOMER;
