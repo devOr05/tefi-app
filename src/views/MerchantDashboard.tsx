@@ -3,11 +3,13 @@ import { useTefi } from '../context/TefiContext';
 import { FiadoRecord } from '../types/tefi';
 import { DollarSign, ShieldAlert, Users, Clock, AlertTriangle, CheckCircle, Image as ImageIcon, ChevronRight } from 'lucide-react';
 import { QrModal } from '../components/QrModal';
+import { RepayModal } from '../components/RepayModal';
 
 export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ onNavigateToNew }) => {
   const { merchant, fiados, claimInsurance, exchangeRate } = useTefi();
   const [selectedFiadoForQr, setSelectedFiadoForQr] = useState<FiadoRecord | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  const [payingFiado, setPayingFiado] = useState<FiadoRecord | null>(null);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const paidFiados = fiados.filter(f => f.status === 'PAID');
@@ -152,12 +154,21 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
 
               {/* Botonera de acciones */}
               <div className="flex items-center justify-between pt-2 border-t border-gray-50 text-[11px]">
-                <button
-                  onClick={() => setSelectedFiadoForQr(f)}
-                  className="text-emerald-700 font-semibold hover:underline flex items-center gap-1"
-                >
-                  Ver QR
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedFiadoForQr(f)}
+                    className="text-gray-500 font-semibold hover:text-gray-800 flex items-center gap-1"
+                  >
+                    Ver QR
+                  </button>
+                  <button
+                    onClick={() => setPayingFiado(f)}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                  >
+                    <DollarSign className="w-3 h-3 text-emerald-600" />
+                    Cobrar (MP/DNI)
+                  </button>
+                </div>
 
                 <button
                   onClick={() => handleClaim(f.id)}
@@ -171,6 +182,13 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
           ))
         )}
       </div>
+
+      {/* Modal Cobro / Repayment (Mercado Pago, Cuenta DNI, Efectivo, Solana) */}
+      <RepayModal
+        isOpen={!!payingFiado}
+        onClose={() => setPayingFiado(null)}
+        fiado={payingFiado}
+      />
 
       {/* Modal QR */}
       {selectedFiadoForQr && (

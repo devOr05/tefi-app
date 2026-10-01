@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { CreditScoreCard } from '../components/CreditScoreCard';
+import { RepayModal } from '../components/RepayModal';
+import { FiadoRecord } from '../types/tefi';
 import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles } from 'lucide-react';
 import { getSolanaExplorerUrl } from '../solana/connection';
 
@@ -8,6 +10,7 @@ export const CustomerLibretaView: React.FC = () => {
   const { customer, fiados, repayFiado, exchangeRate } = useTefi();
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const [justPaidId, setJustPaidId] = useState<string | null>(null);
+  const [payingFiado, setPayingFiado] = useState<FiadoRecord | null>(null);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const pastFiados = fiados.filter(f => f.status === 'PAID');
@@ -103,7 +106,7 @@ export const CustomerLibretaView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => handlePay(f.id)}
+                  onClick={() => setPayingFiado(f)}
                   className="px-4 py-2 rounded-xl gradient-tefi text-white font-bold text-xs shadow-xs active:scale-95 transition-transform flex items-center gap-1.5"
                 >
                   <DollarSign className="w-3.5 h-3.5" />
@@ -128,7 +131,31 @@ export const CustomerLibretaView: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                 <div>
                   <span className="font-bold text-gray-800 block">{f.merchantName}</span>
-                  <span className="text-[10px] text-gray-400">Pagado el {f.repaidAt ? new Date(f.repaidAt).toLocaleDateString('es-AR') : '23/09/2026'}</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-gray-400">
+                      {f.repaidAt ? new Date(f.repaidAt).toLocaleDateString('es-AR') : '23/09/2026'}
+                    </span>
+                    {f.paymentMethod === 'MERCADO_PAGO' && (
+                      <span className="text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded-md">
+                        Mercado Pago
+                      </span>
+                    )}
+                    {f.paymentMethod === 'CUENTA_DNI' && (
+                      <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded-md">
+                        Cuenta DNI
+                      </span>
+                    )}
+                    {f.paymentMethod === 'CASH' && (
+                      <span className="text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded-md">
+                        Efectivo
+                      </span>
+                    )}
+                    {(!f.paymentMethod || f.paymentMethod === 'SOLANA_USDC') && (
+                      <span className="text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.2 rounded-md">
+                        USDC
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -168,6 +195,19 @@ export const CustomerLibretaView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Pago Multicanal */}
+      <RepayModal
+        isOpen={!!payingFiado}
+        onClose={() => setPayingFiado(null)}
+        fiado={payingFiado}
+        onRepaySuccess={() => {
+          if (payingFiado) {
+            setJustPaidId(payingFiado.id);
+            setTimeout(() => setJustPaidId(null), 3500);
+          }
+        }}
+      />
     </div>
   );
 };

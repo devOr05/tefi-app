@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier } from '../types/tefi';
+import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier, PaymentMethod } from '../types/tefi';
 import {
   generateMockSolanaSignature,
   getOrCreateRoleKeypair,
@@ -20,7 +20,7 @@ interface TefiContextType {
   solanaBalance: number;
   isAirdropLoading: boolean;
   createFiado: (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => { success: boolean; error?: string; fiado?: FiadoRecord };
-  repayFiado: (fiadoId: string) => { success: boolean; signature?: string };
+  repayFiado: (fiadoId: string, paymentMethod?: PaymentMethod) => { success: boolean; signature?: string };
   claimInsurance: (fiadoId: string) => { success: boolean; payoutAmount?: number; signature?: string };
   requestAirdrop: () => Promise<{ success: boolean; signature?: string; error?: string }>;
   refreshBalance: () => Promise<void>;
@@ -288,7 +288,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 2. Cliente paga su deuda (Repayment)
-  const repayFiado = (fiadoId: string) => {
+  const repayFiado = (fiadoId: string, paymentMethod: PaymentMethod = 'SOLANA_USDC') => {
     const target = fiados.find(f => f.id === fiadoId);
     if (!target || target.status !== 'ACTIVE') return { success: false };
 
@@ -297,7 +297,13 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setFiados(prev =>
       prev.map(f =>
         f.id === fiadoId
-          ? { ...f, status: 'PAID', repaidAt: new Date().toISOString(), txSignature: txSig }
+          ? {
+              ...f,
+              status: 'PAID',
+              repaidAt: new Date().toISOString(),
+              txSignature: txSig,
+              paymentMethod
+            }
           : f
       )
     );
