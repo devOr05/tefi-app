@@ -75,6 +75,29 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </span>
       </div>
 
+      {/* Identidad Universal Descentralizada (DID) */}
+      <div className="bg-purple-50/80 border border-purple-100 rounded-2xl p-2.5 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-[10px] font-bold">
+            DID
+          </div>
+          <div>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-bold text-purple-950">Identidad Única Verificada</span>
+              <span className="text-[9px] bg-purple-200/60 text-purple-800 font-extrabold px-1.5 py-0.2 rounded-full">
+                1 Persona = 1 Cuenta
+              </span>
+            </div>
+            <p className="text-[10px] text-purple-700 font-mono truncate max-w-[200px]">
+              {customer.didUri || `did:sol:devnet:${customer.walletAddress}`}
+            </p>
+          </div>
+        </div>
+        <span className="text-[10px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-md">
+          Anti-Fraude
+        </span>
+      </div>
+
       <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-5 border border-gray-100 shadow-xs space-y-4">
         {/* Monto en Pesos y conversión a USDC */}
         <div>

@@ -12,6 +12,7 @@ interface TefiContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
   customer: CustomerProfile;
+  setCustomer: React.Dispatch<React.SetStateAction<CustomerProfile>>;
   merchant: MerchantProfile;
   fiados: FiadoRecord[];
   insurancePool: InsurancePoolState;
@@ -40,7 +41,10 @@ const INITIAL_CUSTOMER: CustomerProfile = {
   loyaltyPoints: 340,
   tier: 'Oro',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  solanaBalanceSol: 0
+  solanaBalanceSol: 0,
+  isDidVerified: true,
+  didUri: `did:sol:devnet:${customerKeypair.publicKey.toBase58()}`,
+  biometricHash: 'bio_7a8f9b2c3d4e5f60'
 };
 
 const INITIAL_MERCHANT: MerchantProfile = {
@@ -381,6 +385,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         setRole,
         customer,
+        setCustomer,
         merchant,
         fiados,
         insurancePool,

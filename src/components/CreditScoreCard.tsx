@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
-import { ShieldCheck, TrendingUp, Info } from 'lucide-react';
+import { ShieldCheck, TrendingUp, Fingerprint, CheckCircle2, AlertCircle } from 'lucide-react';
+import { DidVerificationModal } from './DidVerificationModal';
 
 export const CreditScoreCard: React.FC = () => {
   const { customer } = useTefi();
+  const [isDidModalOpen, setIsDidModalOpen] = useState(false);
 
   const availableLimit = Math.max(0, +(customer.maxCreditLimit - customer.currentDebt).toFixed(1));
   const debtPercentage = Math.min(100, Math.round((customer.currentDebt / (customer.maxCreditLimit || 1)) * 100));
@@ -53,8 +55,47 @@ export const CreditScoreCard: React.FC = () => {
         </div>
       </div>
 
+      {/* Identidad Digital DID & Reputación Portable */}
+      <div className="mt-4 bg-purple-50/70 rounded-2xl p-3 border border-purple-100/90">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${customer.isDidVerified ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+              <Fingerprint className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-purple-950">Identidad Única (DID)</span>
+                {customer.isDidVerified ? (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" /> 1 Persona = 1 Cuenta
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
+                    Pendiente
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-purple-700/90 font-mono truncate max-w-[170px]">
+                {customer.isDidVerified ? (customer.didUri || `did:sol:devnet:${customer.walletAddress}`) : 'Sin validar biométricamente'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsDidModalOpen(true)}
+            className="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition-colors shrink-0"
+          >
+            {customer.isDidVerified ? 'Re-escanear' : 'Verificar'}
+          </button>
+        </div>
+
+        <p className="text-[10px] text-purple-800/80 mt-2 border-t border-purple-100/80 pt-1.5">
+          🔒 <strong>Portabilidad Nacional:</strong> Tu historial te acompaña a cualquier almacén del país. No se puede falsificar ni evadir deudas.
+        </p>
+      </div>
+
       {/* Límite de Crédito y Deuda Activa */}
-      <div className="mt-5 bg-gray-50/80 rounded-2xl p-3.5 border border-gray-100">
+      <div className="mt-3.5 bg-gray-50/80 rounded-2xl p-3.5 border border-gray-100">
         <div className="flex items-center justify-between text-xs font-semibold text-gray-600 mb-2">
           <span>Límite de Fiado Disponible</span>
           <span className="text-emerald-600 font-bold">{availableLimit} USDC</span>
@@ -83,6 +124,8 @@ export const CreditScoreCard: React.FC = () => {
           <strong>Regla de Confianza:</strong> Cada pago a término aumenta tu score <strong>+5 pts</strong> y expande tu límite de fiado <strong>+$5 USDC</strong>.
         </p>
       </div>
+
+      <DidVerificationModal isOpen={isDidModalOpen} onClose={() => setIsDidModalOpen(false)} />
     </div>
   );
 };

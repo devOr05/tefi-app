@@ -16,6 +16,9 @@ export interface CustomerProfile {
   tier: LoyaltyTier;
   avatarUrl?: string;
   solanaBalanceSol?: number;
+  isDidVerified?: boolean;
+  didUri?: string;
+  biometricHash?: string;
 }
 
 export interface MerchantProfile {
