@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { CreditScoreCard } from '../components/CreditScoreCard';
+import { AbundanceFountainCard } from '../components/AbundanceFountainCard';
 import { RepayModal } from '../components/RepayModal';
 import { LinkedAccountsModal } from '../components/LinkedAccountsModal';
 import { FiadoRecord } from '../types/tefi';
@@ -30,6 +31,9 @@ export const CustomerLibretaView: React.FC = () => {
     <div className="space-y-4 pb-20">
       {/* Score Card del Cliente */}
       <CreditScoreCard />
+
+      {/* Fuente de la Abundancia (Micro-Ahorro, Rendimiento y Educación Financiera) */}
+      <AbundanceFountainCard />
 
       {/* Tarjeta de Medios de Pago y Billeteras Vinculadas (Cuenta DNI / Mercado Pago) */}
       <div className="glass-card rounded-3xl p-4 border border-gray-100 shadow-2xs space-y-2.5">

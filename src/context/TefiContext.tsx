@@ -29,6 +29,8 @@ interface TefiContextType {
   refreshBalance: () => Promise<void>;
   resetDemoData: () => void;
   updateLinkedAccounts: (data: { cuentaDniAlias?: string; cuentaDniLinked?: boolean; mercadoPagoAlias?: string; mercadoPagoLinked?: boolean }) => void;
+  depositToAbundanceFountain: (amountArs: number, paymentMethod: PaymentMethod) => { success: boolean; usdcAdded: number; solAdded: number };
+  withdrawFromAbundanceFountain: (amountUsdc: number) => { success: boolean };
 }
 
 const customerKeypair = getOrCreateRoleKeypair('customer');
@@ -52,7 +54,10 @@ const INITIAL_CUSTOMER: CustomerProfile = {
   cuentaDniAlias: 'matias.gonzalez.bapro',
   cuentaDniLinked: true,
   mercadoPagoAlias: 'matias.mp.tefi',
-  mercadoPagoLinked: true
+  mercadoPagoLinked: true,
+  abundanceSavingsSol: 0.145,
+  abundanceSavingsUsdc: 22.50,
+  abundanceYieldEarnedUsdc: 1.85
 };
 
 const INITIAL_MERCHANT: MerchantProfile = {
@@ -150,6 +155,11 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         parsed.cuentaDniLinked = true;
         parsed.mercadoPagoAlias = 'matias.mp.tefi';
         parsed.mercadoPagoLinked = true;
+      }
+      if (parsed.abundanceSavingsUsdc === undefined) {
+        parsed.abundanceSavingsSol = 0.145;
+        parsed.abundanceSavingsUsdc = 22.50;
+        parsed.abundanceYieldEarnedUsdc = 1.85;
       }
       return parsed;
     }
@@ -467,6 +477,94 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const depositToAbundanceFountain = (amountArs: number, paymentMethod: PaymentMethod) => {
+    const rate = exchangeRate.rate || 1615;
+    const usdcAdded = +(amountArs / rate).toFixed(2);
+    const solAdded = +(usdcAdded / 155).toFixed(4);
+
+    setCustomer(prev => {
+      const currentUsdc = prev.abundanceSavingsUsdc || 0;
+      const currentSol = prev.abundanceSavingsSol || 0;
+      const newUsdc = +(currentUsdc + usdcAdded).toFixed(2);
+      const newSol = +(currentSol + solAdded).toFixed(4);
+      const newScore = Math.min(100, prev.creditScore + 2);
+      const newLimit = +(prev.maxCreditLimit + Math.floor(usdcAdded * 0.3)).toFixed(0);
+
+      const updated = {
+        ...prev,
+        abundanceSavingsUsdc: newUsdc,
+        abundanceSavingsSol: newSol,
+        creditScore: newScore,
+        maxCreditLimit: newLimit,
+        tier: calculateTier(newScore)
+      };
+      localStorage.setItem('tefi_customer', JSON.stringify(updated));
+      return updated;
+    });
+
+    const methodLabels: Record<PaymentMethod, string> = {
+      MERCADO_PAGO: 'Mercado Pago',
+      CUENTA_DNI: 'Cuenta DNI',
+      CASH: 'Efectivo',
+      SOLANA_USDC: 'Solana USDC'
+    };
+
+    const notif: WebhookNotification = {
+      id: `fountain-${Date.now()}`,
+      title: '💧 Aporte a la Fuente de la Abundancia',
+      message: `+$${amountArs.toLocaleString('es-AR')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) vertidos vía ${methodLabels[paymentMethod]}. +2 pts de Score y rindiendo 7.4% APY en Solana.`,
+      amountArs,
+      amountUsdc: usdcAdded,
+      method: paymentMethod,
+      customerName: customer.name,
+      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    setWebhookNotification(notif);
+    setTimeout(() => {
+      setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
+    }, 7000);
+
+    return { success: true, usdcAdded, solAdded };
+  };
+
+  const withdrawFromAbundanceFountain = (amountUsdc: number) => {
+    setCustomer(prev => {
+      const currentUsdc = prev.abundanceSavingsUsdc || 0;
+      const currentSol = prev.abundanceSavingsSol || 0;
+      const solToDeduct = +(amountUsdc / 155).toFixed(4);
+
+      const newUsdc = Math.max(0, +(currentUsdc - amountUsdc).toFixed(2));
+      const newSol = Math.max(0, +(currentSol - solToDeduct).toFixed(4));
+
+      const updated = {
+        ...prev,
+        abundanceSavingsUsdc: newUsdc,
+        abundanceSavingsSol: newSol
+      };
+      localStorage.setItem('tefi_customer', JSON.stringify(updated));
+      return updated;
+    });
+
+    const notif: WebhookNotification = {
+      id: `fountain-w-${Date.now()}`,
+      title: '🪙 Retiro de la Fuente de la Abundancia',
+      message: `Has retirado $${amountUsdc.toFixed(2)} USDC a tu cuenta vinculada. Liquidación 24/7 confirmada.`,
+      amountArs: Math.round(amountUsdc * (exchangeRate.rate || 1615)),
+      amountUsdc,
+      method: 'CUENTA_DNI',
+      customerName: customer.name,
+      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    setWebhookNotification(notif);
+    setTimeout(() => {
+      setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
+    }, 7000);
+
+    return { success: true };
+  };
+
   return (
     <TefiContext.Provider
       value={{
@@ -487,6 +585,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshBalance,
         resetDemoData,
         updateLinkedAccounts,
+        depositToAbundanceFountain,
+        withdrawFromAbundanceFountain,
         webhookNotification,
         dismissWebhookNotification
       }}

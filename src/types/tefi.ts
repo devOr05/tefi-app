@@ -25,6 +25,9 @@ export interface CustomerProfile {
   cuentaDniLinked?: boolean;
   mercadoPagoAlias?: string;
   mercadoPagoLinked?: boolean;
+  abundanceSavingsSol?: number;
+  abundanceSavingsUsdc?: number;
+  abundanceYieldEarnedUsdc?: number;
 }
 
 export interface MerchantProfile {
