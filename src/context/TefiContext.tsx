@@ -25,6 +25,7 @@ interface TefiContextType {
   requestAirdrop: () => Promise<{ success: boolean; signature?: string; error?: string }>;
   refreshBalance: () => Promise<void>;
   resetDemoData: () => void;
+  updateLinkedAccounts: (data: { cuentaDniAlias?: string; cuentaDniLinked?: boolean; mercadoPagoAlias?: string; mercadoPagoLinked?: boolean }) => void;
 }
 
 const customerKeypair = getOrCreateRoleKeypair('customer');
@@ -44,7 +45,11 @@ const INITIAL_CUSTOMER: CustomerProfile = {
   solanaBalanceSol: 0,
   isDidVerified: true,
   didUri: `did:sol:devnet:${customerKeypair.publicKey.toBase58()}`,
-  biometricHash: 'bio_7a8f9b2c3d4e5f60'
+  biometricHash: 'bio_7a8f9b2c3d4e5f60',
+  cuentaDniAlias: 'matias.gonzalez.bapro',
+  cuentaDniLinked: true,
+  mercadoPagoAlias: 'matias.mp.tefi',
+  mercadoPagoLinked: true
 };
 
 const INITIAL_MERCHANT: MerchantProfile = {
@@ -136,6 +141,12 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         parsed.isDidVerified = true;
         parsed.didUri = `did:sol:devnet:${customerKeypair.publicKey.toBase58()}`;
         parsed.biometricHash = 'bio_7a8f9b2c3d4e5f60';
+      }
+      if (parsed.cuentaDniLinked === undefined) {
+        parsed.cuentaDniAlias = 'matias.gonzalez.bapro';
+        parsed.cuentaDniLinked = true;
+        parsed.mercadoPagoAlias = 'matias.mp.tefi';
+        parsed.mercadoPagoLinked = true;
       }
       return parsed;
     }
@@ -390,6 +401,14 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setInsurancePool(INITIAL_INSURANCE_POOL);
   };
 
+  const updateLinkedAccounts = (data: { cuentaDniAlias?: string; cuentaDniLinked?: boolean; mercadoPagoAlias?: string; mercadoPagoLinked?: boolean }) => {
+    setCustomer(prev => {
+      const updated = { ...prev, ...data };
+      localStorage.setItem('tefi_customer', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
     <TefiContext.Provider
       value={{
@@ -408,7 +427,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         claimInsurance,
         requestAirdrop: handleAirdrop,
         refreshBalance,
-        resetDemoData
+        resetDemoData,
+        updateLinkedAccounts
       }}
     >
       {children}

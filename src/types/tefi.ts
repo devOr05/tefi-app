@@ -21,6 +21,10 @@ export interface CustomerProfile {
   isDidVerified?: boolean;
   didUri?: string;
   biometricHash?: string;
+  cuentaDniAlias?: string;
+  cuentaDniLinked?: boolean;
+  mercadoPagoAlias?: string;
+  mercadoPagoLinked?: boolean;
 }
 
 export interface MerchantProfile {

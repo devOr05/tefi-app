@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { CreditScoreCard } from '../components/CreditScoreCard';
 import { RepayModal } from '../components/RepayModal';
+import { LinkedAccountsModal } from '../components/LinkedAccountsModal';
 import { FiadoRecord } from '../types/tefi';
-import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles } from 'lucide-react';
+import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles, Link2 } from 'lucide-react';
 import { getSolanaExplorerUrl } from '../solana/connection';
 
 export const CustomerLibretaView: React.FC = () => {
@@ -11,6 +12,7 @@ export const CustomerLibretaView: React.FC = () => {
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const [justPaidId, setJustPaidId] = useState<string | null>(null);
   const [payingFiado, setPayingFiado] = useState<FiadoRecord | null>(null);
+  const [isLinkedAccountsModalOpen, setIsLinkedAccountsModalOpen] = useState(false);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const pastFiados = fiados.filter(f => f.status === 'PAID');
@@ -28,6 +30,65 @@ export const CustomerLibretaView: React.FC = () => {
     <div className="space-y-4 pb-20">
       {/* Score Card del Cliente */}
       <CreditScoreCard />
+
+      {/* Tarjeta de Medios de Pago y Billeteras Vinculadas (Cuenta DNI / Mercado Pago) */}
+      <div className="glass-card rounded-3xl p-4 border border-gray-100 shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+              <Link2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-gray-900">Billeteras & Cuentas Vinculadas</h4>
+              <p className="text-[10px] text-gray-400">Rampas de pago para tus fiados</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsLinkedAccountsModalOpen(true)}
+            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-xl transition-colors cursor-pointer"
+          >
+            Vincular / Editar
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 pt-0.5">
+          {/* Cuenta DNI */}
+          <div
+            onClick={() => setIsLinkedAccountsModalOpen(true)}
+            className="p-2.5 rounded-2xl bg-gray-50/80 border border-gray-100 hover:border-emerald-300 cursor-pointer transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-gray-800 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Cuenta DNI
+              </span>
+              <span className="text-[9px] text-emerald-800 font-extrabold bg-emerald-100 px-1.5 py-0.2 rounded-md">
+                {customer.cuentaDniLinked !== false ? 'Vinculada' : 'Off'}
+              </span>
+            </div>
+            <p className="text-[10px] font-mono text-emerald-950 font-bold truncate mt-1">
+              {customer.cuentaDniAlias || 'matias.gonzalez.bapro'}
+            </p>
+          </div>
+
+          {/* Mercado Pago */}
+          <div
+            onClick={() => setIsLinkedAccountsModalOpen(true)}
+            className="p-2.5 rounded-2xl bg-gray-50/80 border border-gray-100 hover:border-blue-300 cursor-pointer transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-gray-800 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Mercado Pago
+              </span>
+              <span className="text-[9px] text-blue-800 font-extrabold bg-blue-100 px-1.5 py-0.2 rounded-md">
+                {customer.mercadoPagoLinked !== false ? 'Vinculada' : 'Off'}
+              </span>
+            </div>
+            <p className="text-[10px] font-mono text-blue-950 font-bold truncate mt-1">
+              {customer.mercadoPagoAlias || 'matias.mp.tefi'}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Banner de Deuda Total */}
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-3xl p-5 shadow-sm">
@@ -207,6 +268,12 @@ export const CustomerLibretaView: React.FC = () => {
             setTimeout(() => setJustPaidId(null), 3500);
           }
         }}
+      />
+
+      {/* Modal de Vinculación de Billeteras (Cuenta DNI / Mercado Pago) */}
+      <LinkedAccountsModal
+        isOpen={isLinkedAccountsModalOpen}
+        onClose={() => setIsLinkedAccountsModalOpen(false)}
       />
     </div>
   );
