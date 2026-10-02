@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier, PaymentMethod } from '../types/tefi';
+import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier, PaymentMethod, WebhookNotification } from '../types/tefi';
 import {
   generateMockSolanaSignature,
   getOrCreateRoleKeypair,
@@ -19,6 +19,8 @@ interface TefiContextType {
   exchangeRate: ExchangeRateData;
   solanaBalance: number;
   isAirdropLoading: boolean;
+  webhookNotification: WebhookNotification | null;
+  dismissWebhookNotification: () => void;
   createFiado: (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => { success: boolean; error?: string; fiado?: FiadoRecord };
   repayFiado: (fiadoId: string, paymentMethod?: PaymentMethod) => { success: boolean; signature?: string };
   claimInsurance: (fiadoId: string) => { success: boolean; payoutAmount?: number; signature?: string };
@@ -182,6 +184,11 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [solanaBalance, setSolanaBalance] = useState<number>(0);
   const [isAirdropLoading, setIsAirdropLoading] = useState<boolean>(false);
+  const [webhookNotification, setWebhookNotification] = useState<WebhookNotification | null>(null);
+
+  const dismissWebhookNotification = useCallback(() => {
+    setWebhookNotification(null);
+  }, []);
 
   // Consultar Oráculo en vivo
   useEffect(() => {
@@ -337,6 +344,30 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     });
 
+    // Disparar Notificación de Webhook Automático en tiempo real
+    const methodLabels: Record<PaymentMethod, string> = {
+      MERCADO_PAGO: 'Mercado Pago (Transferencias 3.0)',
+      CUENTA_DNI: 'Cuenta DNI (Banco Provincia)',
+      CASH: 'Efectivo en Mostrador',
+      SOLANA_USDC: 'Solana USDC (On-Chain)'
+    };
+
+    const notif: WebhookNotification = {
+      id: `wh-${Date.now()}`,
+      title: paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Webhook Bancario Recibido 🔔',
+      message: `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) recibido de ${target.customerName} vía ${methodLabels[paymentMethod]}! Conciliación automática on-chain.`,
+      amountArs: target.amountArs,
+      amountUsdc: target.amountUsdc,
+      method: paymentMethod,
+      customerName: target.customerName,
+      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    setWebhookNotification(notif);
+    setTimeout(() => {
+      setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
+    }, 7000);
+
     return { success: true, signature: txSig };
   };
 
@@ -428,7 +459,9 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         requestAirdrop: handleAirdrop,
         refreshBalance,
         resetDemoData,
-        updateLinkedAccounts
+        updateLinkedAccounts,
+        webhookNotification,
+        dismissWebhookNotification
       }}
     >
       {children}

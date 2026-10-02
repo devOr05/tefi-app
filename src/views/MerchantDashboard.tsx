@@ -161,22 +161,29 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
                   >
                     Ver QR
                   </button>
-                  <button
-                    onClick={() => setPayingFiado(f)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1"
-                  >
-                    <DollarSign className="w-3 h-3 text-emerald-600" />
-                    Cobrar (MP/DNI)
-                  </button>
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-100">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Webhook Activo</span>
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => handleClaim(f.id)}
-                  className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold hover:bg-rose-100 transition-colors flex items-center gap-1"
-                >
-                  <ShieldAlert className="w-3 h-3" />
-                  Ejecutar Seguro
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setPayingFiado(f)}
+                    className="px-2 py-1 rounded-lg bg-amber-50 text-amber-800 font-bold hover:bg-amber-100 transition-colors text-[10px]"
+                    title="Si el cliente te entrega billetes en mano"
+                  >
+                    Efectivo
+                  </button>
+
+                  <button
+                    onClick={() => handleClaim(f.id)}
+                    className="px-2 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold hover:bg-rose-100 transition-colors flex items-center gap-0.5 text-[10px]"
+                  >
+                    <ShieldAlert className="w-3 h-3" />
+                    Seguro
+                  </button>
+                </div>
               </div>
             </div>
           ))

@@ -68,3 +68,15 @@ export interface InsurancePoolState {
   totalActivePolicies: number;
   solanaVaultAddress: string;
 }
+
+export interface WebhookNotification {
+  id: string;
+  title: string;
+  message: string;
+  amountArs: number;
+  amountUsdc: number;
+  method: PaymentMethod;
+  customerName: string;
+  timestamp: string;
+}
+

@@ -15,6 +15,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('MERCADO_PAGO');
   const [copied, setCopied] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processStep, setProcessStep] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
 
@@ -31,17 +32,25 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
 
   const handleConfirmPayment = () => {
     setIsProcessing(true);
+    setProcessStep('1/3: Enviando transferencia bancaria...');
 
     setTimeout(() => {
-      const res = repayFiado(fiado.id, selectedMethod);
-      setIsProcessing(false);
+      setProcessStep('2/3: 🔔 Webhook bancario recibido (Coelsa/API)...');
+      setTimeout(() => {
+        setProcessStep('3/3: ⚡ Conciliando automáticamente en Solana...');
+        setTimeout(() => {
+          const res = repayFiado(fiado.id, selectedMethod);
+          setIsProcessing(false);
+          setProcessStep('');
 
-      if (res.success) {
-        setIsSuccess(true);
-        if (res.signature) setTxSignature(res.signature);
-        if (onRepaySuccess) onRepaySuccess();
-      }
-    }, 1200);
+          if (res.success) {
+            setIsSuccess(true);
+            if (res.signature) setTxSignature(res.signature);
+            if (onRepaySuccess) onRepaySuccess();
+          }
+        }, 700);
+      }, 700);
+    }, 700);
   };
 
   const handleClose = () => {
@@ -270,7 +279,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               {isProcessing ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Liquidando en Solana Devnet...</span>
+                  <span className="text-xs font-bold">{processStep}</span>
                 </>
               ) : (
                 <>
