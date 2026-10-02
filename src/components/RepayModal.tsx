@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiadoRecord, PaymentMethod } from '../types/tefi';
 import { useTefi } from '../context/TefiContext';
-import { X, Check, Copy, ArrowRight, ShieldCheck, Zap, Sparkles, Building, Banknote, Wallet, ExternalLink } from 'lucide-react';
+import { X, Check, Copy, ArrowRight, ShieldCheck, Zap, Sparkles, Building, Banknote, Wallet, ExternalLink, Droplets } from 'lucide-react';
 
 interface RepayModalProps {
   isOpen: boolean;
@@ -11,8 +11,8 @@ interface RepayModalProps {
 }
 
 export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, onRepaySuccess }) => {
-  const { repayFiado, exchangeRate } = useTefi();
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('MERCADO_PAGO');
+  const { customer, repayFiado, exchangeRate } = useTefi();
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('ABUNDANCE_FOUNTAIN');
   const [copied, setCopied] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processStep, setProcessStep] = useState<string>('');
@@ -32,8 +32,30 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
 
   const handleConfirmPayment = () => {
     setIsProcessing(true);
-    setProcessStep('1/3: Enviando transferencia bancaria...');
 
+    if (selectedMethod === 'ABUNDANCE_FOUNTAIN') {
+      setProcessStep('1/3: 💧 Verificando fondos retenidos en la Fuente...');
+      setTimeout(() => {
+        setProcessStep('2/3: ⚡ Liquidando colateral para saldar fiado...');
+        setTimeout(() => {
+          setProcessStep('3/3: 🛡️ Deuda saldada en Solana y saldo liberado...');
+          setTimeout(() => {
+            const res = repayFiado(fiado.id, selectedMethod);
+            setIsProcessing(false);
+            setProcessStep('');
+
+            if (res.success) {
+              setIsSuccess(true);
+              if (res.signature) setTxSignature(res.signature);
+              if (onRepaySuccess) onRepaySuccess();
+            }
+          }, 700);
+        }, 700);
+      }, 700);
+      return;
+    }
+
+    setProcessStep('1/3: Enviando transferencia bancaria...');
     setTimeout(() => {
       setProcessStep('2/3: 🔔 Webhook bancario recibido (Coelsa/API)...');
       setTimeout(() => {
@@ -109,6 +131,62 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               </label>
 
               <div className="space-y-2">
+                {/* 0. Fuente de la Abundancia (Usar tus fondos retenidos en Solana) */}
+                <div
+                  onClick={() => setSelectedMethod('ABUNDANCE_FOUNTAIN')}
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2 ${
+                    selectedMethod === 'ABUNDANCE_FOUNTAIN'
+                      ? 'border-purple-500 bg-purple-50/60 shadow-xs ring-1 ring-purple-500/20'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                        <Droplets className="w-4 h-4 fill-white" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-gray-900">Fuente de la Abundancia</span>
+                          <span className="text-[9px] bg-purple-100 text-purple-800 font-extrabold px-1.5 py-0.2 rounded-md">
+                            Fondos Retenidos
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">
+                          Paga con tus fondos de ahorro (Tenés ${(customer.abundanceSavingsUsdc || 0).toFixed(2)} USDC)
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      selectedMethod === 'ABUNDANCE_FOUNTAIN' ? 'border-purple-600 bg-purple-600 text-white' : 'border-gray-300'
+                    }`}>
+                      {selectedMethod === 'ABUNDANCE_FOUNTAIN' && <Check className="w-2.5 h-2.5 stroke-3" />}
+                    </div>
+                  </div>
+
+                  {selectedMethod === 'ABUNDANCE_FOUNTAIN' && (
+                    <div className="pt-2 border-t border-purple-100 text-xs bg-white/80 p-2.5 rounded-xl mt-1 space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-gray-500">Saldo actual en la Fuente:</span>
+                        <strong className="text-gray-900">${(customer.abundanceSavingsUsdc || 0).toFixed(2)} USDC</strong>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-gray-500">Se debitará para este fiado:</span>
+                        <strong className="text-purple-700">-${fiado.amountUsdc.toFixed(2)} USDC</strong>
+                      </div>
+                      <div className="flex justify-between text-[11px] pt-0.5 border-t border-gray-100 font-bold">
+                        <span className="text-emerald-700">Saldo liberado tras el pago:</span>
+                        <span className="text-emerald-700">
+                          ${Math.max(0, +((customer.abundanceSavingsUsdc || 0) - fiado.amountUsdc).toFixed(2))} USDC
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-purple-700 font-medium pt-1">
+                        ✨ Al pagar con tus fondos bloqueados, cancelás la deuda al instante y liberás el resto para retiro libre.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* 1. Mercado Pago */}
                 <div
                   onClick={() => setSelectedMethod('MERCADO_PAGO')}

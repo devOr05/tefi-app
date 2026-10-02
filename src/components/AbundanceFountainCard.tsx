@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { PaymentMethod } from '../types/tefi';
-import { Sparkles, TrendingUp, Droplets, ArrowUpRight, ArrowDownLeft, X, Check, ShieldCheck, HelpCircle, Coins, ChevronDown, ChevronUp, Lock, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Sparkles, TrendingUp, Droplets, ArrowUpRight, ArrowDownLeft, X, Check, ShieldCheck, HelpCircle, Coins, ChevronDown, ChevronUp, Lock, ShieldAlert, AlertTriangle, Zap } from 'lucide-react';
 
 export const AbundanceFountainCard: React.FC = () => {
-  const { customer, exchangeRate, depositToAbundanceFountain, withdrawFromAbundanceFountain } = useTefi();
+  const { customer, exchangeRate, depositToAbundanceFountain, withdrawFromAbundanceFountain, repayAllDebtWithAbundanceFountain } = useTefi();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [amountArs, setAmountArs] = useState<string>('3000');
@@ -107,19 +107,35 @@ export const AbundanceFountainCard: React.FC = () => {
 
         {/* Garantía y Colateral por Deuda Activa */}
         {currentDebt > 0 ? (
-          <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
-            <span className="text-amber-800 font-semibold flex items-center gap-1">
-              <Lock className="w-3.5 h-3.5 text-amber-600" />
-              Garantía de Fiados Activos:
-            </span>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md">
-                ${lockedCollateral.toFixed(2)} USDC retenidos
+          <div className="mt-3 pt-2.5 border-t border-gray-100 space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-amber-800 font-semibold flex items-center gap-1">
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
+                Garantía de Fiados Activos:
               </span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md">
-                ${maxWithdrawable.toFixed(2)} libres
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md">
+                  ${lockedCollateral.toFixed(2)} USDC retenidos
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                  ${maxWithdrawable.toFixed(2)} libres
+                </span>
+              </div>
             </div>
+
+            {/* Botón rápido para cancelar deuda usando fondos retenidos */}
+            <button
+              onClick={() => {
+                repayAllDebtWithAbundanceFountain();
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-[11px] shadow-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 fill-white text-white" />
+              <span>Pagar Deuda (${currentDebt.toFixed(2)} USDC) con Fondos Retenidos</span>
+            </button>
+            <p className="text-[9.5px] text-gray-400 text-center font-medium">
+              Cancela tus fiados con tu ahorro retenido y libera el 100% de tus ${maxWithdrawable.toFixed(2)} USDC restantes.
+            </p>
           </div>
         ) : (
           <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
@@ -173,6 +189,9 @@ export const AbundanceFountainCard: React.FC = () => {
             </p>
             <p>
               🔒 <strong>Garantía de Solvencia Mutua:</strong> Cada peso ahorrado funciona como garantía silenciosa. Si tenés fiados activos, tu ahorro respalda esa deuda: <em>no podés retirar si el retiro deja tu score o colateral por debajo de la deuda</em>. ¡Eso protege la confianza con el almacenero y te permite fiar más!
+            </p>
+            <p>
+              ⚡ <strong>Autoliquidación con Fondos Bloqueados:</strong> ¡Tus fondos en garantía no están perdidos! Podés usarlos en cualquier momento para pagar tus deudas de fiado con 1 solo toque. Al saldarlas, liberás de inmediato el resto para retirar cuando quieras.
             </p>
             <p>
               📈 <strong>Educación & Score:</strong> Al saldar tus fiados a término, tus fondos quedan 100% liberados para retirar cuando quieras y tu score de crédito se consolida en Solana.
@@ -368,14 +387,28 @@ export const AbundanceFountainCard: React.FC = () => {
 
               {/* Advertencia interactiva de bloqueo si excede la garantía */}
               {parseFloat(withdrawUsdc || '0') > maxWithdrawable && currentDebt > 0 && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[10px] space-y-0.5 animate-in fade-in">
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-[10px] space-y-2 animate-in fade-in">
                   <div className="flex items-center gap-1 font-bold text-rose-900">
                     <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                     <span>Retiro Bloqueado: Compromete tu Solvencia</span>
                   </div>
                   <p className="leading-snug">
-                    Este monto dejaría tu score o colateral por debajo de tu deuda activa ($${currentDebt.toFixed(2)} USDC). Para retirar más de $${maxWithdrawable.toFixed(2)} USDC, debés saldar primero tus fiados pendientes en el almacén.
+                    Este monto dejaría tu score o colateral por debajo de tu deuda activa ($${currentDebt.toFixed(2)} USDC). Sin embargo, <strong>podés usar tus fondos retenidos para pagar la deuda directamente</strong>.
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const res = repayAllDebtWithAbundanceFountain();
+                      if (res.success) {
+                        setIsWithdrawOpen(false);
+                      }
+                    }}
+                    className="w-full py-2 px-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-[10px] shadow-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    <span>Liquidar Fiados (${currentDebt.toFixed(2)} USDC) con Fondos Retenidos</span>
+                  </button>
                 </div>
               )}
 

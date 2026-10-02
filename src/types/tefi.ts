@@ -4,7 +4,7 @@ export type LoyaltyTier = 'Bronce' | 'Plata' | 'Oro' | 'Diamante';
 
 export type FiadoStatus = 'ACTIVE' | 'PAID' | 'DEFAULTED' | 'INSURANCE_CLAIMED';
 
-export type PaymentMethod = 'MERCADO_PAGO' | 'CUENTA_DNI' | 'CASH' | 'SOLANA_USDC';
+export type PaymentMethod = 'MERCADO_PAGO' | 'CUENTA_DNI' | 'CASH' | 'SOLANA_USDC' | 'ABUNDANCE_FOUNTAIN';
 
 export interface CustomerProfile {
   id: string;

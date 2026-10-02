@@ -31,6 +31,7 @@ interface TefiContextType {
   updateLinkedAccounts: (data: { cuentaDniAlias?: string; cuentaDniLinked?: boolean; mercadoPagoAlias?: string; mercadoPagoLinked?: boolean }) => void;
   depositToAbundanceFountain: (amountArs: number, paymentMethod: PaymentMethod) => { success: boolean; usdcAdded: number; solAdded: number };
   withdrawFromAbundanceFountain: (amountUsdc: number) => { success: boolean; error?: string };
+  repayAllDebtWithAbundanceFountain: () => { success: boolean; error?: string };
 }
 
 const customerKeypair = getOrCreateRoleKeypair('customer');
@@ -370,9 +371,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newTier = calculateTier(newScore);
       const newLimit = +(prev.maxCreditLimit + 5).toFixed(0);
 
+      let newSavingsUsdc = prev.abundanceSavingsUsdc || 0;
+      let newSavingsSol = prev.abundanceSavingsSol || 0;
+
+      if (paymentMethod === 'ABUNDANCE_FOUNTAIN') {
+        newSavingsUsdc = Math.max(0, +(newSavingsUsdc - target.amountUsdc).toFixed(2));
+        newSavingsSol = Math.max(0, +(newSavingsSol - (target.amountUsdc / 155)).toFixed(4));
+      }
+
       return {
         ...prev,
         currentDebt: newDebt,
+        abundanceSavingsUsdc: newSavingsUsdc,
+        abundanceSavingsSol: newSavingsSol,
         creditScore: newScore,
         totalRepaid: +(prev.totalRepaid + target.amountUsdc).toFixed(2),
         loyaltyPoints: prev.loyaltyPoints + pointsEarned,
@@ -386,12 +397,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       MERCADO_PAGO: 'Mercado Pago (Transferencias 3.0)',
       CUENTA_DNI: 'Cuenta DNI (Banco Provincia)',
       CASH: 'Efectivo en Mostrador',
-      SOLANA_USDC: 'Solana USDC (On-Chain)'
+      SOLANA_USDC: 'Solana USDC (On-Chain)',
+      ABUNDANCE_FOUNTAIN: 'Fuente de la Abundancia (Fondos Retenidos)'
     };
 
     const notif: WebhookNotification = {
       id: `wh-${Date.now()}`,
-      title: paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Webhook Bancario Recibido 🔔',
+      title: paymentMethod === 'ABUNDANCE_FOUNTAIN'
+        ? '💧 Fiado Saldado con la Fuente'
+        : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Webhook Bancario Recibido 🔔'),
       message: `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) recibido de ${target.customerName} vía ${methodLabels[paymentMethod]}! Conciliación automática on-chain.`,
       amountArs: target.amountArs,
       amountUsdc: target.amountUsdc,
@@ -506,7 +520,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       MERCADO_PAGO: 'Mercado Pago',
       CUENTA_DNI: 'Cuenta DNI',
       CASH: 'Efectivo',
-      SOLANA_USDC: 'Solana USDC'
+      SOLANA_USDC: 'Solana USDC',
+      ABUNDANCE_FOUNTAIN: 'Fuente de la Abundancia'
     };
 
     const notif: WebhookNotification = {
@@ -615,6 +630,85 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
+  const repayAllDebtWithAbundanceFountain = (): { success: boolean; error?: string } => {
+    const totalDebt = customer.currentDebt || 0;
+    const currentSavings = customer.abundanceSavingsUsdc || 0;
+
+    if (totalDebt <= 0) {
+      return { success: false, error: 'No tenés deuda activa pendiente.' };
+    }
+
+    if (currentSavings < totalDebt) {
+      return {
+        success: false,
+        error: `Saldo insuficiente en la Fuente ($${currentSavings.toFixed(2)} USDC) para saldar la deuda total ($${totalDebt.toFixed(2)} USDC).`
+      };
+    }
+
+    const txSig = generateMockSolanaSignature();
+
+    // Marcar todos los fiados activos como pagados
+    setFiados(prev =>
+      prev.map(f =>
+        f.status === 'ACTIVE'
+          ? {
+              ...f,
+              status: 'PAID',
+              repaidAt: new Date().toISOString(),
+              txSignature: txSig,
+              paymentMethod: 'ABUNDANCE_FOUNTAIN'
+            }
+          : f
+      )
+    );
+
+    // Transmitir a Solana
+    broadcastSolanaFiadoEvent(customerKeypair, {
+      type: 'REPAY',
+      fiadoId: 'ALL_ACTIVE_SETTLED',
+      amountUsdc: totalDebt
+    });
+
+    setCustomer(prev => {
+      const newSavingsUsdc = Math.max(0, +(prev.abundanceSavingsUsdc! - totalDebt).toFixed(2));
+      const newSavingsSol = Math.max(0, +(prev.abundanceSavingsSol! - (totalDebt / 155)).toFixed(4));
+      const newScore = Math.min(100, prev.creditScore + 8); // Boost significativo por liquidar deuda
+      const newLimit = +(prev.maxCreditLimit + 10).toFixed(0);
+
+      const updated = {
+        ...prev,
+        currentDebt: 0,
+        abundanceSavingsUsdc: newSavingsUsdc,
+        abundanceSavingsSol: newSavingsSol,
+        creditScore: newScore,
+        maxCreditLimit: newLimit,
+        tier: calculateTier(newScore),
+        totalRepaid: +(prev.totalRepaid + totalDebt).toFixed(2),
+        loyaltyPoints: prev.loyaltyPoints + Math.round(totalDebt * 25)
+      };
+      localStorage.setItem('tefi_customer', JSON.stringify(updated));
+      return updated;
+    });
+
+    const notif: WebhookNotification = {
+      id: `wh-settle-${Date.now()}`,
+      title: '⚡ Deuda Liquidada con la Fuente de la Abundancia',
+      message: `¡Deuda activa de $${totalDebt.toFixed(2)} USDC saldada usando tus fondos en garantía! Tus fiados están 100% pagados, +8 pts a tu Score y tus $${Math.max(0, +(currentSavings - totalDebt).toFixed(2))} USDC restantes quedan libres para retirar.`,
+      amountArs: Math.round(totalDebt * (exchangeRate.rate || 1615)),
+      amountUsdc: totalDebt,
+      method: 'ABUNDANCE_FOUNTAIN',
+      customerName: customer.name,
+      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    setWebhookNotification(notif);
+    setTimeout(() => {
+      setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
+    }, 7000);
+
+    return { success: true };
+  };
+
   return (
     <TefiContext.Provider
       value={{
@@ -637,6 +731,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateLinkedAccounts,
         depositToAbundanceFountain,
         withdrawFromAbundanceFountain,
+        repayAllDebtWithAbundanceFountain,
         webhookNotification,
         dismissWebhookNotification
       }}
