@@ -1,22 +1,27 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { PaymentMethod } from '../types/tefi';
-import { Sparkles, TrendingUp, Droplets, ArrowUpRight, ArrowDownLeft, X, Check, ShieldCheck, HelpCircle, Coins, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, TrendingUp, Droplets, ArrowUpRight, ArrowDownLeft, X, Check, ShieldCheck, HelpCircle, Coins, ChevronDown, ChevronUp, Lock, ShieldAlert, AlertTriangle } from 'lucide-react';
 
 export const AbundanceFountainCard: React.FC = () => {
   const { customer, exchangeRate, depositToAbundanceFountain, withdrawFromAbundanceFountain } = useTefi();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [amountArs, setAmountArs] = useState<string>('3000');
-  const [withdrawUsdc, setWithdrawUsdc] = useState<string>('10');
+  const [withdrawUsdc, setWithdrawUsdc] = useState<string>('4');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('CUENTA_DNI');
   const [showEdu, setShowEdu] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   const rate = exchangeRate.rate || 1615;
   const savingsUsdc = customer.abundanceSavingsUsdc ?? 22.50;
   const savingsSol = customer.abundanceSavingsSol ?? 0.145;
   const yieldEarned = customer.abundanceYieldEarnedUsdc ?? 1.85;
   const savingsArs = Math.round(savingsUsdc * rate);
+
+  const currentDebt = customer.currentDebt || 0;
+  const lockedCollateral = Math.min(savingsUsdc, currentDebt);
+  const maxWithdrawable = Math.max(0, +(savingsUsdc - lockedCollateral).toFixed(2));
 
   const handleDepositSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +31,30 @@ export const AbundanceFountainCard: React.FC = () => {
     setIsDepositOpen(false);
   };
 
+  const handleOpenWithdraw = () => {
+    setWithdrawError(null);
+    setWithdrawUsdc(maxWithdrawable > 0 ? maxWithdrawable.toString() : '0');
+    setIsWithdrawOpen(true);
+  };
+
   const handleWithdrawSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setWithdrawError(null);
     const val = parseFloat(withdrawUsdc);
-    if (!val || val <= 0 || val > savingsUsdc) return;
-    withdrawFromAbundanceFountain(val);
+    if (!val || val <= 0) {
+      setWithdrawError('Ingresá un monto mayor a 0');
+      return;
+    }
+    if (val > savingsUsdc) {
+      setWithdrawError('El monto solicitado supera tu saldo en la Fuente.');
+      return;
+    }
+
+    const res = withdrawFromAbundanceFountain(val);
+    if (!res.success) {
+      setWithdrawError(res.error || 'No se pudo procesar el retiro.');
+      return;
+    }
     setIsWithdrawOpen(false);
   };
 
@@ -81,16 +105,33 @@ export const AbundanceFountainCard: React.FC = () => {
           </div>
         </div>
 
-        {/* Impacto en el Score */}
-        <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
-          <span className="text-gray-500 font-medium flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-            Respaldo de Solvencia:
-          </span>
-          <span className="font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
-            +10 pts al Score On-Chain
-          </span>
-        </div>
+        {/* Garantía y Colateral por Deuda Activa */}
+        {currentDebt > 0 ? (
+          <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
+            <span className="text-amber-800 font-semibold flex items-center gap-1">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              Garantía de Fiados Activos:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md">
+                ${lockedCollateral.toFixed(2)} USDC retenidos
+              </span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                ${maxWithdrawable.toFixed(2)} libres
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
+            <span className="text-gray-500 font-medium flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+              Respaldo de Solvencia:
+            </span>
+            <span className="font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
+              +10 pts al Score On-Chain (100% libre)
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Botones de Aporte y Retiro */}
@@ -104,7 +145,7 @@ export const AbundanceFountainCard: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setIsWithdrawOpen(true)}
+          onClick={handleOpenWithdraw}
           className="py-2.5 px-3 rounded-2xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-xs shadow-2xs active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <ArrowDownLeft className="w-4 h-4 text-gray-500" />
@@ -126,12 +167,15 @@ export const AbundanceFountainCard: React.FC = () => {
         </button>
 
         {showEdu && (
-          <div className="mt-2 text-[11px] text-gray-600 bg-white/90 p-3 rounded-xl border border-emerald-100 space-y-1.5 animate-in fade-in">
+          <div className="mt-2 text-[11px] text-gray-600 bg-white/90 p-3 rounded-xl border border-emerald-100 space-y-2 animate-in fade-in">
             <p>
               💡 <strong>De Deudor a Inversor:</strong> Mientras el plazo fijo bancario pierde contra la inflación del peso, en la Fuente tus fondos se indexan a <strong>Solana y USDC</strong> rindiendo intereses diarios (~7.4% anual) a través del consenso de la red.
             </p>
             <p>
-              🔒 <strong>Ahorro que abre puertas:</strong> Cada peso ahorrado funciona como garantía silenciosa: el almacenero te fía más y tu Score sube porque demostrás conducta financiera responsable.
+              🔒 <strong>Garantía de Solvencia Mutua:</strong> Cada peso ahorrado funciona como garantía silenciosa. Si tenés fiados activos, tu ahorro respalda esa deuda: <em>no podés retirar si el retiro deja tu score o colateral por debajo de la deuda</em>. ¡Eso protege la confianza con el almacenero y te permite fiar más!
+            </p>
+            <p>
+              📈 <strong>Educación & Score:</strong> Al saldar tus fiados a término, tus fondos quedan 100% liberados para retirar cuando quieras y tu score de crédito se consolida en Solana.
             </p>
           </div>
         )}
@@ -259,6 +303,28 @@ export const AbundanceFountainCard: React.FC = () => {
               </div>
             </div>
 
+            {/* Banner de Garantía / Regla de Deuda Activa */}
+            {currentDebt > 0 ? (
+              <div className="mb-3 p-3 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-[11px] space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                  <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span>Garantía de Fiados Activos</span>
+                </div>
+                <p className="text-amber-800 leading-snug">
+                  Tenés una deuda activa de <strong>${currentDebt.toFixed(2)} USDC</strong> en tus fiados. Por regla de solvencia, no podés retirar un monto que deje tu score o colateral por debajo de la deuda.
+                </p>
+                <div className="pt-1 flex items-center justify-between font-bold text-[10px]">
+                  <span className="text-amber-700">Retenido en garantía: ${lockedCollateral.toFixed(2)} USDC</span>
+                  <span className="text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">Libre: ${maxWithdrawable.toFixed(2)} USDC</span>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 text-[11px] flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Sin deudas activas. Podés retirar el 100% de tus ahorros en cualquier momento.</span>
+              </div>
+            )}
+
             <form onSubmit={handleWithdrawSubmit} className="space-y-3">
               <div>
                 <label className="text-[11px] font-bold text-gray-600 block mb-1">Monto a retirar (USDC)</label>
@@ -266,27 +332,59 @@ export const AbundanceFountainCard: React.FC = () => {
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400">$</span>
                   <input
                     type="number"
+                    step="0.01"
                     value={withdrawUsdc}
-                    onChange={e => setWithdrawUsdc(e.target.value)}
+                    onChange={e => {
+                      setWithdrawUsdc(e.target.value);
+                      setWithdrawError(null);
+                    }}
                     max={savingsUsdc}
-                    className="w-full pl-7 pr-20 py-2.5 rounded-xl bg-gray-50 border border-gray-200 font-extrabold text-base focus:outline-none focus:border-emerald-500"
-                    placeholder="10"
+                    className={`w-full pl-7 pr-20 py-2.5 rounded-xl bg-gray-50 border font-extrabold text-base focus:outline-none transition-colors ${
+                      parseFloat(withdrawUsdc || '0') > maxWithdrawable && currentDebt > 0
+                        ? 'border-rose-400 bg-rose-50/40 text-rose-950 focus:border-rose-500'
+                        : 'border-gray-200 focus:border-emerald-500'
+                    }`}
+                    placeholder="4"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-emerald-700">
                     USDC
                   </span>
                 </div>
+
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                  <span>Disponible: ${savingsUsdc.toFixed(2)} USDC</span>
+                  <span>Disponible libre: <strong className="text-gray-700">${maxWithdrawable.toFixed(2)} USDC</strong></span>
                   <button
                     type="button"
-                    onClick={() => setWithdrawUsdc(savingsUsdc.toString())}
-                    className="font-bold text-emerald-600 hover:underline"
+                    onClick={() => {
+                      setWithdrawUsdc(maxWithdrawable.toString());
+                      setWithdrawError(null);
+                    }}
+                    className="font-bold text-emerald-600 hover:underline cursor-pointer"
                   >
-                    Retirar Todo
+                    Máximo Libre (${maxWithdrawable.toFixed(2)})
                   </button>
                 </div>
               </div>
+
+              {/* Advertencia interactiva de bloqueo si excede la garantía */}
+              {parseFloat(withdrawUsdc || '0') > maxWithdrawable && currentDebt > 0 && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[10px] space-y-0.5 animate-in fade-in">
+                  <div className="flex items-center gap-1 font-bold text-rose-900">
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                    <span>Retiro Bloqueado: Compromete tu Solvencia</span>
+                  </div>
+                  <p className="leading-snug">
+                    Este monto dejaría tu score o colateral por debajo de tu deuda activa ($${currentDebt.toFixed(2)} USDC). Para retirar más de $${maxWithdrawable.toFixed(2)} USDC, debés saldar primero tus fiados pendientes en el almacén.
+                  </p>
+                </div>
+              )}
+
+              {withdrawError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[10px] flex items-start gap-1.5 animate-in fade-in">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{withdrawError}</span>
+                </div>
+              )}
 
               <div className="bg-gray-50 p-2.5 rounded-xl text-[10px] text-gray-600 border border-gray-200">
                 Se enviarán aprox. <strong>${Math.round(parseFloat(withdrawUsdc || '0') * rate).toLocaleString('es-AR')} ARS</strong> a tu cuenta vinculada de {customer.cuentaDniAlias ? 'Cuenta DNI' : 'Mercado Pago'} vía Coelsa.
@@ -294,9 +392,16 @@ export const AbundanceFountainCard: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-gray-900 text-white font-extrabold text-xs shadow-md active:scale-98 transition-all hover:bg-gray-800"
+                disabled={parseFloat(withdrawUsdc || '0') > maxWithdrawable && currentDebt > 0}
+                className={`w-full py-3 rounded-xl font-extrabold text-xs shadow-md transition-all ${
+                  parseFloat(withdrawUsdc || '0') > maxWithdrawable && currentDebt > 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-98 cursor-pointer'
+                }`}
               >
-                Confirmar Retiro Inmediato
+                {parseFloat(withdrawUsdc || '0') > maxWithdrawable && currentDebt > 0
+                  ? 'Bloqueado por Regla de Solvencia'
+                  : 'Confirmar Retiro Inmediato'}
               </button>
             </form>
           </div>

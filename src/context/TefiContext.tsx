@@ -30,7 +30,7 @@ interface TefiContextType {
   resetDemoData: () => void;
   updateLinkedAccounts: (data: { cuentaDniAlias?: string; cuentaDniLinked?: boolean; mercadoPagoAlias?: string; mercadoPagoLinked?: boolean }) => void;
   depositToAbundanceFountain: (amountArs: number, paymentMethod: PaymentMethod) => { success: boolean; usdcAdded: number; solAdded: number };
-  withdrawFromAbundanceFountain: (amountUsdc: number) => { success: boolean };
+  withdrawFromAbundanceFountain: (amountUsdc: number) => { success: boolean; error?: string };
 }
 
 const customerKeypair = getOrCreateRoleKeypair('customer');
@@ -528,19 +528,69 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true, usdcAdded, solAdded };
   };
 
-  const withdrawFromAbundanceFountain = (amountUsdc: number) => {
+  const withdrawFromAbundanceFountain = (amountUsdc: number): { success: boolean; error?: string } => {
+    const currentUsdc = customer.abundanceSavingsUsdc || 0;
+    const currentDebt = customer.currentDebt || 0;
+
+    if (amountUsdc <= 0) {
+      return { success: false, error: 'Ingresá un monto válido mayor a 0.' };
+    }
+
+    if (amountUsdc > currentUsdc) {
+      return { success: false, error: 'El monto solicitado supera tu saldo en la Fuente.' };
+    }
+
+    // Regla de Protección y Colateral: "No podés retirarlo si te deja el score más bajo que la deuda"
+    const scoreDeduction = Math.min(15, Math.ceil(amountUsdc * 0.4));
+    const potentialScore = Math.max(10, customer.creditScore - scoreDeduction);
+    const limitDeduction = Math.floor(amountUsdc * 0.3);
+    const potentialLimit = Math.max(5, customer.maxCreditLimit - limitDeduction);
+    const remainingSavings = +(currentUsdc - amountUsdc).toFixed(2);
+
+    if (currentDebt > 0) {
+      // 1. Si el retiro deja el score por debajo de la deuda
+      if (potentialScore < currentDebt) {
+        return {
+          success: false,
+          error: `Retiro bloqueado: Tu score resultante (${potentialScore} pts) quedaría por debajo de tu deuda activa ($${currentDebt} USDC). Primero saldá tus fiados pendientes.`
+        };
+      }
+
+      // 2. Si el retiro deja el límite de fiado por debajo de la deuda activa
+      if (potentialLimit < currentDebt) {
+        return {
+          success: false,
+          error: `Retiro bloqueado: Tu límite de fiado resultante ($${potentialLimit} USDC) quedaría por debajo de tu deuda activa ($${currentDebt} USDC).`
+        };
+      }
+
+      // 3. Si el retiro consume el colateral necesario para respaldar los fiados
+      if (remainingSavings < currentDebt) {
+        const maxWithdrawable = Math.max(0, +(currentUsdc - currentDebt).toFixed(2));
+        return {
+          success: false,
+          error: `Garantía retenida: Tenés una deuda activa de $${currentDebt} USDC. Solo podés retirar hasta $${maxWithdrawable} USDC para no comprometer tu garantía de solvencia.`
+        };
+      }
+    }
+
     setCustomer(prev => {
-      const currentUsdc = prev.abundanceSavingsUsdc || 0;
+      const currentUsdcVal = prev.abundanceSavingsUsdc || 0;
       const currentSol = prev.abundanceSavingsSol || 0;
       const solToDeduct = +(amountUsdc / 155).toFixed(4);
 
-      const newUsdc = Math.max(0, +(currentUsdc - amountUsdc).toFixed(2));
+      const newUsdc = Math.max(0, +(currentUsdcVal - amountUsdc).toFixed(2));
       const newSol = Math.max(0, +(currentSol - solToDeduct).toFixed(4));
+      const newScore = Math.max(10, prev.creditScore - scoreDeduction);
+      const newLimit = Math.max(5, prev.maxCreditLimit - limitDeduction);
 
       const updated = {
         ...prev,
         abundanceSavingsUsdc: newUsdc,
-        abundanceSavingsSol: newSol
+        abundanceSavingsSol: newSol,
+        creditScore: newScore,
+        maxCreditLimit: newLimit,
+        tier: calculateTier(newScore)
       };
       localStorage.setItem('tefi_customer', JSON.stringify(updated));
       return updated;
@@ -549,7 +599,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const notif: WebhookNotification = {
       id: `fountain-w-${Date.now()}`,
       title: '🪙 Retiro de la Fuente de la Abundancia',
-      message: `Has retirado $${amountUsdc.toFixed(2)} USDC a tu cuenta vinculada. Liquidación 24/7 confirmada.`,
+      message: `Has retirado $${amountUsdc.toFixed(2)} USDC a tu cuenta vinculada. Tu garantía de solvencia y fiados se mantienen protegidos.`,
       amountArs: Math.round(amountUsdc * (exchangeRate.rate || 1615)),
       amountUsdc,
       method: 'CUENTA_DNI',
