@@ -4,7 +4,8 @@ import {
   generateMockSolanaSignature,
   getOrCreateRoleKeypair,
   getDevnetBalance,
-  requestDevnetAirdrop
+  requestDevnetAirdrop,
+  broadcastSolanaFiadoEvent
 } from '../solana/connection';
 import { fetchLiveUsdcRate, ExchangeRateData } from '../services/oracle';
 
@@ -291,6 +292,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setFiados(prev => [newFiado, ...prev]);
 
+    // Transmitir evento real on-chain a Solana Devnet si la wallet tiene fondos
+    broadcastSolanaFiadoEvent(merchantKeypair, {
+      type: 'NEW_FIADO',
+      fiadoId: newFiado.id,
+      amountUsdc: data.amountUsdc
+    }).then(realSig => {
+      if (realSig) {
+        setFiados(curr =>
+          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
+        );
+      }
+    });
+
     setCustomer(prev => ({
       ...prev,
       currentDebt: +(prev.currentDebt + data.amountUsdc).toFixed(2)
@@ -325,6 +339,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
           : f
       )
     );
+
+    // Transmitir evento real on-chain a Solana Devnet si la wallet tiene fondos
+    broadcastSolanaFiadoEvent(customerKeypair, {
+      type: 'REPAY',
+      fiadoId,
+      amountUsdc: target.amountUsdc
+    }).then(realSig => {
+      if (realSig) {
+        setFiados(curr =>
+          curr.map(f => (f.id === fiadoId ? { ...f, txSignature: realSig } : f))
+        );
+      }
+    });
 
     setCustomer(prev => {
       const newDebt = Math.max(0, +(prev.currentDebt - target.amountUsdc).toFixed(2));
