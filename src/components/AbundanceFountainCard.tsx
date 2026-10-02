@@ -156,8 +156,8 @@ export const AbundanceFountainCard: React.FC = () => {
           onClick={() => setIsDepositOpen(true)}
           className="py-2.5 px-3 rounded-2xl gradient-tefi text-white font-extrabold text-xs shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
-          <ArrowUpRight className="w-4 h-4" />
-          <span>Aportar a la Fuente</span>
+          <ArrowUpRight className="w-4 h-4 shrink-0" />
+          <span>Fuente de la Abundancia</span>
         </button>
 
         <button
@@ -216,7 +216,7 @@ export const AbundanceFountainCard: React.FC = () => {
                 <Droplets className="w-4 h-4 fill-emerald-600" />
               </div>
               <div>
-                <h4 className="text-sm font-extrabold text-gray-900">Aportar a tu Fuente</h4>
+                <h4 className="text-sm font-extrabold text-gray-900">Fuente de la Abundancia</h4>
                 <p className="text-[10px] text-gray-400">Micro-ahorro con rendimiento en Solana</p>
               </div>
             </div>
