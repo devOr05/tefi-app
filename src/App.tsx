@@ -8,6 +8,7 @@ import { CustomerLibretaView } from './views/CustomerLibretaView';
 import { InsurancePoolView } from './views/InsurancePoolView';
 import { LoyaltyBadge } from './components/LoyaltyBadge';
 import { CreditScoreCard } from './components/CreditScoreCard';
+import { AbundanceFountainCard } from './components/AbundanceFountainCard';
 import { BellRing, X } from 'lucide-react';
 
 const MainContent: React.FC = () => {
@@ -81,6 +82,7 @@ const MainContent: React.FC = () => {
             {currentTab === 'credit' && (
               <div className="space-y-4 pb-20">
                 <CreditScoreCard />
+                <AbundanceFountainCard />
                 <div className="glass-card rounded-3xl p-5 border border-gray-100 text-xs text-gray-600 space-y-2">
                   <h4 className="font-bold text-gray-900">¿Cómo funciona tu Score Tefi?</h4>
                   <p>

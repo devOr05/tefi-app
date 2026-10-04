@@ -1,36 +1,140 @@
 import React from 'react';
 import { useTefi } from '../context/TefiContext';
-import { Store, Plus, ShieldAlert, BookOpen, Award } from 'lucide-react';
 
-// Icono de 3 monedas doradas amarillas en la misma línea creciendo de menor a mayor (Score & Límite)
-const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ className = "w-7 h-5" }) => (
-  <svg viewBox="0 0 28 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+// 1. Icono Almacén con los colores de Solana (Toldo verde esmeralda, puerta violeta, paredes y vitrina blancas/celeste)
+export const SolanaStoreIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="storeRoofGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#00FFA3" />
+        <stop offset="100%" stopColor="#14F195" />
+      </linearGradient>
+      <linearGradient id="storeDoorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#8B5CF6" />
+        <stop offset="100%" stopColor="#6D28D9" />
+      </linearGradient>
+    </defs>
+    {/* Paredes del almacén en blanco puro con marco sutil */}
+    <rect x="3.5" y="9.5" width="17" height="11" rx="1.5" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="1.2" />
+    {/* Toldo / Techo verde Solana ondulado característico de almacén de barrio */}
+    <path d="M2 5.5 C2 4.5 3 4 4 4 H20 C21 4 22 4.5 22 5.5 L21 10 C21 10.8 20 11.5 19 11.5 C18 11.5 17.2 10.8 17 10 C16.8 10.8 16 11.5 15 11.5 C14 11.5 13.2 10.8 13 10 C12.8 10.8 12 11.5 11 11.5 C10 11.5 9.2 10.8 9 10 C8.8 10.8 8 11.5 7 11.5 C6 11.5 5 10.8 5 10 L4 5.5" fill="url(#storeRoofGrad)" stroke="#059669" strokeWidth="0.8" />
+    {/* Puerta violeta Solana */}
+    <rect x="5.5" y="12" width="5.5" height="8.5" rx="1" fill="url(#storeDoorGrad)" stroke="#5B21B6" strokeWidth="0.8" />
+    {/* Picaporte blanco */}
+    <circle cx="9.6" cy="16" r="0.75" fill="#FFFFFF" />
+    {/* Ventana / Vitrina en celeste Solana con marco blanco */}
+    <rect x="13" y="12" width="6" height="5.5" rx="1" fill="#E0F2FE" stroke="#0284C7" strokeWidth="0.8" />
+    {/* Marco divisor de ventana */}
+    <path d="M16 12 V17.5 M13 14.7 H19" stroke="#38BDF8" strokeWidth="0.7" />
+  </svg>
+);
+
+// 2. Icono Libreta con los colores de Solana (tornasolada como la S de Solana, con páginas visibles)
+export const SolanaLibretaIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="solanaSpineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#00FFA3" />
+        <stop offset="50%" stopColor="#06B6D4" />
+        <stop offset="100%" stopColor="#9945FF" />
+      </linearGradient>
+      <linearGradient id="solanaPageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="60%" stopColor="#F5F3FF" />
+        <stop offset="100%" stopColor="#ECFEFF" />
+      </linearGradient>
+      <linearGradient id="solanaCoverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#14F195" />
+        <stop offset="50%" stopColor="#06B6D4" />
+        <stop offset="100%" stopColor="#8B5CF6" />
+      </linearGradient>
+    </defs>
+    {/* Tapa trasera con gradiente Solana tornasolado */}
+    <rect x="4.5" y="2.5" width="15.5" height="19" rx="2.5" fill="url(#solanaCoverGrad)" stroke="#7C3AED" strokeWidth="0.8" />
+    {/* Páginas interiores tornasoladas */}
+    <rect x="7" y="4" width="12" height="16" rx="1.5" fill="url(#solanaPageGrad)" stroke="#E2E8F0" strokeWidth="0.7" />
+    {/* Renglones tornasolados de la libreta */}
+    <line x1="9.5" y1="7.5" x2="16.5" y2="7.5" stroke="#9945FF" strokeWidth="1.1" strokeLinecap="round" opacity="0.7" />
+    <line x1="9.5" y1="10.5" x2="16.5" y2="10.5" stroke="#06B6D4" strokeWidth="1.1" strokeLinecap="round" opacity="0.8" />
+    <line x1="9.5" y1="13.5" x2="15" y2="13.5" stroke="#14F195" strokeWidth="1.1" strokeLinecap="round" opacity="0.85" />
+    <line x1="9.5" y1="16.5" x2="13" y2="16.5" stroke="#8B5CF6" strokeWidth="1.1" strokeLinecap="round" opacity="0.75" />
+    {/* Lomo izquierdo en degradé Solana */}
+    <rect x="4" y="2.5" width="3.2" height="19" rx="1.5" fill="url(#solanaSpineGrad)" stroke="#059669" strokeWidth="0.6" />
+  </svg>
+);
+
+// 3. Icono de 3 Monedas Doradas para Score Crediticio (Más Grandes y Notorias)
+export const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ className = "w-9 h-6" }) => (
+  <svg viewBox="0 0 34 22" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="scoreGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#FDE047"/>
-        <stop offset="45%" stop-color="#F59E0B"/>
-        <stop offset="100%" stop-color="#D97706"/>
+        <stop offset="0%" stopColor="#FDE047"/>
+        <stop offset="45%" stopColor="#F59E0B"/>
+        <stop offset="100%" stopColor="#D97706"/>
       </linearGradient>
-      <filter id="scoreCoinShadow" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#78350F" flood-opacity="0.30"/>
+      <filter id="scoreCoinShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" floodColor="#78350F" floodOpacity="0.32"/>
       </filter>
     </defs>
     <g filter="url(#scoreCoinShadow)">
-      {/* Moneda 1 (Chica - Izquierda) */}
-      <circle cx="5" cy="10" r="3.4" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="0.8"/>
-      <path d="M5 8.3V11.7 M3.3 10H6.7" stroke="#78350F" strokeWidth="1.6" strokeLinecap="round"/>
-      <path d="M5 8.3V11.7 M3.3 10H6.7" stroke="#FFFFFF" strokeWidth="0.9" strokeLinecap="round"/>
+      {/* Moneda 1 (Chica - Izquierda, r=4.2) */}
+      <circle cx="6" cy="12" r="4.2" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="0.9"/>
+      <path d="M6 9.8 V14.2 M3.8 12 H8.2" stroke="#78350F" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M6 9.8 V14.2 M3.8 12 H8.2" stroke="#FFFFFF" strokeWidth="1.0" strokeLinecap="round"/>
 
-      {/* Moneda 2 (Mediana - Centro) */}
-      <circle cx="12.5" cy="10" r="4.8" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="0.9"/>
-      <path d="M12.5 7.8V12.2 M10.3 10H14.7" stroke="#78350F" strokeWidth="1.9" strokeLinecap="round"/>
-      <path d="M12.5 7.8V12.2 M10.3 10H14.7" stroke="#FFFFFF" strokeWidth="1.1" strokeLinecap="round"/>
+      {/* Moneda 2 (Mediana - Centro, r=5.8) */}
+      <circle cx="15.5" cy="11.5" r="5.8" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="1.0"/>
+      <path d="M15.5 8.8 V14.2 M12.8 11.5 H18.2" stroke="#78350F" strokeWidth="2.1" strokeLinecap="round"/>
+      <path d="M15.5 8.8 V14.2 M12.8 11.5 H18.2" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round"/>
 
-      {/* Moneda 3 (Grande - Derecha) */}
-      <circle cx="21" cy="10" r="6.6" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="1.0"/>
-      <path d="M21 7.0V13.0 M18.0 10H24.0" stroke="#78350F" strokeWidth="2.2" strokeLinecap="round"/>
-      <path d="M21 7.0V13.0 M18.0 10H24.0" stroke="#FFFFFF" strokeWidth="1.3" strokeLinecap="round"/>
+      {/* Moneda 3 (Grande - Derecha, r=7.8) */}
+      <circle cx="26" cy="10.5" r="7.8" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="1.2"/>
+      <path d="M26 6.8 V14.2 M22.3 10.5 H29.7" stroke="#78350F" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M26 6.8 V14.2 M22.3 10.5 H29.7" stroke="#FFFFFF" strokeWidth="1.4" strokeLinecap="round"/>
     </g>
+  </svg>
+);
+
+// 4. Icono Medalla con Moneda Dorada y Cintas Azul/Violeta (Fidelidad)
+export const SolanaLoyaltyMedalIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="medalGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FDE047"/>
+        <stop offset="45%" stopColor="#F59E0B"/>
+        <stop offset="100%" stopColor="#B45309"/>
+      </linearGradient>
+      <linearGradient id="medalRibbonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#8B5CF6"/>
+        <stop offset="100%" stopColor="#2563EB"/>
+      </linearGradient>
+    </defs>
+    {/* Cintas inferiores en azul/violeta Solana */}
+    <path d="M8 12 L6 21 L10 18.5 L12 21 L10 14" fill="url(#medalRibbonGrad)" stroke="#4338CA" strokeWidth="0.7" />
+    <path d="M16 12 L18 21 L14 18.5 L12 21 L14 14" fill="url(#medalRibbonGrad)" stroke="#4338CA" strokeWidth="0.7" />
+    {/* Moneda circular dorada superior */}
+    <circle cx="12" cy="8.5" r="7" fill="url(#medalGoldGrad)" stroke="#FEF08A" strokeWidth="1.2"/>
+    <circle cx="12" cy="8.5" r="5.6" fill="none" stroke="#78350F" strokeWidth="0.7" strokeDasharray="1.5 1" opacity="0.4"/>
+    {/* Símbolo cruz/estrella Tefi en la moneda */}
+    <path d="M12 5.5 V11.5 M9 8.5 H15" stroke="#78350F" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M12 5.5 V11.5 M9 8.5 H15" stroke="#FFFFFF" strokeWidth="1.0" strokeLinecap="round"/>
+  </svg>
+);
+
+// 5. Icono Escudo en Violeta Solana (Seguro & Riesgo)
+export const SolanaShieldIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="shieldVioletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#A855F7" />
+        <stop offset="50%" stopColor="#8B5CF6" />
+        <stop offset="100%" stopColor="#6D28D9" />
+      </linearGradient>
+    </defs>
+    {/* Escudo violeta Solana */}
+    <path d="M12 2.5 L19.5 5.8 C19.5 12.5 16.5 18.5 12 21.5 C7.5 18.5 4.5 12.5 4.5 5.8 L12 2.5 Z" fill="url(#shieldVioletGrad)" stroke="#C084FC" strokeWidth="1.2" />
+    {/* Check interno blanco */}
+    <path d="M8.5 11.5 L11 14 L15.5 9.5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -43,72 +147,81 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
   const { role } = useTefi();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100 py-2 px-6 shadow-lg safe-area-pb">
-      <div className="max-w-md mx-auto flex items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100 py-2 shadow-lg safe-area-pb flex justify-center">
+      {/* Contenedor perfectamente centrado con espaciado equilibrado */}
+      <div className="w-full max-w-md px-6 flex items-center justify-around">
         {role === 'MERCHANT' ? (
           <>
+            {/* Almacén */}
             <button
               onClick={() => onTabChange('dashboard')}
-              className={`flex flex-col items-center gap-1 transition-colors ${
+              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
                 currentTab === 'dashboard' ? 'text-tefi-primary font-bold' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <Store className="w-5 h-5" />
+              <SolanaStoreIcon className="w-6 h-6" />
               <span className="text-[10px]">Almacén</span>
             </button>
 
+            {/* Botón Central Fiar */}
             <button
               onClick={() => onTabChange('new-fiado')}
-              className="flex flex-col items-center -mt-5 group"
+              className="flex flex-col items-center -mt-5 group cursor-pointer"
             >
               {/* Moneda Dorada con Signo Más (+) */}
               <div className="w-13 h-13 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/35 border-2 border-yellow-200/90 active:scale-95 transition-all flex items-center justify-center relative">
                 <div className="w-full h-full rounded-full border border-amber-600/30 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-500 shadow-inner">
-                  <Plus className="w-7 h-7 text-white stroke-[3.5] drop-shadow-[0_1px_2px_rgba(120,53,15,0.6)]" />
+                  <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7 stroke-white stroke-[3.5] drop-shadow-[0_1px_2px_rgba(120,53,15,0.6)]">
+                    <path d="M12 5 V19 M5 12 H19" strokeLinecap="round" />
+                  </svg>
                 </div>
               </div>
               <span className="text-[10px] font-black text-amber-700 mt-1 tracking-tight">Fiar</span>
             </button>
 
+            {/* Seguro & Riesgo (Escudo Violeta) */}
             <button
               onClick={() => onTabChange('insurance')}
-              className={`flex flex-col items-center gap-1 transition-colors ${
-                currentTab === 'insurance' ? 'text-tefi-primary font-bold' : 'text-gray-400 hover:text-gray-600'
+              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                currentTab === 'insurance' ? 'text-purple-700 font-bold' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <ShieldAlert className="w-5 h-5" />
+              <SolanaShieldIcon className="w-6 h-6" />
               <span className="text-[10px]">Seguro & Riesgo</span>
             </button>
           </>
         ) : (
           <>
+            {/* Mi Libreta (Libreta tornasolada Solana) */}
             <button
               onClick={() => onTabChange('libreta')}
-              className={`flex flex-col items-center gap-1 transition-colors ${
-                currentTab === 'libreta' ? 'text-blue-600 font-bold' : 'text-gray-400 hover:text-gray-600'
+              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                currentTab === 'libreta' ? 'text-emerald-700 font-bold' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <BookOpen className="w-5 h-5" />
+              <SolanaLibretaIcon className="w-6 h-6" />
               <span className="text-[10px]">Mi Libreta</span>
             </button>
 
+            {/* Score Crediticio (Monedas Doradas Más Grandes) */}
             <button
               onClick={() => onTabChange('credit')}
-              className={`flex flex-col items-center gap-1 transition-colors ${
-                currentTab === 'credit' ? 'text-blue-600 font-bold' : 'text-gray-400 hover:text-gray-600'
+              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                currentTab === 'credit' ? 'text-amber-700 font-bold' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <GrowingGoldCoinsIcon className="w-7 h-5" />
-              <span className="text-[10px]">Score & Límite</span>
+              <GrowingGoldCoinsIcon className="w-9 h-6" />
+              <span className="text-[10px] font-bold">Score Crediticio</span>
             </button>
 
+            {/* Fidelidad (Medalla con Moneda Dorada y Cintas Azul/Violeta) */}
             <button
               onClick={() => onTabChange('loyalty')}
-              className={`flex flex-col items-center gap-1 transition-colors ${
-                currentTab === 'loyalty' ? 'text-blue-600 font-bold' : 'text-gray-400 hover:text-gray-600'
+              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                currentTab === 'loyalty' ? 'text-blue-700 font-bold' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <Award className="w-5 h-5" />
+              <SolanaLoyaltyMedalIcon className="w-6 h-6" />
               <span className="text-[10px]">Fidelidad</span>
             </button>
           </>

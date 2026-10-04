@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTefi } from '../context/TefiContext';
-import { CreditScoreCard } from '../components/CreditScoreCard';
-import { AbundanceFountainCard } from '../components/AbundanceFountainCard';
 import { RepayModal } from '../components/RepayModal';
 import { LinkedAccountsModal } from '../components/LinkedAccountsModal';
 import { QrScannerModal } from '../components/QrScannerModal';
 import { FiadoConfirmationModal } from '../components/FiadoConfirmationModal';
 import { FiadoRecord, FiadoQrPayload } from '../types/tefi';
-import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles, Link2, Camera, QrCode, ArrowDownRight, Info } from 'lucide-react';
-import { getSolanaExplorerUrl } from '../solana/connection';
+import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, Sparkles, Link2, Camera, QrCode, ArrowDownRight, Info } from 'lucide-react';
 
 export const CustomerLibretaView: React.FC = () => {
   const { customer, fiados, repayFiado, exchangeRate, pendingFiadoFromUrl, clearPendingFiadoFromUrl } = useTefi();
@@ -21,7 +18,6 @@ export const CustomerLibretaView: React.FC = () => {
   const [pendingScannedFiado, setPendingScannedFiado] = useState<FiadoQrPayload | null>(null);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
-  const pastFiados = fiados.filter(f => f.status === 'PAID');
   const rate = exchangeRate.rate || 1615;
 
   // Si se abrió la app con un enlace de fiado (?fiado=...), abrir el modal de confirmación
@@ -86,11 +82,6 @@ export const CustomerLibretaView: React.FC = () => {
         </div>
       )}
 
-      {/* Score Card del Cliente */}
-      <CreditScoreCard />
-
-      {/* Fuente de la Abundancia (Micro-Ahorro, Rendimiento y Educación Financiera) */}
-      <AbundanceFountainCard />
 
       {/* Tarjeta de Medios de Pago y Billeteras Vinculadas (Cuenta DNI / Mercado Pago) */}
       <div className="glass-card rounded-3xl p-4 border border-gray-100 shadow-2xs space-y-2.5">
@@ -248,65 +239,6 @@ export const CustomerLibretaView: React.FC = () => {
         )}
       </div>
 
-      {/* Historial de Pagos Anteriores */}
-      {pastFiados.length > 0 && (
-        <div className="space-y-2 mt-5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 px-1">
-            Historial de Cumplimiento ({pastFiados.length})
-          </h3>
-
-          {pastFiados.map(f => (
-            <div key={f.id} className="p-3 rounded-2xl bg-white/60 border border-gray-100 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <div>
-                  <span className="font-bold text-gray-800 block">{f.merchantName}</span>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-gray-400">
-                      {f.repaidAt ? new Date(f.repaidAt).toLocaleDateString('es-AR') : '23/09/2026'}
-                    </span>
-                    {f.paymentMethod === 'MERCADO_PAGO' && (
-                      <span className="text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded-md">
-                        Mercado Pago
-                      </span>
-                    )}
-                    {f.paymentMethod === 'CUENTA_DNI' && (
-                      <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded-md">
-                        Cuenta DNI
-                      </span>
-                    )}
-                    {f.paymentMethod === 'CASH' && (
-                      <span className="text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded-md">
-                        Efectivo
-                      </span>
-                    )}
-                    {(!f.paymentMethod || f.paymentMethod === 'SOLANA_USDC') && (
-                      <span className="text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.2 rounded-md">
-                        USDC
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <span className="font-bold text-gray-900 block">${f.amountUsdc} USDC</span>
-                {f.txSignature && (
-                  <a
-                    href={getSolanaExplorerUrl(f.txSignature)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] text-purple-600 hover:underline flex items-center gap-0.5 justify-end"
-                  >
-                    <span>Tx Devnet</span>
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Modal Zoom Foto */}
       {viewingPhoto && (
