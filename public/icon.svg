@@ -1,72 +1,97 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
-    <!-- Gradiente Oficial Solana Neón Vibrante para fondo blanco -->
-    <linearGradient id="solGradWhite" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#7928CA"/>
-      <stop offset="35%" stop-color="#9945FF"/>
-      <stop offset="75%" stop-color="#00C48C"/>
-      <stop offset="100%" stop-color="#14F195"/>
+    <linearGradient id="bar4Grad4D" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00FFA3"/>
+      <stop offset="50%" stop-color="#14F195"/>
+      <stop offset="100%" stop-color="#00C48C"/>
     </linearGradient>
 
-    <!-- Gradiente Monedas Oro y Abundancia de Alto Contraste -->
-    <linearGradient id="goldGradWhite" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bar3Grad4D" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#14F195"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+
+    <linearGradient id="bar2Grad4D" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+
+    <linearGradient id="bar1Grad4D" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#581C87"/>
+    </linearGradient>
+
+    <linearGradient id="stemGrad4D" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#581C87" stop-opacity="0.25"/>
+      <stop offset="50%" stop-color="#0284C7" stop-opacity="0.45"/>
+      <stop offset="90%" stop-color="#14F195" stop-opacity="0.80"/>
+      <stop offset="100%" stop-color="#00FFA3" stop-opacity="1"/>
+    </linearGradient>
+
+    <linearGradient id="goldGrad4D" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FDE047"/>
       <stop offset="40%" stop-color="#F59E0B"/>
       <stop offset="100%" stop-color="#B45309"/>
     </linearGradient>
 
-    <!-- Sombras suaves para fondo blanco -->
-    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.12"/>
+    <filter id="softShadow4D" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.10"/>
     </filter>
 
-    <filter id="coinShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#78350F" flood-opacity="0.25"/>
+    <filter id="coinShadow4D" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#78350F" flood-opacity="0.30"/>
     </filter>
   </defs>
 
-  <!-- FONDO BLANCO PURO -->
+  <!-- FONDO BLANCO PURO SQUIRCLE -->
   <rect width="512" height="512" rx="128" fill="#FFFFFF"/>
   <rect width="508" height="508" x="2" y="2" rx="126" stroke="#E2E8F0" stroke-width="2"/>
 
-  <!-- LA 'T' ESTILO SOLANA (Cortes angulares y dinámicos) -->
-  <g filter="url(#softShadow)">
-    <!-- Barra Superior de la T: Paralelepípedo Dinámico Solana -->
-    <path d="M125 158 L365 158 C378 158 387 149 391 136 L401 106 C405 93 395 81 381 81 L141 81 C128 81 119 90 115 103 L105 133 C101 146 111 158 125 158 Z" fill="url(#solGradWhite)"/>
-
-    <!-- Tronco Vertical de la T: Corte Inclinado Solana descendiendo hacia la base -->
-    <path d="M232 174 H280 C287 174 293 179 291 186 L272 295 C271 301 265 306 259 306 H245 C239 306 234 301 235 295 L247 186 C248 179 253 174 232 174 Z" fill="url(#solGradWhite)"/>
+  <!-- TALLO VERTICAL CON FLECHA/VECTOR DE CRECIMIENTO ASCENDENTE (Efecto que sube) -->
+  <g filter="url(#softShadow4D)">
+    <!-- Tallo que se afina y asciende enérgicamente -->
+    <path d="M236 445 L236 185 L256 165 L276 185 L276 445 Z" fill="url(#stemGrad4D)"/>
   </g>
 
-  <!-- BASE DE LA ABUNDANCIA: CASCADA DE MONEDAS CON SIGNO MÁS (+) CADA UNA -->
-  
-  <!-- Moneda Izquierda con Signo Más (+) -->
-  <g filter="url(#coinShadow)">
-    <circle cx="160" cy="385" r="44" fill="url(#goldGradWhite)" stroke="#FEF08A" stroke-width="3"/>
-    <circle cx="160" cy="385" r="36" fill="none" stroke="#78350F" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.35"/>
-    <!-- Signo Más (+) Blanco con Reborde Contraste -->
-    <path d="M144 385 H176 M160 369 V401" stroke="#78350F" stroke-width="7" stroke-linecap="round"/>
-    <path d="M144 385 H176 M160 369 V401" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round"/>
+  <!-- LAS 4 BARRAS HORIZONTALES SOLANA CON ESPACIADO EXPONENCIAL -->
+  <g filter="url(#softShadow4D)">
+    <!-- Barra 1 Base (105px) -->
+    <path d="M212 445 L288 445 C297 445 303 438 305 430 L310 412 C312 404 306 397 298 397 H222 C214 397 207 404 205 412 L200 430 C198 438 204 445 212 445 Z" fill="url(#bar1Grad4D)"/>
+
+    <!-- Barra 2 (148px) -->
+    <path d="M192 375 L320 375 C329 375 336 368 338 360 L344 342 C346 334 340 327 332 327 H204 C195 327 188 334 186 342 L180 360 C178 368 184 375 192 375 Z" fill="url(#bar2Grad4D)"/>
+
+    <!-- Barra 3 (205px) -->
+    <path d="M162 300 L350 300 C360 300 368 293 370 284 L376 264 C378 255 372 247 363 247 H175 C165 247 157 254 155 263 L149 283 C147 292 153 300 162 300 Z" fill="url(#bar3Grad4D)"/>
+
+    <!-- Barra 4 Superior Gigante (350px) -->
+    <path d="M100 215 L388 215 C402 215 412 205 416 192 L426 158 C430 144 420 130 405 130 L117 130 C103 130 93 140 89 153 L79 187 C75 201 85 215 100 215 Z" fill="url(#bar4Grad4D)"/>
   </g>
 
-  <!-- Moneda Derecha con Signo Más (+) -->
-  <g filter="url(#coinShadow)">
-    <circle cx="352" cy="385" r="44" fill="url(#goldGradWhite)" stroke="#FEF08A" stroke-width="3"/>
-    <circle cx="352" cy="385" r="36" fill="none" stroke="#78350F" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.35"/>
-    <!-- Signo Más (+) Blanco con Reborde Contraste -->
-    <path d="M336 385 H368 M352 369 V401" stroke="#78350F" stroke-width="7" stroke-linecap="round"/>
-    <path d="M336 385 H368 M352 369 V401" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round"/>
+  <!-- 3 MONEDAS OFICIALES EN LA BARRA SUPERIOR -->
+  <g filter="url(#coinShadow4D)">
+    <!-- Moneda Izquierda (+) -->
+    <circle cx="170" cy="165" r="35" fill="url(#goldGrad4D)" stroke="#FEF08A" stroke-width="2.6"/>
+    <circle cx="170" cy="165" r="28" fill="none" stroke="#78350F" stroke-width="1.1" stroke-dasharray="3 2" opacity="0.35"/>
+    <path d="M157 165 H183 M170 152 V178" stroke="#78350F" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M157 165 H183 M170 152 V178" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
   </g>
 
-  <!-- Moneda Central Principal al Frente (Más grande, con Signo Más (+) de Fiar / Abundancia) -->
-  <g filter="url(#coinShadow)">
-    <circle cx="256" cy="365" r="54" fill="url(#goldGradWhite)" stroke="#FEF08A" stroke-width="4"/>
-    <circle cx="256" cy="365" r="44" fill="none" stroke="#78350F" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/>
-    <!-- Signo Más (+) Principal -->
-    <path d="M234 365 H278 M256 343 V387" stroke="#78350F" stroke-width="9" stroke-linecap="round"/>
-    <path d="M234 365 H278 M256 343 V387" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round"/>
+  <g filter="url(#coinShadow4D)">
+    <!-- Moneda Derecha (+) -->
+    <circle cx="342" cy="165" r="35" fill="url(#goldGrad4D)" stroke="#FEF08A" stroke-width="2.6"/>
+    <circle cx="342" cy="165" r="28" fill="none" stroke="#78350F" stroke-width="1.1" stroke-dasharray="3 2" opacity="0.35"/>
+    <path d="M329 165 H355 M342 152 V178" stroke="#78350F" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M329 165 H355 M342 152 V178" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
   </g>
 
-  <!-- Pequeño destello cian de Solana en la esquina superior derecha -->
-  <circle cx="388" cy="92" r="6" fill="#14F195"/>
+  <g filter="url(#coinShadow4D)">
+    <!-- Moneda Central Principal al Frente (+) -->
+    <circle cx="256" cy="148" r="45" fill="url(#goldGrad4D)" stroke="#FEF08A" stroke-width="3.6"/>
+    <circle cx="256" cy="148" r="36" fill="none" stroke="#78350F" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.4"/>
+    <path d="M238 148 H274 M256 130 V166" stroke="#78350F" stroke-width="8" stroke-linecap="round"/>
+    <path d="M238 148 H274 M256 130 V166" stroke="#FFFFFF" stroke-width="4.8" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="418" cy="138" r="5" fill="#14F195"/>
 </svg>
