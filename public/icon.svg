@@ -89,7 +89,6 @@
     <!-- Barra 4 Superior Grande (350px) -->
     <path d="M100 235 L388 235 C402 235 412 225 416 212 L426 178 C430 164 420 150 405 150 L117 150 C103 150 93 160 89 173 L79 207 C75 221 85 235 100 235 Z" fill="url(#bar4Grad)" filter="url(#glowCyan)"/>
   </g>
-  <circle cx="418" cy="158" r="5" fill="#14F195"/>
 
 
   <!-- 2 Monedas chicas con exactamente 3px de desahogo (cx=201, 311, cy=150, r=16) -->

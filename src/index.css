@@ -5,6 +5,38 @@
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar Personalizada con Estilo Tefi / Solana */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #14F195 0%, #8B5CF6 100%);
+  border-radius: 9999px;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00FFA3 0%, #9945FF 100%);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #8B5CF6 transparent;
 }
 
 /* Ocultar barra de desplazamiento en listas horizontales de mobile */
@@ -22,6 +54,15 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark .glass-card {
+  background: rgba(17, 24, 39, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 25px -2px rgba(0, 0, 0, 0.45);
 }
 
 .gradient-tefi {
@@ -30,4 +71,32 @@
 
 .gradient-solana {
   background: linear-gradient(135deg, #9945FF 0%, #14F195 100%);
+}
+
+/* Accesibilidad: Personas con Capacidades Reducidas */
+/* Modo de Texto Grande para baja visión */
+html.a11y-large-text {
+  font-size: 115%;
+}
+
+/* Modo de Alto Contraste */
+html.a11y-high-contrast {
+  filter: contrast(115%);
+}
+
+html.a11y-high-contrast button {
+  outline: 2px solid currentColor !important;
+  outline-offset: 1px !important;
+}
+
+/* Foco accesible para navegación por teclado o tecnologías asistivas */
+:focus-visible {
+  outline: 2.5px solid #8B5CF6 !important;
+  outline-offset: 2px !important;
+}
+
+/* Touch targets accesibles (mínimo 44px) */
+.touch-target-accessible {
+  min-height: 44px;
+  min-width: 44px;
 }

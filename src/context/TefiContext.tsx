@@ -8,10 +8,22 @@ import {
   broadcastSolanaFiadoEvent
 } from '../solana/connection';
 import { fetchLiveUsdcRate, ExchangeRateData } from '../services/oracle';
+import { Language, translations } from '../i18n/translations';
 
 interface TefiContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  toggleLanguage: () => void;
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
+  toggleTheme: () => void;
+  a11yLargeText: boolean;
+  toggleA11yLargeText: () => void;
+  a11yHighContrast: boolean;
+  toggleA11yHighContrast: () => void;
+  t: (key: keyof typeof translations['es']) => string;
   customer: CustomerProfile;
   setCustomer: React.Dispatch<React.SetStateAction<CustomerProfile>>;
   merchant: MerchantProfile;
@@ -201,6 +213,94 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAirdropLoading, setIsAirdropLoading] = useState<boolean>(false);
   const [webhookNotification, setWebhookNotification] = useState<WebhookNotification | null>(null);
   const [pendingFiadoFromUrl, setPendingFiadoFromUrl] = useState<FiadoQrPayload | null>(null);
+
+  // Idioma (Español / Inglés)
+  const [language, setLanguageState] = useState<Language>(() => {
+    return (localStorage.getItem('tefi_language') as Language) || 'es';
+  });
+
+  const setLanguage = useCallback((lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('tefi_language', lang);
+  }, []);
+
+  const toggleLanguage = useCallback(() => {
+    setLanguage(language === 'es' ? 'en' : 'es');
+  }, [language, setLanguage]);
+
+  // Tema (Modo Oscuro / Modo Claro)
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('tefi_theme') as 'light' | 'dark') || 'light';
+  });
+
+  const setTheme = useCallback((newTheme: 'light' | 'dark') => {
+    setThemeState(newTheme);
+    localStorage.setItem('tefi_theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  }, [theme, setTheme]);
+
+  // Accesibilidad para personas con capacidades reducidas
+  const [a11yLargeText, setA11yLargeText] = useState<boolean>(() => {
+    return localStorage.getItem('tefi_a11y_large_text') === 'true';
+  });
+
+  const [a11yHighContrast, setA11yHighContrast] = useState<boolean>(() => {
+    return localStorage.getItem('tefi_a11y_high_contrast') === 'true';
+  });
+
+  const toggleA11yLargeText = useCallback(() => {
+    setA11yLargeText(prev => {
+      const next = !prev;
+      localStorage.setItem('tefi_a11y_large_text', String(next));
+      if (next) {
+        document.documentElement.classList.add('a11y-large-text');
+      } else {
+        document.documentElement.classList.remove('a11y-large-text');
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleA11yHighContrast = useCallback(() => {
+    setA11yHighContrast(prev => {
+      const next = !prev;
+      localStorage.setItem('tefi_a11y_high_contrast', String(next));
+      if (next) {
+        document.documentElement.classList.add('a11y-high-contrast');
+      } else {
+        document.documentElement.classList.remove('a11y-high-contrast');
+      }
+      return next;
+    });
+  }, []);
+
+  // Inicializar clases globales de tema y accesibilidad en el DOM
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    if (a11yLargeText) {
+      document.documentElement.classList.add('a11y-large-text');
+    }
+    if (a11yHighContrast) {
+      document.documentElement.classList.add('a11y-high-contrast');
+    }
+  }, [theme, a11yLargeText, a11yHighContrast]);
+
+  // Helper de traducción instantánea
+  const t = useCallback((key: keyof typeof translations['es']): string => {
+    return translations[language][key] || translations['es'][key] || key;
+  }, [language]);
 
   const dismissWebhookNotification = useCallback(() => {
     setWebhookNotification(null);
@@ -836,6 +936,17 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         role,
         setRole,
+        language,
+        setLanguage,
+        toggleLanguage,
+        theme,
+        setTheme,
+        toggleTheme,
+        a11yLargeText,
+        toggleA11yLargeText,
+        a11yHighContrast,
+        toggleA11yHighContrast,
+        t,
         customer,
         setCustomer,
         merchant,

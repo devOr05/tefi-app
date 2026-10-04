@@ -25,7 +25,7 @@ const MainContent: React.FC = () => {
   }, [role]);
 
   return (
-    <div className="min-h-screen bg-tefi-bg text-gray-900 flex flex-col relative">
+    <div className="min-h-screen bg-tefi-bg dark:bg-[#0c0f17] text-gray-900 dark:text-gray-100 flex flex-col relative transition-colors duration-200">
       <Header />
 
       {/* Notificación Flotante de Webhook Automático en Tiempo Real */}
@@ -83,12 +83,12 @@ const MainContent: React.FC = () => {
               <div className="space-y-4 pb-20">
                 <CreditScoreCard />
                 <AbundanceFountainCard />
-                <div className="glass-card rounded-3xl p-5 border border-gray-100 text-xs text-gray-600 space-y-2">
-                  <h4 className="font-bold text-gray-900">¿Cómo funciona tu Score Tefi?</h4>
+                <div className="glass-card rounded-3xl p-5 border border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-300 space-y-2">
+                  <h4 className="font-bold text-gray-900 dark:text-white">¿Cómo funciona tu Score Tefi?</h4>
                   <p>
                     A diferencia del Veraz bancario que solo castiga, Tefi premia tu lealtad barrial. Cada vez que compras al fiado y pagas dentro del plazo:
                   </p>
-                  <ul className="list-disc pl-4 space-y-1 text-gray-500">
+                  <ul className="list-disc pl-4 space-y-1 text-gray-500 dark:text-gray-400">
                     <li>Ganas +5 puntos en tu score de reputación on-chain.</li>
                     <li>Tu límite de crédito disponible se expande automáticamente en +$5 USDC.</li>
                     <li>Acumulas puntos canjeables por descuentos en todos los almacenes de la red.</li>

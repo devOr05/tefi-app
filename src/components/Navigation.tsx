@@ -144,29 +144,37 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange }) => {
-  const { role } = useTefi();
+  const { role, t } = useTefi();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-100 py-2 shadow-lg safe-area-pb flex justify-center">
-      {/* Contenedor perfectamente centrado con espaciado equilibrado */}
-      <div className="w-full max-w-md px-6 flex items-center justify-around">
+    <nav
+      role="navigation"
+      aria-label="Navegación principal"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 py-2 shadow-lg safe-area-pb flex justify-center"
+    >
+      {/* Contenedor en grid de 3 columnas iguales: garantiza que la columna central esté matemáticamente al 50.0% */}
+      <div className="w-full max-w-md px-2 grid grid-cols-3 items-center justify-items-center">
         {role === 'MERCHANT' ? (
           <>
-            {/* Almacén */}
+            {/* Columna 1: Almacén */}
             <button
               onClick={() => onTabChange('dashboard')}
-              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
-                currentTab === 'dashboard' ? 'text-tefi-primary font-bold' : 'text-gray-400 hover:text-gray-600'
+              aria-label={t('navStore')}
+              className={`flex flex-col items-center justify-center gap-1 w-full py-1 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+                currentTab === 'dashboard'
+                  ? 'text-tefi-primary dark:text-emerald-400 font-bold'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <SolanaStoreIcon className="w-6 h-6" />
-              <span className="text-[10px]">Almacén</span>
+              <span className="text-[10px] text-center">{t('navStore')}</span>
             </button>
 
-            {/* Botón Central Fiar */}
+            {/* Columna 2: Botón Central Fiar (+) Exactamente en el Centro */}
             <button
               onClick={() => onTabChange('new-fiado')}
-              className="flex flex-col items-center -mt-5 group cursor-pointer"
+              aria-label={t('navFiar')}
+              className="flex flex-col items-center justify-center -mt-5 group cursor-pointer touch-target-accessible focus:outline-hidden"
             >
               {/* Moneda Dorada con Signo Más (+) */}
               <div className="w-13 h-13 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/35 border-2 border-yellow-200/90 active:scale-95 transition-all flex items-center justify-center relative">
@@ -176,53 +184,65 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                   </svg>
                 </div>
               </div>
-              <span className="text-[10px] font-black text-amber-700 mt-1 tracking-tight">Fiar</span>
+              <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 mt-1 tracking-tight">{t('navFiar')}</span>
             </button>
 
-            {/* Seguro & Riesgo (Escudo Violeta) */}
+            {/* Columna 3: Seguro & Riesgo */}
             <button
               onClick={() => onTabChange('insurance')}
-              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
-                currentTab === 'insurance' ? 'text-purple-700 font-bold' : 'text-gray-400 hover:text-gray-600'
+              aria-label={t('navInsurance')}
+              className={`flex flex-col items-center justify-center gap-1 w-full py-1 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+                currentTab === 'insurance'
+                  ? 'text-purple-700 dark:text-purple-400 font-bold'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <SolanaShieldIcon className="w-6 h-6" />
-              <span className="text-[10px]">Seguro & Riesgo</span>
+              <span className="text-[10px] text-center leading-tight">{t('navInsurance')}</span>
             </button>
           </>
         ) : (
           <>
-            {/* Mi Libreta (Libreta tornasolada Solana) */}
+            {/* Columna 1: Mi Libreta */}
             <button
               onClick={() => onTabChange('libreta')}
-              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
-                currentTab === 'libreta' ? 'text-emerald-700 font-bold' : 'text-gray-400 hover:text-gray-600'
+              aria-label={t('navLibreta')}
+              className={`flex flex-col items-center justify-center gap-1 w-full py-1 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+                currentTab === 'libreta'
+                  ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <SolanaLibretaIcon className="w-6 h-6" />
-              <span className="text-[10px]">Mi Libreta</span>
+              <span className="text-[10px] text-center">{t('navLibreta')}</span>
             </button>
 
-            {/* Score Crediticio (Monedas Doradas Más Grandes) */}
+            {/* Columna 2: Score Crediticio (Monedas Doradas) */}
             <button
               onClick={() => onTabChange('credit')}
-              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
-                currentTab === 'credit' ? 'text-amber-700 font-bold' : 'text-gray-400 hover:text-gray-600'
+              aria-label={t('navScore')}
+              className={`flex flex-col items-center justify-center gap-1 w-full py-1 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+                currentTab === 'credit'
+                  ? 'text-amber-700 dark:text-amber-400 font-bold'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <GrowingGoldCoinsIcon className="w-9 h-6" />
-              <span className="text-[10px] font-bold">Score Crediticio</span>
+              <span className="text-[10px] font-bold text-center">{t('navScore')}</span>
             </button>
 
-            {/* Fidelidad (Medalla con Moneda Dorada y Cintas Azul/Violeta) */}
+            {/* Columna 3: Fidelidad */}
             <button
               onClick={() => onTabChange('loyalty')}
-              className={`flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer ${
-                currentTab === 'loyalty' ? 'text-blue-700 font-bold' : 'text-gray-400 hover:text-gray-600'
+              aria-label={t('navLoyalty')}
+              className={`flex flex-col items-center justify-center gap-1 w-full py-1 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+                currentTab === 'loyalty'
+                  ? 'text-blue-700 dark:text-blue-400 font-bold'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <SolanaLoyaltyMedalIcon className="w-6 h-6" />
-              <span className="text-[10px]">Fidelidad</span>
+              <span className="text-[10px] text-center">{t('navLoyalty')}</span>
             </button>
           </>
         )}
