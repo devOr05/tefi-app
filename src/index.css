@@ -10,8 +10,8 @@
 
 /* Scrollbar Personalizada con Estilo Tefi / Solana */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -58,11 +58,53 @@
 }
 
 .dark .glass-card {
-  background: rgba(17, 24, 39, 0.88);
+  background: rgba(17, 24, 39, 0.90) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 4px 25px -2px rgba(0, 0, 0, 0.45);
+}
+
+/* Estilos Globales para Modo Oscuro Suave y Armónico */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #0c0f17;
+  color: #f3f4f6;
+}
+
+.dark .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+.dark .text-gray-800 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-700 {
+  color: #e5e7eb !important;
+}
+
+.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+.dark .border-gray-100 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark .bg-white\/60 {
+  background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 .gradient-tefi {

@@ -8,7 +8,7 @@ import { FiadoRecord, FiadoQrPayload } from '../types/tefi';
 import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, Sparkles, Link2, Camera, QrCode, ArrowDownRight, Info } from 'lucide-react';
 
 export const CustomerLibretaView: React.FC = () => {
-  const { customer, fiados, repayFiado, exchangeRate, pendingFiadoFromUrl, clearPendingFiadoFromUrl } = useTefi();
+  const { customer, fiados, repayFiado, exchangeRate, pendingFiadoFromUrl, clearPendingFiadoFromUrl, t, language } = useTefi();
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const [justPaidId, setJustPaidId] = useState<string | null>(null);
   const [justAcceptedFiado, setJustAcceptedFiado] = useState<FiadoRecord | null>(null);
@@ -183,13 +183,14 @@ export const CustomerLibretaView: React.FC = () => {
           </div>
         ) : (
           activeFiados.map(f => (
-            <div key={f.id} className="glass-card rounded-2xl p-4 border border-gray-100 shadow-xs flex flex-col gap-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+            <div key={f.id} className="glass-card rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-xs flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   {/* Foto del comprobante */}
                   <button
                     onClick={() => setViewingPhoto(f.photoReceiptUrl)}
-                    className="relative w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200 group"
+                    aria-label="Ver foto del ticket"
+                    className="relative w-13 h-13 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 group cursor-pointer"
                   >
                     <img src={f.photoReceiptUrl} alt="Comprobante" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -197,20 +198,23 @@ export const CustomerLibretaView: React.FC = () => {
                     </div>
                   </button>
 
-                  <div>
-                    <h4 className="text-xs font-bold text-gray-900">{f.merchantName}</h4>
-                    <p className="text-[11px] text-gray-600 font-medium line-clamp-1 max-w-[170px]">{f.itemsDescription}</p>
-                    <div className="flex items-center gap-1.5 mt-1 text-[10px] text-amber-600 font-semibold">
-                      <Calendar className="w-3 h-3" />
-                      <span>Vence el {new Date(f.dueDate).toLocaleDateString('es-AR')}</span>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">{f.merchantName}</h4>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium line-clamp-1">{f.itemsDescription}</p>
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                      <Calendar className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{language === 'en' ? 'Due' : 'Vence el'} {new Date(f.dueDate).toLocaleDateString(language === 'en' ? 'en-US' : 'es-AR')}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-sm font-extrabold text-gray-900 block">${(f.amountUsdc * 1.01).toFixed(2)} USDC</span>
-                  <span className="text-[10px] text-gray-400 block">${Math.round(f.amountArs * 1.01).toLocaleString('es-AR')} ARS</span>
-                  <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.2 rounded-md inline-block mt-0.5" title="Monto final con comisión de red Solana (1%) y mantenimiento de app">
+                <div className="shrink-0 text-right min-w-[100px]">
+                  <span className="text-sm font-extrabold text-gray-900 dark:text-white block">${(f.amountUsdc * 1.01).toFixed(2)} USDC</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-400 block">${Math.round(f.amountArs * 1.01).toLocaleString(language === 'en' ? 'en-US' : 'es-AR')} ARS</span>
+                  <span
+                    className="text-[9px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800 px-1.5 py-0.5 rounded-md inline-block mt-0.5 whitespace-nowrap shadow-2xs"
+                    title={language === 'en' ? 'Final amount including 1% Solana network & app fee' : 'Monto final con comisión de red Solana (1%) y mantenimiento de app'}
+                  >
                     Final con 1% red & app
                   </span>
                 </div>
