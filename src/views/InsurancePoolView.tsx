@@ -184,8 +184,8 @@ export const InsurancePoolView: React.FC = () => {
                   </div>
                   <h3 className="text-base font-extrabold text-gray-900">Opciones de Seguro</h3>
                 </div>
-                <p className="text-[11px] text-gray-400 mt-1">
-                  Elige el nivel de protección financiera respaldada por Smart Contract en Solana para tus fiados.
+                <p className="text-[11px] text-gray-500 mt-1">
+                  El valor de los seguros se adapta dinámicamente según el índice de cobrabilidad y comportamiento histórico de tu almacén.
                 </p>
               </div>
               <button
@@ -194,6 +194,38 @@ export const InsurancePoolView: React.FC = () => {
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Ficha Actuarial en Vivo del Comercio */}
+            <div className="p-3.5 bg-purple-50/90 rounded-2xl border border-purple-100 space-y-2 text-[11px]">
+              <div className="flex items-center justify-between text-purple-900 font-bold">
+                <span className="flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-purple-600" />
+                  Modelo Actuarial Dinámico (Tu Comercio)
+                </span>
+                <span className="text-[10px] bg-purple-200/70 text-purple-800 px-2 py-0.5 rounded-full font-extrabold">
+                  En Vivo
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-white p-2 rounded-xl border border-purple-100/70 shadow-2xs">
+                  <span className="text-[9px] text-gray-400 block font-medium uppercase">Tasa Base</span>
+                  <span className="font-extrabold text-xs text-gray-800">{merchant.baseInsuranceFee}%</span>
+                </div>
+                <div className="bg-white p-2 rounded-xl border border-purple-100/70 shadow-2xs">
+                  <span className="text-[9px] text-gray-400 block font-medium uppercase">Mora Histórica</span>
+                  <span className="font-extrabold text-xs text-rose-600">{merchant.defaultRate}%</span>
+                </div>
+                <div className="bg-white p-2 rounded-xl border border-purple-100/70 shadow-2xs">
+                  <span className="text-[9px] text-purple-600 block font-bold uppercase">Prima Actual</span>
+                  <span className="font-extrabold text-xs text-purple-700">{merchant.currentInsuranceFee}%</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-purple-800/90 leading-relaxed pt-0.5">
+                💡 <strong>Tarifa Adaptativa:</strong> El seguro no es un costo fijo arbitrario. Premia la buena gestión barrial: si cuidas a quién fías y mantienes alta cobrabilidad, tu prima baja hacia el piso del {merchant.baseInsuranceFee}%. Si aumentan los incobrables, sube para proteger el fondo común PDA.
+              </p>
             </div>
 
             {/* Listado de los 3 Planes */}
@@ -226,7 +258,7 @@ export const InsurancePoolView: React.FC = () => {
                       )}
                     </div>
                     <p className="text-[11px] font-extrabold text-amber-700 mt-0.5">
-                      $25 USDC / mes <span className="text-[10px] font-normal text-gray-500">(o 2.8% de tasa preferencial)</span>
+                      Prima adaptativa: {merchant.currentInsuranceFee}% por fiado <span className="text-[10px] font-normal text-gray-500">(Baja al 2.5% con alta cobrabilidad)</span>
                     </p>
                   </div>
                 </div>
@@ -234,15 +266,15 @@ export const InsurancePoolView: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-amber-200/60 space-y-1.5 text-xs text-gray-600">
                   <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-[11px]">
                     <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    <span>100% del capital garantizado ante morosidad</span>
+                    <span>100% del capital garantizado ante morosidad barrial</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    <span>Liquidación automática vía Smart Contract PDA</span>
+                    <span>Liquidación automática de siniestros vía Smart Contract PDA</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    <span>Scoring predictivo con IA barrial antifraude</span>
+                    <span>Scoring predictivo barrial antifraude incluido</span>
                   </div>
                 </div>
               </div>
@@ -270,7 +302,7 @@ export const InsurancePoolView: React.FC = () => {
                       )}
                     </div>
                     <p className="text-[11px] font-extrabold text-blue-700 mt-0.5">
-                      $12 USDC / mes <span className="text-[10px] font-normal text-gray-500">(o 1.5% por liquidación)</span>
+                      Prima reducida: {(merchant.currentInsuranceFee * 0.6).toFixed(1)}% por fiado <span className="text-[10px] font-normal text-gray-500">(60% de tu tasa actuarial)</span>
                     </p>
                   </div>
                 </div>
@@ -278,7 +310,7 @@ export const InsurancePoolView: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-600">
                   <div className="flex items-center gap-1.5 text-blue-900 font-semibold text-[11px]">
                     <Check className="w-3.5 h-3.5 text-blue-600 stroke-[2.5]" />
-                    <span>60% de cobertura ante mora barrial</span>
+                    <span>60% de cobertura de capital ante mora de clientes</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-blue-600 stroke-[2.5]" />
@@ -286,7 +318,7 @@ export const InsurancePoolView: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-blue-600 stroke-[2.5]" />
-                    <span>Ideal para almacenes chicos con pocos fiados</span>
+                    <span>Ideal para almacenes con muy baja tasa de fiados</span>
                   </div>
                 </div>
               </div>
@@ -314,7 +346,7 @@ export const InsurancePoolView: React.FC = () => {
                       )}
                     </div>
                     <p className="text-[11px] font-extrabold text-gray-600 mt-0.5">
-                      $0 USDC / mes <span className="text-[10px] font-normal text-gray-400">(0% de prima)</span>
+                      0% de prima <span className="text-[10px] font-normal text-gray-400">(Sin costo mensual ni por liquidación)</span>
                     </p>
                   </div>
                 </div>
@@ -322,7 +354,7 @@ export const InsurancePoolView: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-500">
                   <div className="flex items-center gap-1.5 text-rose-700 font-semibold text-[11px]">
                     <X className="w-3.5 h-3.5 text-rose-500 stroke-[2.5]" />
-                    <span>0% de cobertura: Asumes el 100% del riesgo</span>
+                    <span>0% de cobertura: Asumes el 100% del riesgo de impago</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <X className="w-3.5 h-3.5 text-rose-500 stroke-[2.5]" />

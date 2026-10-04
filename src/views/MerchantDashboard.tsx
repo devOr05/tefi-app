@@ -97,11 +97,11 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
           </div>
         </div>
 
-        {/* Explicación de la regla actuarial que el usuario pidió */}
+        {/* Explicación del modelo actuarial dinámico y cobrabilidad */}
         <div className="mt-3 bg-gray-50 rounded-xl p-2.5 text-[11px] text-gray-600 flex items-start gap-2 border border-gray-100">
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <p className="leading-snug">
-            <strong>Tasa de Riesgo:</strong> Tu tasa es <strong>{merchant.currentInsuranceFee}%</strong> (mora histórica: {merchant.defaultRate}%). Si registras muchos incobrables, tu seguro sube para evitar selección adversa.
+            <strong>Modelo Actuarial Dinámico:</strong> Tu prima actual es <strong>{merchant.currentInsuranceFee}%</strong> (mora histórica: {merchant.defaultRate}%). Varía según el índice de cobrabilidad de tu almacén: si cuidas a quién fías y cobras a término, tu tasa baja hacia el piso del 2.5%; si aumentan los incobrables, sube progresivamente.
           </p>
         </div>
       </div>

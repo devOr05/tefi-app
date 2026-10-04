@@ -38,7 +38,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
       setTimeout(() => {
         setProcessStep('2/3: ⚡ Liquidando colateral para saldar fiado...');
         setTimeout(() => {
-          setProcessStep('3/3: 🛡️ Deuda saldada en Solana y saldo liberado...');
+          setProcessStep('3/3: 🛡️ Fiado saldado en Solana y saldo liberado...');
           setTimeout(() => {
             const res = repayFiado(fiado.id, selectedMethod);
             setIsProcessing(false);
@@ -183,7 +183,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                         </span>
                       </div>
                       <p className="text-[10px] text-purple-700 font-medium pt-1">
-                        ✨ Al pagar con tus fondos bloqueados, cancelás la deuda al instante y liberás el resto para retiro libre.
+                        ✨ Al pagar con tus fondos bloqueados, cancelás el fiado al instante y liberás el resto para retiro libre.
                       </p>
                     </div>
                   )}
@@ -388,7 +388,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full uppercase tracking-wider">
                 ¡Pago Asentado On-Chain!
               </span>
-              <h3 className="text-lg font-black text-gray-900 mt-2">Deuda Cancelada con Éxito</h3>
+              <h3 className="text-lg font-black text-gray-900 mt-2">Fiado Cancelado con Éxito</h3>
               <p className="text-xs text-gray-500 mt-1">
                 Abonaste <strong>${calculatedArs.toLocaleString('es-AR')} ARS</strong> ({fiado.amountUsdc} USDC) vía{' '}
                 <strong className="text-gray-800">

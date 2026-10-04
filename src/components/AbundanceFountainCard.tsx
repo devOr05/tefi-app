@@ -126,7 +126,7 @@ export const AbundanceFountainCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Botón rápido para cancelar deuda usando fondos retenidos */}
+            {/* Botón rápido para cancelar fiados usando fondos retenidos */}
             <button
               onClick={() => {
                 repayAllDebtWithAbundanceFountain();
@@ -134,7 +134,7 @@ export const AbundanceFountainCard: React.FC = () => {
               className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-[11px] shadow-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Zap className="w-3.5 h-3.5 fill-white text-white" />
-              <span>Pagar Deuda (${currentDebt.toFixed(2)} USDC) con Fondos Retenidos</span>
+              <span>Saldar Fiados (${currentDebt.toFixed(2)} USDC) con Fondos Retenidos</span>
             </button>
             <p className="text-[9.5px] text-gray-400 text-center font-medium">
               Cancela tus fiados con tu ahorro retenido y libera el 100% de tus ${maxWithdrawable.toFixed(2)} USDC restantes.
@@ -188,13 +188,13 @@ export const AbundanceFountainCard: React.FC = () => {
         {showEdu && (
           <div className="mt-2 text-[11px] text-gray-600 bg-white/90 p-3 rounded-xl border border-emerald-100 space-y-2 animate-in fade-in">
             <p>
-              💡 <strong>De Deudor a Inversor:</strong> Mientras el plazo fijo bancario pierde contra la inflación del peso, en la Fuente tus fondos se indexan a <strong>Solana y USDC</strong> rindiendo intereses diarios (~7.4% anual) a través del consenso de la red.
+              💡 <strong>De Consumidor a Inversor:</strong> Mientras el plazo fijo bancario pierde contra la inflación del peso, en la Fuente tus fondos se indexan a <strong>Solana y USDC</strong> rindiendo intereses diarios (~7.4% anual) a través del consenso de la red.
             </p>
             <p>
-              🔒 <strong>Garantía de Solvencia Mutua:</strong> Cada peso ahorrado funciona como garantía silenciosa. Si tenés fiados activos, tu ahorro respalda esa deuda: <em>no podés retirar si el retiro deja tu score o colateral por debajo de la deuda</em>. ¡Eso protege la confianza con el almacenero y te permite fiar más!
+              🔒 <strong>Garantía de Solvencia Mutua:</strong> Cada peso ahorrado funciona como garantía silenciosa. Si tenés fiados activos, tu ahorro respalda ese compromiso: <em>no podés retirar si el retiro deja tu score o colateral por debajo del monto fiado</em>. ¡Eso protege la confianza con el almacenero y te permite fiar más!
             </p>
             <p>
-              ⚡ <strong>Autoliquidación con Fondos Bloqueados:</strong> ¡Tus fondos en garantía no están perdidos! Podés usarlos en cualquier momento para pagar tus deudas de fiado con 1 solo toque. Al saldarlas, liberás de inmediato el resto para retirar cuando quieras.
+              ⚡ <strong>Autoliquidación con Fondos Bloqueados:</strong> ¡Tus fondos en garantía no están perdidos! Podés usarlos en cualquier momento para saldar tus consumos de fiado con 1 solo toque. Al saldarlos, liberás de inmediato el resto para retirar cuando quieras.
             </p>
             <p>
               📈 <strong>Educación & Score:</strong> Al saldar tus fiados a término, tus fondos quedan 100% liberados para retirar cuando quieras y tu score de crédito se consolida en Solana.
@@ -327,7 +327,7 @@ export const AbundanceFountainCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Banner de Garantía / Regla de Deuda Activa */}
+            {/* Banner de Garantía / Regla de Solvencia */}
             {currentDebt > 0 ? (
               <div className="mb-3 p-3 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-[11px] space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-amber-900">
@@ -335,7 +335,7 @@ export const AbundanceFountainCard: React.FC = () => {
                   <span>Garantía de Fiados Activos</span>
                 </div>
                 <p className="text-amber-800 leading-snug">
-                  Tenés una deuda activa de <strong>${currentDebt.toFixed(2)} USDC</strong> en tus fiados. Por regla de solvencia, no podés retirar un monto que deje tu score o colateral por debajo de la deuda.
+                  Tenés consumos activos por <strong>${currentDebt.toFixed(2)} USDC</strong> en tus fiados. Por regla de solvencia, no podés retirar un monto que deje tu score o colateral por debajo del monto fiado.
                 </p>
                 <div className="pt-1 flex items-center justify-between font-bold text-[10px]">
                   <span className="text-amber-700">Retenido en garantía: ${lockedCollateral.toFixed(2)} USDC</span>
@@ -345,7 +345,7 @@ export const AbundanceFountainCard: React.FC = () => {
             ) : (
               <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 text-[11px] flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Sin deudas activas. Podés retirar el 100% de tus ahorros en cualquier momento.</span>
+                <span>Sin consumos activos pendientes. Podés retirar el 100% de tus ahorros en cualquier momento.</span>
               </div>
             )}
 
@@ -398,7 +398,7 @@ export const AbundanceFountainCard: React.FC = () => {
                     <span>Retiro Bloqueado: Compromete tu Solvencia</span>
                   </div>
                   <p className="leading-snug">
-                    Este monto dejaría tu score o colateral por debajo de tu deuda activa ($${currentDebt.toFixed(2)} USDC). Sin embargo, <strong>podés usar tus fondos retenidos para pagar la deuda directamente</strong>.
+                    Este monto dejaría tu score o colateral por debajo de tus consumos activos (${currentDebt.toFixed(2)} USDC). Sin embargo, <strong>podés usar tus fondos retenidos para saldar los fiados directamente</strong>.
                   </p>
 
                   <button

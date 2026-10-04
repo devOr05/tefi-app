@@ -685,19 +685,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const remainingSavings = +(currentUsdc - amountUsdc).toFixed(2);
 
     if (currentDebt > 0) {
-      // 1. Si el retiro deja el score por debajo de la deuda
+      // 1. Si el retiro deja el score por debajo de los consumos
       if (potentialScore < currentDebt) {
         return {
           success: false,
-          error: `Retiro bloqueado: Tu score resultante (${potentialScore} pts) quedaría por debajo de tu deuda activa ($${currentDebt} USDC). Primero saldá tus fiados pendientes.`
+          error: `Retiro bloqueado: Tu score resultante (${potentialScore} pts) quedaría por debajo de tus consumos activos ($${currentDebt} USDC). Primero saldá tus fiados pendientes.`
         };
       }
 
-      // 2. Si el retiro deja el límite de fiado por debajo de la deuda activa
+      // 2. Si el retiro deja el límite de fiado por debajo de los consumos activos
       if (potentialLimit < currentDebt) {
         return {
           success: false,
-          error: `Retiro bloqueado: Tu límite de fiado resultante ($${potentialLimit} USDC) quedaría por debajo de tu deuda activa ($${currentDebt} USDC).`
+          error: `Retiro bloqueado: Tu límite de fiado resultante ($${potentialLimit} USDC) quedaría por debajo de tus consumos activos ($${currentDebt} USDC).`
         };
       }
 
@@ -706,7 +706,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const maxWithdrawable = Math.max(0, +(currentUsdc - currentDebt).toFixed(2));
         return {
           success: false,
-          error: `Garantía retenida: Tenés una deuda activa de $${currentDebt} USDC. Solo podés retirar hasta $${maxWithdrawable} USDC para no comprometer tu garantía de solvencia.`
+          error: `Garantía retenida: Tenés consumos activos por $${currentDebt} USDC. Solo podés retirar hasta $${maxWithdrawable} USDC para no comprometer tu garantía de solvencia.`
         };
       }
     }
@@ -757,13 +757,13 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const currentSavings = customer.abundanceSavingsUsdc || 0;
 
     if (totalDebt <= 0) {
-      return { success: false, error: 'No tenés deuda activa pendiente.' };
+      return { success: false, error: 'No tenés consumos pendientes en tu libreta.' };
     }
 
     if (currentSavings < totalDebt) {
       return {
         success: false,
-        error: `Saldo insuficiente en la Fuente ($${currentSavings.toFixed(2)} USDC) para saldar la deuda total ($${totalDebt.toFixed(2)} USDC).`
+        error: `Saldo insuficiente en la Fuente ($${currentSavings.toFixed(2)} USDC) para saldar el total de consumos ($${totalDebt.toFixed(2)} USDC).`
       };
     }
 
@@ -794,7 +794,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCustomer(prev => {
       const newSavingsUsdc = Math.max(0, +(prev.abundanceSavingsUsdc! - totalDebt).toFixed(2));
       const newSavingsSol = Math.max(0, +(prev.abundanceSavingsSol! - (totalDebt / 155)).toFixed(4));
-      const newScore = Math.min(100, prev.creditScore + 8); // Boost significativo por liquidar deuda
+      const newScore = Math.min(100, prev.creditScore + 8); // Boost significativo por liquidar consumos
       const newLimit = +(prev.maxCreditLimit + 10).toFixed(0);
 
       const updated = {
@@ -814,8 +814,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const notif: WebhookNotification = {
       id: `wh-settle-${Date.now()}`,
-      title: '⚡ Deuda Liquidada con la Fuente de la Abundancia',
-      message: `¡Deuda activa de $${totalDebt.toFixed(2)} USDC saldada usando tus fondos en garantía! Tus fiados están 100% pagados, +8 pts a tu Score y tus $${Math.max(0, +(currentSavings - totalDebt).toFixed(2))} USDC restantes quedan libres para retirar.`,
+      title: '⚡ Fiados Liquidados con la Fuente de la Abundancia',
+      message: `¡Consumos activos de $${totalDebt.toFixed(2)} USDC saldados usando tus fondos en garantía! Tus fiados están 100% pagados, +8 pts a tu Score y tus $${Math.max(0, +(currentSavings - totalDebt).toFixed(2))} USDC restantes quedan libres para retirar.`,
       amountArs: Math.round(totalDebt * (exchangeRate.rate || 1615)),
       amountUsdc: totalDebt,
       method: 'ABUNDANCE_FOUNTAIN',

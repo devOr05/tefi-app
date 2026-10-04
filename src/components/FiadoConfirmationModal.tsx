@@ -71,7 +71,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
         </span>
         <h3 className="text-lg font-black text-gray-900 mt-1">¿Aceptar este Fiado?</h3>
         <p className="text-[11px] text-gray-500">
-          Revisa el comprobante y confirma la deuda en tu Libreta Tefi
+          Revisa el comprobante y confirma el registro en tu Libreta Tefi
         </p>
 
         {/* Tarjeta del Comercio & Monto */}
@@ -130,7 +130,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
         {/* Simulación de Impacto en Crédito */}
         <div className="mt-3 p-3 bg-purple-50/70 rounded-2xl border border-purple-100 text-left text-[11px] space-y-1.5">
           <div className="flex items-center justify-between font-bold text-purple-900">
-            <span>Tu Deuda Total:</span>
+            <span>Tus Consumos en Libreta:</span>
             <span className="flex items-center gap-1">
               <span>${customer.currentDebt.toFixed(2)}</span>
               <ArrowRight className="w-3 h-3 text-purple-500" />

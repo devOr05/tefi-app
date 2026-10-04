@@ -95,18 +95,18 @@ export const CreditScoreCard: React.FC = () => {
         </div>
 
         <p className="text-[10px] text-purple-800/80 border-t border-purple-100/80 pt-1.5">
-          🔒 <strong>Portabilidad Nacional:</strong> Tu historial te acompaña a cualquier almacén del país. No se puede falsificar ni evadir deudas.
+          🔒 <strong>Portabilidad Nacional:</strong> Tu historial te acompaña a cualquier almacén del país. No se puede falsificar ni eludir compromisos.
         </p>
       </div>
 
-      {/* Límite de Crédito y Deuda Activa */}
+      {/* Límite de Crédito y Consumos Activos */}
       <div className="mt-3.5 bg-gray-50/80 rounded-2xl p-3.5 border border-gray-100">
         <div className="flex items-center justify-between text-xs font-semibold text-gray-600 mb-2">
           <span>Límite de Fiado Disponible</span>
           <span className="text-emerald-600 font-bold">{availableLimit} USDC</span>
         </div>
 
-        {/* Barra de progreso de deuda */}
+        {/* Barra de progreso de consumo */}
         <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden flex">
           <div
             className={`h-full transition-all duration-500 ${
@@ -117,7 +117,7 @@ export const CreditScoreCard: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between text-[11px] text-gray-400 mt-2 font-medium">
-          <span>Deuda activa: <strong className="text-gray-700">${customer.currentDebt} USDC</strong></span>
+          <span>Consumo actual: <strong className="text-gray-700">${customer.currentDebt} USDC</strong></span>
           <span>Límite total: <strong className="text-gray-700">${customer.maxCreditLimit} USDC</strong></span>
         </div>
       </div>

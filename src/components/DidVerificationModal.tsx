@@ -112,7 +112,7 @@ export const DidVerificationModal: React.FC<DidModalProps> = ({ isOpen, onClose 
               </div>
               <div className="flex items-start gap-2">
                 <Lock className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-                <span><strong>Anti-Fraude:</strong> Nadie puede duplicar cuentas para eludir deudas. Tu reputación es inmutable.</span>
+                <span><strong>Anti-Fraude:</strong> Nadie puede duplicar cuentas para eludir compromisos. Tu reputación es inmutable.</span>
               </div>
             </div>
 
