@@ -11,7 +11,7 @@ interface RepayModalProps {
 }
 
 export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, onRepaySuccess }) => {
-  const { customer, repayFiado, exchangeRate } = useTefi();
+  const { customer, repayFiado, exchangeRate, language, t } = useTefi();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('ABUNDANCE_FOUNTAIN');
   const [copied, setCopied] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -44,11 +44,11 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
     setIsProcessing(true);
 
     if (selectedMethod === 'ABUNDANCE_FOUNTAIN') {
-      setProcessStep('1/3: 💧 Verificando fondos retenidos en la Fuente...');
+      setProcessStep(language === 'en' ? '1/3: 💧 Verifying collateral in Fountain...' : '1/3: 💧 Verificando fondos retenidos en la Fuente...');
       setTimeout(() => {
-        setProcessStep('2/3: ⚡ Liquidando colateral para saldar fiado...');
+        setProcessStep(language === 'en' ? '2/3: ⚡ Liquidating collateral to settle credit...' : '2/3: ⚡ Liquidando colateral para saldar fiado...');
         setTimeout(() => {
-          setProcessStep('3/3: 🛡️ Fiado saldado en Solana y saldo liberado...');
+          setProcessStep(language === 'en' ? '3/3: 🛡️ Credit settled on Solana and funds unlocked...' : '3/3: 🛡️ Fiado saldado en Solana y saldo liberado...');
           setTimeout(() => {
             const res = repayFiado(fiado.id, selectedMethod);
             setIsProcessing(false);
@@ -65,11 +65,11 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
       return;
     }
 
-    setProcessStep('1/3: Enviando transferencia bancaria...');
+    setProcessStep(language === 'en' ? '1/3: Sending bank transfer...' : '1/3: Enviando transferencia bancaria...');
     setTimeout(() => {
-      setProcessStep('2/3: 🔔 Webhook bancario recibido (Coelsa/API)...');
+      setProcessStep(language === 'en' ? '2/3: 🔔 Bank webhook received (Coelsa/API)...' : '2/3: 🔔 Webhook bancario recibido (Coelsa/API)...');
       setTimeout(() => {
-        setProcessStep('3/3: ⚡ Conciliando automáticamente en Solana...');
+        setProcessStep(language === 'en' ? '3/3: ⚡ Automatically reconciling on Solana...' : '3/3: ⚡ Conciliando automáticamente en Solana...');
         setTimeout(() => {
           const res = repayFiado(fiado.id, selectedMethod);
           setIsProcessing(false);
@@ -107,11 +107,13 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
             {/* Header */}
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
-                Liquidación Multicanal
+                {language === 'en' ? 'Multichannel Settlement' : 'Liquidación Multicanal'}
               </span>
-              <h3 className="text-lg font-extrabold text-gray-900 mt-1">Pagar Fiado</h3>
+              <h3 className="text-lg font-extrabold text-gray-900 mt-1">
+                {language === 'en' ? 'Pay Store Credit' : 'Pagar Fiado'}
+              </h3>
               <p className="text-xs text-gray-500">
-                Comercio: <strong className="text-gray-800">{fiado.merchantName}</strong>
+                {language === 'en' ? 'Store:' : 'Comercio:'} <strong className="text-gray-800">{fiado.merchantName}</strong>
               </p>
             </div>
 
@@ -119,14 +121,18 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-4 shadow-sm space-y-2.5">
               <div className="flex justify-between items-baseline border-b border-gray-700/60 pb-2">
                 <div>
-                  <span className="text-[10px] text-gray-400 font-medium">Subtotal Productos</span>
+                  <span className="text-[10px] text-gray-400 font-medium">
+                    {language === 'en' ? 'Products Subtotal' : 'Subtotal Productos'}
+                  </span>
                   <div className="flex items-baseline gap-1 mt-0.5">
                     <span className="text-xs font-bold text-gray-200">${baseUsdc.toFixed(2)} USDC</span>
                     <span className="text-[10px] text-gray-400">(${baseArs.toLocaleString('es-AR')} ARS)</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-emerald-400 font-semibold">Comisión Red + App (1%)</span>
+                  <span className="text-[10px] text-emerald-400 font-semibold">
+                    {language === 'en' ? 'Network + App Fee (1%)' : 'Comisión Red + App (1%)'}
+                  </span>
                   <p className="text-xs font-bold text-emerald-300 mt-0.5">
                     +${feeUsdc.toFixed(2)} USDC <span className="text-[10px] text-emerald-400/80">(+${feeArs.toLocaleString('es-AR')} ARS)</span>
                   </p>
@@ -135,14 +141,18 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
 
               <div className="flex justify-between items-baseline pt-0.5">
                 <div>
-                  <span className="text-[11px] text-gray-300 font-bold uppercase tracking-wider">Monto Final a Abonar</span>
+                  <span className="text-[11px] text-gray-300 font-bold uppercase tracking-wider">
+                    {language === 'en' ? 'Final Amount Due' : 'Monto Final a Abonar'}
+                  </span>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="text-2xl font-black tracking-tight text-white">${totalFinalUsdc.toFixed(2)}</span>
                     <span className="text-xs font-extrabold text-emerald-400">USDC</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-gray-400 font-medium">Total en Pesos</span>
+                  <span className="text-[10px] text-gray-400 font-medium">
+                    {language === 'en' ? 'Total in Pesos' : 'Total en Pesos'}
+                  </span>
                   <p className="text-base font-black text-emerald-300 mt-0.5">
                     ${totalFinalArs.toLocaleString('es-AR')} <span className="text-xs text-gray-300">ARS</span>
                   </p>
@@ -152,7 +162,10 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               <div className="pt-1.5 border-t border-gray-700/50 flex items-start gap-1.5 text-[10px] text-gray-400 leading-snug">
                 <Info className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                 <p>
-                  <strong>Comisión mínima pautada (1%):</strong> Cubre el costo de transacción de la red Solana y el mantenimiento de la app. Ya se encuentra calculada en el monto final.
+                  <strong>{language === 'en' ? 'Agreed minimum fee (1%):' : 'Comisión mínima pautada (1%):'}</strong>{' '}
+                  {language === 'en'
+                    ? 'Covers Solana network transaction costs and app maintenance. Already calculated in the final amount.'
+                    : 'Cubre el costo de transacción de la red Solana y el mantenimiento de la app. Ya se encuentra calculada en el monto final.'}
                 </p>
               </div>
             </div>
@@ -160,7 +173,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
             {/* Selector de Método de Pago */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-2">
-                Selecciona cómo deseas pagar:
+                {language === 'en' ? 'Select how you want to pay:' : 'Selecciona cómo deseas pagar:'}
               </label>
 
               <div className="space-y-2">
@@ -182,13 +195,15 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                       />
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-gray-900">Fuente de la Abundancia</span>
+                          <span className="text-xs font-bold text-gray-900">{t('abundanceTitle')}</span>
                           <span className="text-[9px] bg-purple-100 text-purple-800 font-extrabold px-1.5 py-0.2 rounded-md">
-                            Fondos Retenidos
+                            {language === 'en' ? 'Retained Funds' : 'Fondos Retenidos'}
                           </span>
                         </div>
                         <p className="text-[10px] text-gray-500">
-                          Paga con tus fondos de ahorro (Tenés ${(customer.abundanceSavingsUsdc || 0).toFixed(2)} USDC)
+                          {language === 'en'
+                            ? `Pay with your savings (You have $${(customer.abundanceSavingsUsdc || 0).toFixed(2)} USDC)`
+                            : `Paga con tus fondos de ahorro (Tenés $${(customer.abundanceSavingsUsdc || 0).toFixed(2)} USDC)`}
                         </p>
                       </div>
                     </div>
@@ -202,21 +217,23 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                   {selectedMethod === 'ABUNDANCE_FOUNTAIN' && (
                     <div className="pt-2 border-t border-purple-100 text-xs bg-white/80 p-2.5 rounded-xl mt-1 space-y-1">
                       <div className="flex justify-between text-[11px]">
-                        <span className="text-gray-500">Saldo actual en la Fuente:</span>
+                        <span className="text-gray-500">{language === 'en' ? 'Current balance in Fountain:' : 'Saldo actual en la Fuente:'}</span>
                         <strong className="text-gray-900">${(customer.abundanceSavingsUsdc || 0).toFixed(2)} USDC</strong>
                       </div>
                       <div className="flex justify-between text-[11px]">
-                        <span className="text-gray-500">Se debitará para este fiado:</span>
+                        <span className="text-gray-500">{language === 'en' ? 'Will debit for this credit:' : 'Se debitará para este fiado:'}</span>
                         <strong className="text-purple-700">-${fiado.amountUsdc.toFixed(2)} USDC</strong>
                       </div>
                       <div className="flex justify-between text-[11px] pt-0.5 border-t border-gray-100 font-bold">
-                        <span className="text-emerald-700">Saldo liberado tras el pago:</span>
+                        <span className="text-emerald-700">{language === 'en' ? 'Unlocked balance after payment:' : 'Saldo liberado tras el pago:'}</span>
                         <span className="text-emerald-700">
                           ${Math.max(0, +((customer.abundanceSavingsUsdc || 0) - fiado.amountUsdc).toFixed(2))} USDC
                         </span>
                       </div>
                       <p className="text-[10px] text-purple-700 font-medium pt-1">
-                        ✨ Al pagar con tus fondos bloqueados, cancelás el fiado al instante y liberás el resto para retiro libre.
+                        {language === 'en'
+                          ? '✨ By paying with your locked funds, you settle the credit instantly and unlock the rest for free withdrawal.'
+                          : '✨ Al pagar con tus fondos bloqueados, cancelás el fiado al instante y liberás el resto para retiro libre.'}
                       </p>
                     </div>
                   )}
@@ -243,7 +260,9 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                             Transferencia 3.0
                           </span>
                         </div>
-                        <p className="text-[10px] text-gray-500">Paga con dinero en cuenta vía CVU / Alias</p>
+                        <p className="text-[10px] text-gray-500">
+                          {language === 'en' ? 'Pay with account balance via CVU / Alias' : 'Paga con dinero en cuenta vía CVU / Alias'}
+                        </p>
                       </div>
                     </div>
                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
@@ -256,7 +275,9 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                   {selectedMethod === 'MERCADO_PAGO' && (
                     <div className="pt-2 border-t border-blue-100 flex items-center justify-between text-xs bg-white/70 p-2 rounded-xl mt-1">
                       <div>
-                        <span className="text-[10px] text-gray-400 block font-medium">Alias de pago:</span>
+                        <span className="text-[10px] text-gray-400 block font-medium">
+                          {language === 'en' ? 'Payment alias:' : 'Alias de pago:'}
+                        </span>
                         <code className="text-xs font-mono font-bold text-blue-900">tefi.mercadopago.fiado</code>
                       </div>
                       <button
@@ -268,7 +289,11 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                         className="p-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors flex items-center gap-1 text-[11px] font-semibold"
                       >
                         {copied === 'mp' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copied === 'mp' ? 'Copiado' : 'Copiar'}</span>
+                        <span>
+                          {copied === 'mp'
+                            ? (language === 'en' ? 'Copied' : 'Copiado')
+                            : (language === 'en' ? 'Copy' : 'Copiar')}
+                        </span>
                       </button>
                     </div>
                   )}
@@ -295,7 +320,9 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                             Banco Provincia
                           </span>
                         </div>
-                        <p className="text-[10px] text-gray-500">Aprovecha descuentos y reintegros barriales</p>
+                        <p className="text-[10px] text-gray-500">
+                          {language === 'en' ? 'Enjoy neighborhood discounts and cashbacks' : 'Aprovecha descuentos y reintegros barriales'}
+                        </p>
                       </div>
                     </div>
                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
@@ -308,7 +335,9 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                   {selectedMethod === 'CUENTA_DNI' && (
                     <div className="pt-2 border-t border-emerald-100 flex items-center justify-between text-xs bg-white/70 p-2 rounded-xl mt-1">
                       <div>
-                        <span className="text-[10px] text-gray-400 block font-medium">Alias de pago:</span>
+                        <span className="text-[10px] text-gray-400 block font-medium">
+                          {language === 'en' ? 'Payment alias:' : 'Alias de pago:'}
+                        </span>
                         <code className="text-xs font-mono font-bold text-emerald-900">almacen.dontito.cuentadni</code>
                       </div>
                       <button
@@ -320,7 +349,11 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                         className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors flex items-center gap-1 text-[11px] font-semibold"
                       >
                         {copied === 'dni' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copied === 'dni' ? 'Copiado' : 'Copiar'}</span>
+                        <span>
+                          {copied === 'dni'
+                            ? (language === 'en' ? 'Copied' : 'Copiado')
+                            : (language === 'en' ? 'Copy' : 'Copiar')}
+                        </span>
                       </button>
                     </div>
                   )}
@@ -340,8 +373,12 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                       <Banknote className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-xs font-bold text-gray-900 block">Efectivo en Mano</span>
-                      <p className="text-[10px] text-gray-500">Entrega billetes en el mostrador del almacén</p>
+                      <span className="text-xs font-bold text-gray-900 block">
+                        {language === 'en' ? 'Cash in Hand' : 'Efectivo en Mano'}
+                      </span>
+                      <p className="text-[10px] text-gray-500">
+                        {language === 'en' ? 'Hand banknotes at the store counter' : 'Entrega billetes en el mostrador del almacén'}
+                      </p>
                     </div>
                   </div>
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
@@ -368,10 +405,12 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-gray-900">Solana USDC</span>
                         <span className="text-[9px] bg-purple-100 text-purple-800 font-extrabold px-1.5 py-0.2 rounded-md">
-                          Web3 Nativo
+                          {language === 'en' ? 'Native Web3' : 'Web3 Nativo'}
                         </span>
                       </div>
-                      <p className="text-[10px] text-gray-500">Firma on-chain con tu clave Ed25519</p>
+                      <p className="text-[10px] text-gray-500">
+                        {language === 'en' ? 'On-chain signature with your Ed25519 key' : 'Firma on-chain con tu clave Ed25519'}
+                      </p>
                     </div>
                   </div>
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
@@ -397,10 +436,10 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               ) : (
                 <>
                   <span>
-                    {selectedMethod === 'MERCADO_PAGO' && 'Confirmar Transferencia Mercado Pago'}
-                    {selectedMethod === 'CUENTA_DNI' && 'Confirmar Pago con Cuenta DNI'}
-                    {selectedMethod === 'CASH' && 'Confirmar Pago en Efectivo'}
-                    {selectedMethod === 'SOLANA_USDC' && 'Firmar y Pagar en Solana USDC'}
+                    {selectedMethod === 'MERCADO_PAGO' && (language === 'en' ? 'Confirm Mercado Pago Transfer' : 'Confirmar Transferencia Mercado Pago')}
+                    {selectedMethod === 'CUENTA_DNI' && (language === 'en' ? 'Confirm Cuenta DNI Payment' : 'Confirmar Pago con Cuenta DNI')}
+                    {selectedMethod === 'CASH' && (language === 'en' ? 'Confirm Cash Payment' : 'Confirmar Pago en Efectivo')}
+                    {selectedMethod === 'SOLANA_USDC' && (language === 'en' ? 'Sign & Pay in Solana USDC' : 'Firmar y Pagar en Solana USDC')}
                   </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
@@ -408,7 +447,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
             </button>
 
             <p className="text-[10px] text-center text-gray-400">
-              🔒 La rampa de Tefi liquida automáticamente en Solana y actualiza tu Score Crediticio (+5 pts).
+              🔒 {language === 'en' ? 'Tefi on-ramp automatically settles on Solana and updates your Credit Score (+5 pts).' : 'La rampa de Tefi liquida automáticamente en Solana y actualiza tu Score Crediticio (+5 pts).'}
             </p>
           </div>
         ) : (
@@ -419,15 +458,21 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
 
             <div>
               <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                ¡Pago Asentado On-Chain!
+                {language === 'en' ? 'Payment Settled On-Chain!' : '¡Pago Asentado On-Chain!'}
               </span>
-              <h3 className="text-lg font-black text-gray-900 mt-2">Fiado Cancelado con Éxito</h3>
+              <h3 className="text-lg font-black text-gray-900 mt-2">
+                {language === 'en' ? 'Credit Repaid Successfully' : 'Fiado Cancelado con Éxito'}
+              </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Abonaste <strong>${totalFinalArs.toLocaleString('es-AR')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, con costo de red Solana y app incluidos) vía{' '}
+                {language === 'en' ? (
+                  <>You paid <strong>${totalFinalArs.toLocaleString('es-AR')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, with Solana network and app fees included) via{' '}</>
+                ) : (
+                  <>Abonaste <strong>${totalFinalArs.toLocaleString('es-AR')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, con costo de red Solana y app incluidos) vía{' '}</>
+                )}
                 <strong className="text-gray-800">
                   {selectedMethod === 'MERCADO_PAGO' && 'Mercado Pago'}
                   {selectedMethod === 'CUENTA_DNI' && 'Cuenta DNI'}
-                  {selectedMethod === 'CASH' && 'Efectivo en Mostrador'}
+                  {selectedMethod === 'CASH' && (language === 'en' ? 'Cash at Counter' : 'Efectivo en Mostrador')}
                   {selectedMethod === 'SOLANA_USDC' && 'Solana USDC'}
                 </strong>.
               </p>
@@ -437,12 +482,12 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
             <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-100 text-left text-xs space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-emerald-900">
                 <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <span>Beneficios de tu pago a término:</span>
+                <span>{language === 'en' ? 'Benefits of paying on time:' : 'Beneficios de tu pago a término:'}</span>
               </div>
               <ul className="text-[11px] text-emerald-800 space-y-0.5 pl-5 list-disc">
-                <li><strong>+5 puntos</strong> en tu Score Crediticio On-Chain.</li>
-                <li><strong>+$5.00 USDC</strong> de aumento en tu límite de crédito.</li>
-                <li><strong>+{Math.round(fiado.amountUsdc * 20)} puntos</strong> Tefi para canjear en comercios.</li>
+                <li><strong>+5 {language === 'en' ? 'points' : 'puntos'}</strong> {language === 'en' ? 'in your On-Chain Credit Score.' : 'en tu Score Crediticio On-Chain.'}</li>
+                <li><strong>+$5.00 USDC</strong> {language === 'en' ? 'increase in your credit limit.' : 'de aumento en tu límite de crédito.'}</li>
+                <li><strong>+{Math.round(fiado.amountUsdc * 20)} {language === 'en' ? 'points' : 'puntos'}</strong> {language === 'en' ? 'Tefi points to redeem in partner stores.' : 'Tefi para canjear en comercios.'}</li>
               </ul>
             </div>
 
@@ -454,9 +499,9 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
 
             <button
               onClick={handleClose}
-              className="w-full py-3 rounded-2xl bg-gray-900 text-white font-bold text-xs hover:bg-gray-800 transition-colors"
+              className="w-full py-3 rounded-2xl bg-gray-900 text-white font-bold text-xs hover:bg-gray-800 transition-colors cursor-pointer"
             >
-              Volver a Mi Libreta
+              {language === 'en' ? 'Back to My Passbook' : 'Volver a Mi Libreta'}
             </button>
           </div>
         )}

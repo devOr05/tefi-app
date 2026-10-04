@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FiadoRecord, FiadoQrPayload } from '../types/tefi';
+import { useTefi } from '../context/TefiContext';
 import { QrCode, X, ShieldCheck, ExternalLink, Copy, Check, Share2, Loader2, Sparkles } from 'lucide-react';
 import { getSolanaExplorerUrl } from '../solana/connection';
 import QRCode from 'qrcode';
@@ -10,6 +11,7 @@ interface QrModalProps {
 }
 
 export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
+  const { language } = useTefi();
   const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
@@ -112,9 +114,13 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
           <QrCode className="w-6 h-6" />
         </div>
 
-        <h3 className="text-base font-black text-gray-900">QR de Fiado Generado</h3>
+        <h3 className="text-base font-black text-gray-900">
+          {language === 'en' ? 'Generated Credit QR' : 'QR de Fiado Generado'}
+        </h3>
         <p className="text-[11px] text-gray-500 mt-0.5">
-          El cliente escanea este QR desde su Tefi o con la cámara de su celular
+          {language === 'en'
+            ? 'The customer scans this QR from Tefi or using their phone camera'
+            : 'El cliente escanea este QR desde su Tefi o con la cámara de su celular'}
         </p>
 
         {/* Contenedor del QR Real */}
@@ -127,50 +133,52 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
             />
           ) : qrError ? (
             <div className="p-4 text-center text-rose-500 text-xs">
-              <p>{qrError}</p>
+              <p>{language === 'en' ? 'Could not generate QR code.' : qrError}</p>
               <button
                 onClick={() => setQrDataUrl(null)}
-                className="mt-2 text-[11px] text-emerald-600 underline font-bold"
+                className="mt-2 text-[11px] text-emerald-600 underline font-bold cursor-pointer"
               >
-                Reintentar
+                {language === 'en' ? 'Retry' : 'Reintentar'}
               </button>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 p-8 text-gray-400">
               <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-              <span className="text-xs font-semibold">Generando QR On-Chain...</span>
+              <span className="text-xs font-semibold">
+                {language === 'en' ? 'Generating On-Chain QR...' : 'Generando QR On-Chain...'}
+              </span>
             </div>
           )}
 
           <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg w-full">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>QR Oficial On-Chain • Solana</span>
+            <span>{language === 'en' ? 'Official On-Chain QR • Solana' : 'QR Oficial On-Chain • Solana'}</span>
           </div>
         </div>
 
         {/* Resumen del Fiado */}
         <div className="bg-gray-50 rounded-2xl p-3 text-left border border-gray-100 text-xs mb-3 space-y-1">
           <div className="flex justify-between items-center">
-            <span className="text-gray-500">Monto total:</span>
+            <span className="text-gray-500">{language === 'en' ? 'Total amount:' : 'Monto total:'}</span>
             <span className="font-black text-emerald-700 text-sm">
               ${fiado.amountArs.toLocaleString('es-AR')} ARS
               <span className="text-xs font-bold text-gray-500 ml-1">({fiado.amountUsdc} USDC)</span>
             </span>
           </div>
           <div className="flex justify-between items-center text-[11px]">
-            <span className="text-gray-500">Comercio:</span>
+            <span className="text-gray-500">{language === 'en' ? 'Store:' : 'Comercio:'}</span>
             <span className="font-semibold text-gray-800">{fiado.merchantName}</span>
           </div>
           <div className="flex justify-between items-center text-[11px]">
-            <span className="text-gray-500">Detalle:</span>
+            <span className="text-gray-500">{language === 'en' ? 'Items:' : 'Detalle:'}</span>
             <span className="font-semibold text-gray-700 truncate max-w-[180px]">
-              {fiado.itemsDescription || 'Compra de almacén'}
+              {fiado.itemsDescription || (language === 'en' ? 'Store purchase' : 'Compra de almacén')}
             </span>
           </div>
           <div className="flex justify-between items-center text-[11px]">
-            <span className="text-gray-500">Vence:</span>
+            <span className="text-gray-500">{language === 'en' ? 'Due date:' : 'Vence:'}</span>
             <span className="font-semibold text-gray-800">
-              {new Date(fiado.dueDate).toLocaleDateString('es-AR')}
+              {new Date(fiado.dueDate).toLocaleDateString(language === 'en' ? 'en-US' : 'es-AR')}
             </span>
           </div>
         </div>
@@ -184,12 +192,12 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
             {copied ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-emerald-700 font-extrabold">¡Copiado!</span>
+                <span className="text-emerald-700 font-extrabold">{language === 'en' ? 'Copied!' : '¡Copiado!'}</span>
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5 text-gray-500" />
-                <span>Copiar Enlace</span>
+                <span>{language === 'en' ? 'Copy Link' : 'Copiar Enlace'}</span>
               </>
             )}
           </button>
@@ -201,7 +209,7 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
             className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] active:scale-95 transition-all"
           >
             <Share2 className="w-3.5 h-3.5" />
-            <span>Por WhatsApp</span>
+            <span>{language === 'en' ? 'Via WhatsApp' : 'Por WhatsApp'}</span>
           </a>
         </div>
 
@@ -213,7 +221,7 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
             className="flex items-center justify-center gap-1.5 text-[11px] text-purple-700 hover:text-purple-900 font-mono mb-3 underline decoration-purple-300"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Ver Tx Inicial en Solana Devnet</span>
+            <span>{language === 'en' ? 'View Initial Tx on Solana Devnet' : 'Ver Tx Inicial en Solana Devnet'}</span>
             <ExternalLink className="w-3 h-3" />
           </a>
         )}
@@ -222,7 +230,7 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
           onClick={onClose}
           className="w-full py-3 rounded-2xl gradient-tefi text-white font-black text-xs shadow-md active:scale-98 transition-transform cursor-pointer"
         >
-          Listo / Volver al Panel
+          {language === 'en' ? 'Done / Back to Dashboard' : 'Listo / Volver al Panel'}
         </button>
       </div>
     </div>

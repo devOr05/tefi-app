@@ -47,19 +47,20 @@ export const CustomerLibretaView: React.FC = () => {
               <QrCode className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-white">¿En el Almacén?</h3>
+              <h3 className="text-sm font-black text-white">{t('inStoreBanner')}</h3>
               <p className="text-[11px] text-emerald-100 font-medium">
-                Escaneá el QR de Don Tito para recibir y firmar tu fiado
+                {t('inStoreScanDesc')}
               </p>
             </div>
           </div>
 
           <button
             onClick={() => setIsScannerOpen(true)}
+            aria-label={t('scanQrBtn')}
             className="px-4 py-3 rounded-2xl bg-white text-emerald-900 font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
           >
             <Camera className="w-4 h-4 text-emerald-700" />
-            <span>Escanear QR</span>
+            <span>{t('scanQrBtn')}</span>
           </button>
         </div>
       </div>
@@ -70,12 +71,14 @@ export const CustomerLibretaView: React.FC = () => {
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
             <span>
-              ¡Fiado de ${justAcceptedFiado.amountArs.toLocaleString('es-AR')} ARS ({justAcceptedFiado.amountUsdc} USDC) registrado en tu libreta!
+              {language === 'en'
+                ? `Store credit of $${justAcceptedFiado.amountArs.toLocaleString('en-US')} ARS (${justAcceptedFiado.amountUsdc} USDC) recorded in your passbook!`
+                : `¡Fiado de $${justAcceptedFiado.amountArs.toLocaleString('es-AR')} ARS (${justAcceptedFiado.amountUsdc} USDC) registrado en tu libreta!`}
             </span>
           </div>
           <button
             onClick={() => setJustAcceptedFiado(null)}
-            className="text-white/80 hover:text-white p-1"
+            className="text-white/80 hover:text-white p-1 cursor-pointer"
           >
             ✕
           </button>
@@ -84,22 +87,22 @@ export const CustomerLibretaView: React.FC = () => {
 
 
       {/* Tarjeta de Medios de Pago y Billeteras Vinculadas (Cuenta DNI / Mercado Pago) */}
-      <div className="glass-card rounded-3xl p-4 border border-gray-100 shadow-2xs space-y-2.5">
+      <div className="glass-card rounded-3xl p-4 border border-gray-100 dark:border-gray-800 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+            <div className="w-7 h-7 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
               <Link2 className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-gray-900">Billeteras & Cuentas Vinculadas</h4>
-              <p className="text-[10px] text-gray-400">Rampas de pago para tus fiados</p>
+              <h4 className="text-xs font-bold text-gray-900 dark:text-white">{t('linkedAccountsTitle')}</h4>
+              <p className="text-[10px] text-gray-400 dark:text-gray-400">{t('linkedAccountsSubtitle')}</p>
             </div>
           </div>
           <button
             onClick={() => setIsLinkedAccountsModalOpen(true)}
-            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-xl transition-colors cursor-pointer"
+            className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-2.5 py-1 rounded-xl transition-colors cursor-pointer border border-emerald-200/50 dark:border-emerald-800"
           >
-            Vincular / Editar
+            {t('linkEditBtn')}
           </button>
         </div>
 
@@ -107,17 +110,17 @@ export const CustomerLibretaView: React.FC = () => {
           {/* Cuenta DNI */}
           <div
             onClick={() => setIsLinkedAccountsModalOpen(true)}
-            className="p-2.5 rounded-2xl bg-gray-50/80 border border-gray-100 hover:border-emerald-300 cursor-pointer transition-all"
+            className="p-2.5 rounded-2xl bg-gray-50/80 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 hover:border-emerald-300 cursor-pointer transition-all"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-gray-800 flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Cuenta DNI
               </span>
-              <span className="text-[9px] text-emerald-800 font-extrabold bg-emerald-100 px-1.5 py-0.2 rounded-md">
-                {customer.cuentaDniLinked !== false ? 'Vinculada' : 'Off'}
+              <span className="text-[9px] text-emerald-800 dark:text-emerald-300 font-extrabold bg-emerald-100 dark:bg-emerald-950/70 px-1.5 py-0.2 rounded-md">
+                {customer.cuentaDniLinked !== false ? t('linkedBadge') : t('offBadge')}
               </span>
             </div>
-            <p className="text-[10px] font-mono text-emerald-950 font-bold truncate mt-1">
+            <p className="text-[10px] font-mono text-emerald-950 dark:text-emerald-300 font-bold truncate mt-1">
               {customer.cuentaDniAlias || 'matias.gonzalez.bapro'}
             </p>
           </div>
@@ -125,17 +128,17 @@ export const CustomerLibretaView: React.FC = () => {
           {/* Mercado Pago */}
           <div
             onClick={() => setIsLinkedAccountsModalOpen(true)}
-            className="p-2.5 rounded-2xl bg-gray-50/80 border border-gray-100 hover:border-blue-300 cursor-pointer transition-all"
+            className="p-2.5 rounded-2xl bg-gray-50/80 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 hover:border-blue-300 cursor-pointer transition-all"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-gray-800 flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Mercado Pago
               </span>
-              <span className="text-[9px] text-blue-800 font-extrabold bg-blue-100 px-1.5 py-0.2 rounded-md">
-                {customer.mercadoPagoLinked !== false ? 'Vinculada' : 'Off'}
+              <span className="text-[9px] text-blue-800 dark:text-blue-300 font-extrabold bg-blue-100 dark:bg-blue-950/70 px-1.5 py-0.2 rounded-md">
+                {customer.mercadoPagoLinked !== false ? t('linkedBadge') : t('offBadge')}
               </span>
             </div>
-            <p className="text-[10px] font-mono text-blue-950 font-bold truncate mt-1">
+            <p className="text-[10px] font-mono text-blue-950 dark:text-blue-300 font-bold truncate mt-1">
               {customer.mercadoPagoAlias || 'matias.mp.tefi'}
             </p>
           </div>
@@ -145,17 +148,19 @@ export const CustomerLibretaView: React.FC = () => {
       {/* Banner de Consumos Totales */}
       <div className="bg-gradient-to-r from-gray-950 via-[#18112c] to-gray-900 text-white rounded-3xl p-5 shadow-sm border border-purple-900/30 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
-        <span className="text-[11px] font-semibold text-purple-200/80 uppercase tracking-wider relative z-10">Total de consumos en la libreta</span>
+        <span className="text-[11px] font-semibold text-purple-200/80 uppercase tracking-wider relative z-10">{t('totalConsumptions')}</span>
         <div className="flex items-baseline gap-2 mt-1 relative z-10">
           <span className="text-3xl font-extrabold tracking-tight text-white">${customer.currentDebt.toFixed(2)}</span>
           <span className="text-sm font-semibold text-emerald-400">USDC</span>
         </div>
         <p className="text-[11px] text-gray-400 mt-1 relative z-10">
-          Aprox. ${(customer.currentDebt * rate).toLocaleString('es-AR')} ARS en {activeFiados.length} comercios ({exchangeRate.source})
+          {language === 'en'
+            ? `Approx. $${(customer.currentDebt * rate).toLocaleString('en-US')} ARS across ${activeFiados.length} stores (${exchangeRate.source})`
+            : `Aprox. $${(customer.currentDebt * rate).toLocaleString('es-AR')} ARS en ${activeFiados.length} comercios (${exchangeRate.source})`}
         </p>
         <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-white/10 text-[10px] text-purple-200/90 relative z-10">
           <Info className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>Al abonar, se calcula la comisión mínima (1%) por costo de red Solana y mantenimiento de la app.</span>
+          <span>{t('feeNotice')}</span>
         </div>
       </div>
 
@@ -163,7 +168,7 @@ export const CustomerLibretaView: React.FC = () => {
         <div className="p-3.5 rounded-2xl bg-emerald-500 text-white text-xs font-bold flex items-center justify-between shadow-md animate-in slide-in-from-top">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-200 fill-amber-200" />
-            <span>¡Pago confirmado! +5 pts de score y +150 puntos Tefi ganados.</span>
+            <span>{t('paymentConfirmedAlert')}</span>
           </div>
           <CheckCircle2 className="w-4 h-4" />
         </div>
@@ -171,15 +176,15 @@ export const CustomerLibretaView: React.FC = () => {
 
       {/* Fiados Pendientes (con Foto del Ticket) */}
       <div className="space-y-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 px-1">
-          Compras al Fiado Activas ({activeFiados.length})
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1">
+          {t('activeFiadosTitle')} ({activeFiados.length})
         </h3>
 
         {activeFiados.length === 0 ? (
-          <div className="text-center py-6 glass-card rounded-3xl border border-gray-100 p-6">
+          <div className="text-center py-6 glass-card rounded-3xl border border-gray-100 dark:border-gray-800 p-6">
             <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-            <p className="text-xs font-bold text-gray-800">¡Estás al día!</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">No tienes consumos pendientes en tu libreta.</p>
+            <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{t('allSettled')}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{t('noActiveFiados')}</p>
           </div>
         ) : (
           activeFiados.map(f => (
@@ -189,7 +194,7 @@ export const CustomerLibretaView: React.FC = () => {
                   {/* Foto del comprobante */}
                   <button
                     onClick={() => setViewingPhoto(f.photoReceiptUrl)}
-                    aria-label="Ver foto del ticket"
+                    aria-label={t('viewTicketPhoto')}
                     className="relative w-13 h-13 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 group cursor-pointer"
                   >
                     <img src={f.photoReceiptUrl} alt="Comprobante" className="w-full h-full object-cover" />
@@ -203,7 +208,7 @@ export const CustomerLibretaView: React.FC = () => {
                     <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium line-clamp-1">{f.itemsDescription}</p>
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
                       <Calendar className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{language === 'en' ? 'Due' : 'Vence el'} {new Date(f.dueDate).toLocaleDateString(language === 'en' ? 'en-US' : 'es-AR')}</span>
+                      <span className="truncate">{t('dueOn')} {new Date(f.dueDate).toLocaleDateString(language === 'en' ? 'en-US' : 'es-AR')}</span>
                     </div>
                   </div>
                 </div>
@@ -215,27 +220,27 @@ export const CustomerLibretaView: React.FC = () => {
                     className="text-[9px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800 px-1.5 py-0.5 rounded-md inline-block mt-0.5 whitespace-nowrap shadow-2xs"
                     title={language === 'en' ? 'Final amount including 1% Solana network & app fee' : 'Monto final con comisión de red Solana (1%) y mantenimiento de app'}
                   >
-                    Final con 1% red & app
+                    {t('finalFeeBadge')}
                   </span>
                 </div>
               </div>
 
               {/* Botón Pagar en 1-click */}
-              <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+              <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-gray-800">
                 <button
                   onClick={() => setViewingPhoto(f.photoReceiptUrl)}
-                  className="text-[11px] text-gray-500 font-medium hover:text-gray-800 flex items-center gap-1"
+                  className="text-[11px] text-gray-500 dark:text-gray-400 font-medium hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1 cursor-pointer"
                 >
                   <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
-                  <span>Ver foto del ticket</span>
+                  <span>{t('viewTicketPhoto')}</span>
                 </button>
 
                 <button
                   onClick={() => setPayingFiado(f)}
-                  className="px-4 py-2 rounded-xl gradient-tefi text-white font-bold text-xs shadow-xs active:scale-95 transition-transform flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl gradient-tefi text-white font-bold text-xs shadow-xs active:scale-95 transition-transform flex items-center gap-1.5 cursor-pointer touch-target-accessible"
                 >
                   <DollarSign className="w-3.5 h-3.5" />
-                  <span>Pagar Ahora</span>
+                  <span>{t('payNow')}</span>
                 </button>
               </div>
             </div>
@@ -250,13 +255,13 @@ export const CustomerLibretaView: React.FC = () => {
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
           onClick={() => setViewingPhoto(null)}
         >
-          <div className="max-w-md w-full bg-white rounded-3xl overflow-hidden shadow-2xl p-2" onClick={e => e.stopPropagation()}>
+          <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl p-2 border border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
             <img src={viewingPhoto} alt="Comprobante ampliado" className="w-full rounded-2xl max-h-[70vh] object-contain" />
             <button
               onClick={() => setViewingPhoto(null)}
-              className="w-full mt-2 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-xs"
+              className="w-full mt-2 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold text-xs cursor-pointer touch-target-accessible"
             >
-              Cerrar Comprobante
+              {t('closeReceipt')}
             </button>
           </div>
         </div>

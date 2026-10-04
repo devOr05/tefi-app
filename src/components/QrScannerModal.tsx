@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { FiadoQrPayload } from '../types/tefi';
+import { useTefi } from '../context/TefiContext';
 import { X, Camera, AlertCircle, Upload, Sparkles, RefreshCw } from 'lucide-react';
 
 interface QrScannerModalProps {
@@ -14,6 +15,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   onClose,
   onScanSuccess
 }) => {
+  const { language } = useTefi();
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -245,9 +247,13 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           <Camera className="w-6 h-6" />
         </div>
 
-        <h3 className="text-base font-extrabold text-gray-900">Escanear QR de Don Tito</h3>
+        <h3 className="text-base font-extrabold text-gray-900">
+          {language === 'en' ? "Scan Don Tito's QR" : 'Escanear QR de Don Tito'}
+        </h3>
         <p className="text-[11px] text-gray-500 mt-0.5">
-          Apunta tu cámara a la pantalla del almacenero para recibir el fiado
+          {language === 'en'
+            ? "Point your camera at the merchant's screen to receive the credit"
+            : 'Apunta tu cámara a la pantalla del almacenero para recibir el fiado'}
         </p>
 
         {/* Viewport de Cámara */}
@@ -257,15 +263,17 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           {/* Guía visual de escaneo */}
           <div className="absolute inset-8 pointer-events-none border-2 border-dashed border-emerald-400/70 rounded-2xl animate-pulse flex items-center justify-center">
             <span className="text-[10px] text-emerald-300 font-bold bg-black/60 px-2 py-0.5 rounded-full">
-              Centrar código QR
+              {language === 'en' ? 'Center QR code' : 'Centrar código QR'}
             </span>
           </div>
 
           {isProcessing && (
             <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white z-10 p-4">
               <RefreshCw className="w-8 h-8 animate-spin text-emerald-400 mb-2" />
-              <p className="text-xs font-bold">¡QR Detectado!</p>
-              <p className="text-[10px] text-gray-300">Decodificando fiado on-chain...</p>
+              <p className="text-xs font-bold">{language === 'en' ? 'QR Detected!' : '¡QR Detectado!'}</p>
+              <p className="text-[10px] text-gray-300">
+                {language === 'en' ? 'Decoding on-chain credit...' : 'Decodificando fiado on-chain...'}
+              </p>
             </div>
           )}
         </div>
@@ -285,7 +293,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-[11px] bg-gray-50 hover:bg-white active:scale-95 transition-all"
             >
               <Upload className="w-3.5 h-3.5 text-gray-500" />
-              <span>Subir Foto QR</span>
+              <span>{language === 'en' ? 'Upload QR Photo' : 'Subir Foto QR'}</span>
             </button>
             <input
               type="file"
@@ -300,7 +308,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-bold text-[11px] active:scale-95 transition-all"
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              <span>Simular Don Tito</span>
+              <span>{language === 'en' ? 'Simulate Don Tito' : 'Simular Don Tito'}</span>
             </button>
           </div>
 
@@ -309,9 +317,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               stopScanner();
               onClose();
             }}
-            className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-600 font-bold text-xs hover:bg-gray-200 transition-colors"
+            className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-600 font-bold text-xs hover:bg-gray-200 transition-colors cursor-pointer"
           >
-            Cancelar
+            {language === 'en' ? 'Cancel' : 'Cancelar'}
           </button>
         </div>
       </div>

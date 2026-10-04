@@ -6,7 +6,7 @@ import { FiadoRecord } from '../types/tefi';
 import { ArrowLeft, Sparkles, QrCode, AlertCircle, ShoppingBag } from 'lucide-react';
 
 export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { createFiado, customer, exchangeRate } = useTefi();
+  const { createFiado, customer, exchangeRate, language, t } = useTefi();
   const [amountArs, setAmountArs] = useState<string>('');
   const [itemsDescription, setItemsDescription] = useState<string>('');
   const [photoUrl, setPhotoUrl] = useState<string>('');
@@ -22,24 +22,24 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setError('');
 
     if (!amountArs || parseFloat(amountArs) <= 0) {
-      setError('Por favor ingresa un monto válido.');
+      setError(language === 'en' ? 'Please enter a valid amount.' : 'Por favor ingresa un monto válido.');
       return;
     }
 
     if (!photoUrl) {
-      setError('Es necesario sacar una foto del ticket o de los productos.');
+      setError(language === 'en' ? 'Please take a photo of the receipt or products.' : 'Es necesario sacar una foto del ticket o de los productos.');
       return;
     }
 
     const res = createFiado({
       amountArs: parseFloat(amountArs),
       amountUsdc: calculatedUsdc,
-      itemsDescription: itemsDescription || 'Compra de almacén',
+      itemsDescription: itemsDescription || (language === 'en' ? 'Store purchase' : 'Compra de almacén'),
       photoReceiptUrl: photoUrl
     });
 
     if (!res.success) {
-      setError(res.error || 'Error al crear el fiado.');
+      setError(res.error || (language === 'en' ? 'Error creating store credit.' : 'Error al crear el fiado.'));
       return;
     }
 
@@ -54,20 +54,26 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="flex items-center gap-2">
         <button
           onClick={onBack}
-          className="p-2 rounded-xl bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 shadow-2xs"
+          className="p-2 rounded-xl bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 shadow-2xs cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h2 className="text-base font-extrabold text-gray-900">Nuevo Fiado con Foto</h2>
-          <p className="text-[11px] text-gray-400 font-medium">Registrar compra para {customer.name}</p>
+          <h2 className="text-base font-extrabold text-gray-900">
+            {language === 'en' ? 'New Credit with Receipt Photo' : 'Nuevo Fiado con Foto'}
+          </h2>
+          <p className="text-[11px] text-gray-400 font-medium">
+            {language === 'en' ? `Record credit purchase for ${customer.name}` : `Registrar compra para ${customer.name}`}
+          </p>
         </div>
       </div>
 
       {/* Límite disponible del cliente */}
       <div className="bg-emerald-50/80 border border-emerald-100 rounded-2xl p-3 flex items-center justify-between text-xs">
         <div>
-          <span className="text-[10px] text-emerald-800 font-semibold block">Crédito disponible de {customer.name}</span>
+          <span className="text-[10px] text-emerald-800 font-semibold block">
+            {language === 'en' ? `Available credit for ${customer.name}` : `Crédito disponible de ${customer.name}`}
+          </span>
           <span className="text-xs text-emerald-950 font-extrabold">{availableLimit} USDC (${(availableLimit * rate).toLocaleString('es-AR')} ARS)</span>
         </div>
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900">
@@ -83,9 +89,8 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
           <div>
             <div className="flex items-center gap-1">
-              <span className="text-[11px] font-bold text-purple-950">Identidad Única Verificada</span>
-              <span className="text-[9px] bg-purple-200/60 text-purple-800 font-extrabold px-1.5 py-0.2 rounded-full">
-                1 Persona = 1 Cuenta
+              <span className="text-[11px] font-bold text-purple-950">
+                {language === 'en' ? 'Verified Unique Identity' : 'Identidad Única Verificada'}
               </span>
             </div>
             <p className="text-[10px] text-purple-700 font-mono truncate max-w-[200px]">
@@ -94,14 +99,16 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </div>
         <span className="text-[10px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-md">
-          Anti-Fraude
+          {language === 'en' ? 'Anti-Fraud' : 'Anti-Fraude'}
         </span>
       </div>
 
       <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-5 border border-gray-100 shadow-xs space-y-4">
         {/* Monto en Pesos y conversión a USDC */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Monto en Pesos ($ ARS)</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            {language === 'en' ? 'Amount in Pesos ($ ARS)' : 'Monto en Pesos ($ ARS)'}
+          </label>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
             <input
@@ -115,17 +122,23 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               ≈ {calculatedUsdc} USDC
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1">Cotización en vivo: 1 USDC = ${rate.toLocaleString('es-AR')} ARS ({exchangeRate.source})</p>
+          <p className="text-[10px] text-gray-400 mt-1">
+            {language === 'en'
+              ? `Live Oracle: 1 USDC = $${rate.toLocaleString('es-AR')} ARS (${exchangeRate.source})`
+              : `Cotización en vivo: 1 USDC = $${rate.toLocaleString('es-AR')} ARS (${exchangeRate.source})`}
+          </p>
         </div>
 
         {/* Descripción de artículos */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Detalle de Productos</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            {language === 'en' ? 'Items Description' : 'Detalle de Productos'}
+          </label>
           <div className="relative">
             <ShoppingBag className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Ej: 1 Leche, 1 Yerba, 500g queso cremoso"
+              placeholder={language === 'en' ? 'e.g. 1 Milk, 1 Yerba, 500g cheese' : 'Ej: 1 Leche, 1 Yerba, 500g queso cremoso'}
               value={itemsDescription}
               onChange={e => setItemsDescription(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-gray-50 border border-gray-200 text-xs text-gray-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
@@ -145,10 +158,10 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
         <button
           type="submit"
-          className="w-full py-3.5 rounded-2xl gradient-tefi text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 active:scale-98 transition-transform flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-2xl gradient-tefi text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 active:scale-98 transition-transform flex items-center justify-center gap-2 cursor-pointer"
         >
           <QrCode className="w-4 h-4" />
-          <span>Generar Fiado y Mostrar QR</span>
+          <span>{language === 'en' ? 'Generate Credit & Show QR' : 'Generar Fiado y Mostrar QR'}</span>
         </button>
       </form>
 

@@ -12,7 +12,7 @@ import { AbundanceFountainCard } from './components/AbundanceFountainCard';
 import { BellRing, X } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { role, webhookNotification, dismissWebhookNotification } = useTefi();
+  const { role, webhookNotification, dismissWebhookNotification, t } = useTefi();
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
 
   // Ajustar tab al cambiar de rol
@@ -49,7 +49,7 @@ const MainContent: React.FC = () => {
                   {webhookNotification.message}
                 </p>
                 <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-400 font-mono">
-                  <span className="text-emerald-400 font-bold">✓ Conciliado automático</span>
+                  <span className="text-emerald-400 font-bold">✓ {t('autoReconciled')}</span>
                   <span>•</span>
                   <span>Solana Devnet</span>
                 </div>
@@ -84,14 +84,12 @@ const MainContent: React.FC = () => {
                 <CreditScoreCard />
                 <AbundanceFountainCard />
                 <div className="glass-card rounded-3xl p-5 border border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-300 space-y-2">
-                  <h4 className="font-bold text-gray-900 dark:text-white">¿Cómo funciona tu Score Tefi?</h4>
-                  <p>
-                    A diferencia del Veraz bancario que solo castiga, Tefi premia tu lealtad barrial. Cada vez que compras al fiado y pagas dentro del plazo:
-                  </p>
+                  <h4 className="font-bold text-gray-900 dark:text-white">{t('howScoreWorks')}</h4>
+                  <p>{t('howScoreWorksDesc')}</p>
                   <ul className="list-disc pl-4 space-y-1 text-gray-500 dark:text-gray-400">
-                    <li>Ganas +5 puntos en tu score de reputación on-chain.</li>
-                    <li>Tu límite de crédito disponible se expande automáticamente en +$5 USDC.</li>
-                    <li>Acumulas puntos canjeables por descuentos en todos los almacenes de la red.</li>
+                    <li>{t('howScoreLi1')}</li>
+                    <li>{t('howScoreLi2')}</li>
+                    <li>{t('howScoreLi3')}</li>
                   </ul>
                 </div>
               </div>

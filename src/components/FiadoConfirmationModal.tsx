@@ -15,7 +15,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
   onClose,
   onConfirmed
 }) => {
-  const { customer, acceptScannedFiado, exchangeRate } = useTefi();
+  const { customer, acceptScannedFiado, exchangeRate, language } = useTefi();
   const [isSigning, setIsSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +36,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
 
       const res = acceptScannedFiado(payload);
       if (!res.success) {
-        setError(res.error || 'No se pudo registrar el fiado.');
+        setError(res.error || (language === 'en' ? 'Could not record store credit.' : 'No se pudo registrar el fiado.'));
         setIsSigning(false);
         return;
       }
@@ -45,7 +45,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
         onConfirmed(res.fiado);
       }
     } catch (e: any) {
-      setError(e.message || 'Error inesperado al firmar el fiado.');
+      setError(e.message || (language === 'en' ? 'Unexpected error signing credit.' : 'Error inesperado al firmar el fiado.'));
     } finally {
       setIsSigning(false);
     }
@@ -57,7 +57,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
         <button
           onClick={onClose}
           disabled={isSigning}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -67,22 +67,30 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
         </div>
 
         <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-          Fiado P2P Detectado
+          {language === 'en' ? 'P2P Credit Detected' : 'Fiado P2P Detectado'}
         </span>
-        <h3 className="text-lg font-black text-gray-900 mt-1">¿Aceptar este Fiado?</h3>
+        <h3 className="text-lg font-black text-gray-900 mt-1">
+          {language === 'en' ? 'Accept this Store Credit?' : '¿Aceptar este Fiado?'}
+        </h3>
         <p className="text-[11px] text-gray-500">
-          Revisa el comprobante y confirma el registro en tu Libreta Tefi
+          {language === 'en'
+            ? 'Review the receipt and confirm registration in your Tefi Passbook'
+            : 'Revisa el comprobante y confirma el registro en tu Libreta Tefi'}
         </p>
 
         {/* Tarjeta del Comercio & Monto */}
         <div className="mt-3.5 p-3.5 bg-gray-50 rounded-2xl border border-gray-200/80 text-left space-y-2.5">
           <div className="flex items-center justify-between border-b border-gray-200/60 pb-2">
             <div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Comercio</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase">
+                {language === 'en' ? 'Merchant' : 'Comercio'}
+              </span>
               <h4 className="text-xs font-bold text-gray-900">{data.merchantName || 'Almacén Don Tito'}</h4>
             </div>
             <div className="text-right">
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Monto Final a Abonar</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase">
+                {language === 'en' ? 'Final Amount Due' : 'Monto Final a Abonar'}
+              </span>
               <p className="text-base font-black text-emerald-700 leading-tight">
                 ${Math.round(data.amountArs * 1.01).toLocaleString('es-AR')} ARS
               </p>
@@ -90,7 +98,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
                 ≈ {(data.amountUsdc * 1.01).toFixed(2)} USDC
               </span>
               <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200/70 px-1 py-0.2 rounded block mt-0.5">
-                Incluye 1% red & app
+                {language === 'en' ? 'Includes 1% net & app' : 'Incluye 1% red & app'}
               </span>
             </div>
           </div>
@@ -98,14 +106,19 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
           <div className="p-2 bg-emerald-50/80 border border-emerald-100/90 rounded-xl text-[10px] text-emerald-900 leading-snug flex items-start gap-1.5">
             <Info className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
             <p>
-              <strong>Comisión Mínima Pautada (1%):</strong> Cubre el costo de red Solana ($0.00025) y el mantenimiento de la app. El monto final ya la incluye calculada.
+              <strong>{language === 'en' ? 'Agreed Minimum Fee (1%):' : 'Comisión Mínima Pautada (1%):'}</strong>{' '}
+              {language === 'en'
+                ? 'Covers Solana network fee ($0.00025) and app maintenance. The final amount already includes it.'
+                : 'Cubre el costo de red Solana ($0.00025) y el mantenimiento de la app. El monto final ya la incluye calculada.'}
             </p>
           </div>
 
           <div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase">Artículos incluidos:</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase">
+              {language === 'en' ? 'Included items:' : 'Artículos incluidos:'}
+            </span>
             <p className="text-xs font-medium text-gray-800 bg-white p-2 rounded-xl border border-gray-100 mt-0.5">
-              {data.itemsDescription || 'Compra general de almacén'}
+              {data.itemsDescription || (language === 'en' ? 'General store purchase' : 'Compra general de almacén')}
             </p>
           </div>
 
@@ -114,7 +127,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
             <div>
               <span className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1 mb-1">
                 <ImageIcon className="w-3 h-3" />
-                <span>Foto de mercadería / ticket:</span>
+                <span>{language === 'en' ? 'Goods / receipt photo:' : 'Foto de mercadería / ticket:'}</span>
               </span>
               <div className="w-full h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
                 <img
@@ -129,10 +142,10 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
           <div className="flex items-center justify-between text-[11px] text-gray-600 pt-1">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-gray-400" />
-              <span>Fecha límite de pago:</span>
+              <span>{language === 'en' ? 'Payment due date:' : 'Fecha límite de pago:'}</span>
             </span>
             <span className="font-bold text-gray-900">
-              {new Date(data.dueDate).toLocaleDateString('es-AR')}
+              {new Date(data.dueDate).toLocaleDateString(language === 'en' ? 'en-US' : 'es-AR')}
             </span>
           </div>
         </div>
@@ -140,7 +153,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
         {/* Simulación de Impacto en Crédito */}
         <div className="mt-3 p-3 bg-purple-50/70 rounded-2xl border border-purple-100 text-left text-[11px] space-y-1.5">
           <div className="flex items-center justify-between font-bold text-purple-900">
-            <span>Tus Consumos en Libreta:</span>
+            <span>{language === 'en' ? 'Your Passbook Balance:' : 'Tus Consumos en Libreta:'}</span>
             <span className="flex items-center gap-1">
               <span>${customer.currentDebt.toFixed(2)}</span>
               <ArrowRight className="w-3 h-3 text-purple-500" />
@@ -148,11 +161,11 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
             </span>
           </div>
           <div className="flex items-center justify-between text-gray-600">
-            <span>Cupo disponible restante:</span>
+            <span>{language === 'en' ? 'Remaining credit limit:' : 'Cupo disponible restante:'}</span>
             <span className="font-bold text-gray-800">${remainingLimit} USDC</span>
           </div>
           <div className="flex items-center justify-between text-emerald-800 font-semibold pt-1 border-t border-purple-100">
-            <span>Recompensa al pagar a término:</span>
+            <span>{language === 'en' ? 'Reward when paid on time:' : 'Recompensa al pagar a término:'}</span>
             <span className="font-extrabold text-emerald-600">+5 pts Score & +150 Tefi</span>
           </div>
         </div>
@@ -160,7 +173,11 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
         {isOverLimit && (
           <div className="mt-2.5 p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2 text-left">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>Supera tu límite crediticio disponible (${availableLimit.toFixed(1)} USDC).</span>
+            <span>
+              {language === 'en'
+                ? `Exceeds your available credit limit ($${availableLimit.toFixed(1)} USDC).`
+                : `Supera tu límite crediticio disponible ($${availableLimit.toFixed(1)} USDC).`}
+            </span>
           </div>
         )}
 
@@ -180,12 +197,12 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
             {isSigning ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Firmando con clave privada Solana...</span>
+                <span>{language === 'en' ? 'Signing with Solana private key...' : 'Firmando con clave privada Solana...'}</span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Aceptar y Registrar en mi Libreta</span>
+                <span>{language === 'en' ? 'Accept & Record in Passbook' : 'Aceptar y Registrar en mi Libreta'}</span>
               </>
             )}
           </button>
@@ -193,9 +210,9 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
           <button
             onClick={onClose}
             disabled={isSigning}
-            className="w-full py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs transition-colors"
+            className="w-full py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs transition-colors cursor-pointer"
           >
-            Rechazar / Cancelar
+            {language === 'en' ? 'Reject / Cancel' : 'Rechazar / Cancelar'}
           </button>
         </div>
       </div>

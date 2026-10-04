@@ -615,7 +615,13 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Disparar Notificación de Webhook Automático en tiempo real
-    const methodLabels: Record<PaymentMethod, string> = {
+    const methodLabels: Record<PaymentMethod, string> = language === 'en' ? {
+      MERCADO_PAGO: 'Mercado Pago (Instant Transfer)',
+      CUENTA_DNI: 'Cuenta DNI (State Bank)',
+      CASH: 'Cash at Counter',
+      SOLANA_USDC: 'Solana USDC (On-Chain)',
+      ABUNDANCE_FOUNTAIN: 'Abundance Fountain (Collateral)'
+    } : {
       MERCADO_PAGO: 'Mercado Pago (Transferencias 3.0)',
       CUENTA_DNI: 'Cuenta DNI (Banco Provincia)',
       CASH: 'Efectivo en Mostrador',
@@ -623,17 +629,27 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ABUNDANCE_FOUNTAIN: 'Fuente de la Abundancia (Fondos Retenidos)'
     };
 
+    const notifTitle = language === 'en'
+      ? (paymentMethod === 'ABUNDANCE_FOUNTAIN'
+        ? '💧 Credit Settled with Fountain'
+        : (paymentMethod === 'CASH' ? 'In-Person Cash Payment Registered' : 'Banking Webhook Received 🔔'))
+      : (paymentMethod === 'ABUNDANCE_FOUNTAIN'
+        ? '💧 Fiado Saldado con la Fuente'
+        : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Webhook Bancario Recibido 🔔'));
+
+    const notifMessage = language === 'en'
+      ? `Payment of $${target.amountArs.toLocaleString('en-US')} ARS (${target.amountUsdc} USDC) received from ${target.customerName} via ${methodLabels[paymentMethod]}! Automatic on-chain reconciliation.`
+      : `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) recibido de ${target.customerName} vía ${methodLabels[paymentMethod]}! Conciliación automática on-chain.`;
+
     const notif: WebhookNotification = {
       id: `wh-${Date.now()}`,
-      title: paymentMethod === 'ABUNDANCE_FOUNTAIN'
-        ? '💧 Fiado Saldado con la Fuente'
-        : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Webhook Bancario Recibido 🔔'),
-      message: `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) recibido de ${target.customerName} vía ${methodLabels[paymentMethod]}! Conciliación automática on-chain.`,
+      title: notifTitle,
+      message: notifMessage,
       amountArs: target.amountArs,
       amountUsdc: target.amountUsdc,
       method: paymentMethod,
       customerName: target.customerName,
-      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
     setWebhookNotification(notif);
@@ -738,7 +754,13 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return updated;
     });
 
-    const methodLabels: Record<PaymentMethod, string> = {
+    const methodLabels: Record<PaymentMethod, string> = language === 'en' ? {
+      MERCADO_PAGO: 'Mercado Pago',
+      CUENTA_DNI: 'Cuenta DNI',
+      CASH: 'Cash',
+      SOLANA_USDC: 'Solana USDC',
+      ABUNDANCE_FOUNTAIN: 'Abundance Fountain'
+    } : {
       MERCADO_PAGO: 'Mercado Pago',
       CUENTA_DNI: 'Cuenta DNI',
       CASH: 'Efectivo',
@@ -748,13 +770,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const notif: WebhookNotification = {
       id: `fountain-${Date.now()}`,
-      title: '💧 Aporte a la Fuente de la Abundancia',
-      message: `+$${amountArs.toLocaleString('es-AR')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) vertidos vía ${methodLabels[paymentMethod]}. +2 pts de Score y rindiendo 7.4% APY en Solana.`,
+      title: language === 'en' ? '💧 Deposit to Abundance Fountain' : '💧 Aporte a la Fuente de la Abundancia',
+      message: language === 'en'
+        ? `+$${amountArs.toLocaleString('en-US')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) contributed via ${methodLabels[paymentMethod]}. +2 Credit Score pts & earning 7.4% APY on Solana.`
+        : `+$${amountArs.toLocaleString('es-AR')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) vertidos vía ${methodLabels[paymentMethod]}. +2 pts de Score y rindiendo 7.4% APY en Solana.`,
       amountArs,
       amountUsdc: usdcAdded,
       method: paymentMethod,
       customerName: customer.name,
-      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
     setWebhookNotification(notif);
@@ -835,13 +859,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const notif: WebhookNotification = {
       id: `fountain-w-${Date.now()}`,
-      title: '🪙 Retiro de la Fuente de la Abundancia',
-      message: `Has retirado $${amountUsdc.toFixed(2)} USDC a tu cuenta vinculada. Tu garantía de solvencia y fiados se mantienen protegidos.`,
+      title: language === 'en' ? '🪙 Withdrawal from Abundance Fountain' : '🪙 Retiro de la Fuente de la Abundancia',
+      message: language === 'en'
+        ? `You have withdrawn $${amountUsdc.toFixed(2)} USDC to your linked account. Your solvency collateral and credits remain protected.`
+        : `Has retirado $${amountUsdc.toFixed(2)} USDC a tu cuenta vinculada. Tu garantía de solvencia y fiados se mantienen protegidos.`,
       amountArs: Math.round(amountUsdc * (exchangeRate.rate || 1615)),
       amountUsdc,
       method: 'CUENTA_DNI',
       customerName: customer.name,
-      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
     setWebhookNotification(notif);
@@ -857,13 +883,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const currentSavings = customer.abundanceSavingsUsdc || 0;
 
     if (totalDebt <= 0) {
-      return { success: false, error: 'No tenés consumos pendientes en tu libreta.' };
+      return { success: false, error: language === 'en' ? 'No pending credits in your passbook.' : 'No tenés consumos pendientes en tu libreta.' };
     }
 
     if (currentSavings < totalDebt) {
       return {
         success: false,
-        error: `Saldo insuficiente en la Fuente ($${currentSavings.toFixed(2)} USDC) para saldar el total de consumos ($${totalDebt.toFixed(2)} USDC).`
+        error: language === 'en'
+          ? `Insufficient savings in the Fountain ($${currentSavings.toFixed(2)} USDC) to settle total credits ($${totalDebt.toFixed(2)} USDC).`
+          : `Saldo insuficiente en la Fuente ($${currentSavings.toFixed(2)} USDC) para saldar el total de consumos ($${totalDebt.toFixed(2)} USDC).`
       };
     }
 
@@ -914,13 +942,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const notif: WebhookNotification = {
       id: `wh-settle-${Date.now()}`,
-      title: '⚡ Fiados Liquidados con la Fuente de la Abundancia',
-      message: `¡Consumos activos de $${totalDebt.toFixed(2)} USDC saldados usando tus fondos en garantía! Tus fiados están 100% pagados, +8 pts a tu Score y tus $${Math.max(0, +(currentSavings - totalDebt).toFixed(2))} USDC restantes quedan libres para retirar.`,
+      title: language === 'en' ? '⚡ Credits Settled with Abundance Fountain' : '⚡ Fiados Liquidados con la Fuente de la Abundancia',
+      message: language === 'en'
+        ? `Active credits of $${totalDebt.toFixed(2)} USDC settled using your collateral funds! Your debts are 100% paid, +8 pts to your Score, and remaining $${Math.max(0, +(currentSavings - totalDebt).toFixed(2))} USDC are free to withdraw.`
+        : `¡Consumos activos de $${totalDebt.toFixed(2)} USDC saldados usando tus fondos en garantía! Tus fiados están 100% pagados, +8 pts a tu Score y tus $${Math.max(0, +(currentSavings - totalDebt).toFixed(2))} USDC restantes quedan libres para retirar.`,
       amountArs: Math.round(totalDebt * (exchangeRate.rate || 1615)),
       amountUsdc: totalDebt,
       method: 'ABUNDANCE_FOUNTAIN',
       customerName: customer.name,
-      timestamp: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
     setWebhookNotification(notif);

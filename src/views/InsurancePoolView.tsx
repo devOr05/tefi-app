@@ -21,7 +21,7 @@ import { INSURANCE_VAULT_PDA, getSolanaExplorerUrl } from '../solana/connection'
 type InsurancePlan = 'FREE' | 'STANDAR' | 'ORO';
 
 export const InsurancePoolView: React.FC = () => {
-  const { insurancePool, merchant } = useTefi();
+  const { insurancePool, merchant, language, t } = useTefi();
   const [selectedPlan, setSelectedPlan] = useState<InsurancePlan>('ORO');
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [justChangedPlan, setJustChangedPlan] = useState<string | null>(null);
@@ -39,16 +39,16 @@ export const InsurancePoolView: React.FC = () => {
       <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-gray-900 text-white rounded-3xl p-5 shadow-sm relative overflow-hidden">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-purple-200">
-            Smart Contract PDA en Solana
+            {t('smartContractPda')}
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[11px] font-bold text-emerald-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Tu seguro está al día</span>
+            <span>{t('insuranceStatusOk')}</span>
           </div>
         </div>
 
         <div className="mt-4">
-          <span className="text-xs text-purple-200">Fondo Común de Garantía (Insurance Vault)</span>
+          <span className="text-xs text-purple-200">{t('insuranceVaultTitle')}</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-extrabold tracking-tight">${insurancePool.totalBalanceUsdc.toLocaleString('es-AR')}</span>
             <span className="text-sm font-semibold text-purple-300">USDC</span>
@@ -75,14 +75,14 @@ export const InsurancePoolView: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-bold text-white block">
-                {selectedPlan === 'ORO' && 'Opción Oro (Cobertura Completa)'}
-                {selectedPlan === 'STANDAR' && 'Opción Estándar (Mínimo)'}
-                {selectedPlan === 'FREE' && 'Versión Free (Sin Seguro)'}
+                {selectedPlan === 'ORO' && (language === 'en' ? 'Gold Option (Full Coverage)' : 'Opción Oro (Cobertura Completa)')}
+                {selectedPlan === 'STANDAR' && (language === 'en' ? 'Standard Option (Minimum)' : 'Opción Estándar (Mínimo)')}
+                {selectedPlan === 'FREE' && (language === 'en' ? 'Free Version (No Insurance)' : 'Versión Free (Sin Seguro)')}
               </span>
               <span className="text-[10px] text-purple-200">
-                {selectedPlan === 'ORO' && '100% de fiados asegurados ante impagos'}
-                {selectedPlan === 'STANDAR' && '60% de cobertura de riesgo en Solana'}
-                {selectedPlan === 'FREE' && 'Sin cobertura. Asumes el 100% del riesgo'}
+                {selectedPlan === 'ORO' && (language === 'en' ? '100% of credits insured against default' : '100% de fiados asegurados ante impagos')}
+                {selectedPlan === 'STANDAR' && (language === 'en' ? '60% risk coverage on Solana' : '60% de cobertura de riesgo en Solana')}
+                {selectedPlan === 'FREE' && (language === 'en' ? 'No coverage. You assume 100% of the risk' : 'Sin cobertura. Asumes el 100% del riesgo')}
               </span>
             </div>
           </div>
@@ -90,25 +90,31 @@ export const InsurancePoolView: React.FC = () => {
             onClick={() => setIsSubscriptionModalOpen(true)}
             className="text-[10px] font-bold text-white bg-white/15 hover:bg-white/25 active:scale-95 border border-white/25 px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-xs shrink-0 cursor-pointer"
           >
-            <span>Ver seguros</span>
+            <span>{t('viewInsurancesBtn')}</span>
             <ChevronRight className="w-3 h-3 text-purple-200" />
           </button>
         </div>
 
         {justChangedPlan && (
           <div className="mt-2 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 rounded-lg px-2 py-1 text-center animate-in fade-in">
-            ✓ Seguro actualizado con éxito a {justChangedPlan}
+            ✓ {language === 'en' ? 'Insurance successfully updated to' : 'Seguro actualizado con éxito a'} {justChangedPlan}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-purple-800/60 text-xs">
           <div>
-            <span className="text-[10px] text-purple-300 block">Siniestros Pagados</span>
+            <span className="text-[10px] text-purple-300 block">
+              {language === 'en' ? 'Claims Paid' : 'Siniestros Pagados'}
+            </span>
             <span className="font-bold text-emerald-300">${insurancePool.totalClaimsPaidUsdc} USDC</span>
           </div>
           <div>
-            <span className="text-[10px] text-purple-300 block">Comercios Asegurados</span>
-            <span className="font-bold text-white">{insurancePool.totalActivePolicies} locales</span>
+            <span className="text-[10px] text-purple-300 block">
+              {language === 'en' ? 'Insured Stores' : 'Comercios Asegurados'}
+            </span>
+            <span className="font-bold text-white">
+              {insurancePool.totalActivePolicies} {language === 'en' ? 'stores' : 'locales'}
+            </span>
           </div>
         </div>
       </div>
@@ -120,29 +126,39 @@ export const InsurancePoolView: React.FC = () => {
             <Activity className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-gray-800">Modelo Actuarial Dinámico</h3>
-            <p className="text-[10px] text-gray-400">Diseñado para evitar fraude y selección adversa</p>
+            <h3 className="text-xs font-bold text-gray-800">{t('solanaActuarialTitle')}</h3>
+            <p className="text-[10px] text-gray-400">
+              {language === 'en' ? 'Designed to prevent fraud and adverse selection' : 'Diseñado para evitar fraude y selección adversa'}
+            </p>
           </div>
         </div>
 
         <p className="text-xs text-gray-600 leading-relaxed">
-          Para que el fondo sea sustentable, cada comercio paga una prima proporcional a su comportamiento crediticio histórico:
+          {language === 'en'
+            ? 'For the fund to remain sustainable, each store pays a premium proportional to its historical credit performance:'
+            : 'Para que el fondo sea sustentable, cada comercio paga una prima proporcional a su comportamiento crediticio histórico:'}
         </p>
 
         {/* Tarjeta de Tasa Actual */}
         <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-2">
           <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-500">Tasa Base del Protocolo:</span>
+            <span className="text-gray-500">
+              {language === 'en' ? 'Protocol Base Rate:' : 'Tasa Base del Protocolo:'}
+            </span>
             <span className="font-bold text-gray-800">{merchant.baseInsuranceFee}%</span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-500">Mora histórica de tu comercio:</span>
+            <span className="text-gray-500">
+              {language === 'en' ? 'Historical store default rate:' : 'Mora histórica de tu comercio:'}
+            </span>
             <span className={`font-bold ${merchant.defaultRate > 5 ? 'text-rose-600' : 'text-gray-800'}`}>
               {merchant.defaultRate}%
             </span>
           </div>
           <div className="flex justify-between items-center text-xs pt-2 border-t border-gray-200">
-            <span className="font-bold text-gray-800">Tu Prima de Seguro Actual:</span>
+            <span className="font-bold text-gray-800">
+              {language === 'en' ? 'Your Current Insurance Premium:' : 'Tu Prima de Seguro Actual:'}
+            </span>
             <span className="text-sm font-extrabold text-purple-700">{merchant.currentInsuranceFee}%</span>
           </div>
         </div>
@@ -150,7 +166,11 @@ export const InsurancePoolView: React.FC = () => {
         <div className="p-3 bg-purple-50/80 rounded-2xl text-[11px] text-purple-900 border border-purple-100 flex items-start gap-2">
           <Info className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
           <p className="leading-snug">
-            <strong>Incentivo Alineado:</strong> Si un comerciante fía a clientes irresponsables y ejecuta el seguro repetidamente, su prima sube automáticamente hasta un 12%. Si cuida a quién fía, su tasa se mantiene en 2.5%.
+            {language === 'en' ? (
+              <><strong>Aligned Incentive:</strong> If a merchant credits irresponsible customers and claims insurance repeatedly, their premium automatically increases up to 12%. If they manage credit prudently, their rate stays at 2.5%.</>
+            ) : (
+              <><strong>Incentivo Alineado:</strong> Si un comerciante fía a clientes irresponsables y ejecuta el seguro repetidamente, su prima sube automáticamente hasta un 12%. Si cuida a quién fía, su tasa se mantiene en 2.5%.</>
+            )}
           </p>
         </div>
       </div>
@@ -159,10 +179,12 @@ export const InsurancePoolView: React.FC = () => {
       <div className="glass-card rounded-3xl p-4 border border-gray-100 text-xs space-y-2">
         <div className="flex items-center gap-1.5 text-gray-700 font-bold">
           <Lock className="w-4 h-4 text-emerald-600" />
-          <span>Bóveda On-Chain en Solana</span>
+          <span>{language === 'en' ? 'On-Chain Vault on Solana' : 'Bóveda On-Chain en Solana'}</span>
         </div>
         <p className="text-[11px] text-gray-400">
-          Los fondos están bloqueados en una PDA sin custodia humana. Los retiros solo se autorizan cuando un fiado supera los 30 días de mora.
+          {language === 'en'
+            ? 'Funds are locked in a PDA with no human custody. Withdrawals are only authorized when a credit exceeds 30 days past due.'
+            : 'Los fondos están bloqueados en una PDA sin custodia humana. Los retiros solo se autorizan cuando un fiado supera los 30 días de mora.'}
         </p>
         <div className="p-2.5 bg-gray-50 rounded-xl font-mono text-[10px] text-gray-500 break-all border border-gray-100 flex items-center justify-between">
           <span>PDA: {INSURANCE_VAULT_PDA}</span>
@@ -182,10 +204,14 @@ export const InsurancePoolView: React.FC = () => {
                   <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
                     <ShieldCheck className="w-5 h-5 text-purple-700" />
                   </div>
-                  <h3 className="text-base font-extrabold text-gray-900">Opciones de Seguro</h3>
+                  <h3 className="text-base font-extrabold text-gray-900">
+                    {language === 'en' ? 'Insurance Options' : 'Opciones de Seguro'}
+                  </h3>
                 </div>
                 <p className="text-[11px] text-gray-500 mt-1">
-                  El valor de los seguros se adapta dinámicamente según el índice de cobrabilidad y comportamiento histórico de tu almacén.
+                  {language === 'en'
+                    ? 'Insurance rates dynamically adapt based on your store collection rate and historical track record.'
+                    : 'El valor de los seguros se adapta dinámicamente según el índice de cobrabilidad y comportamiento histórico de tu almacén.'}
                 </p>
               </div>
               <button
@@ -201,30 +227,39 @@ export const InsurancePoolView: React.FC = () => {
               <div className="flex items-center justify-between text-purple-900 font-bold">
                 <span className="flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5 text-purple-600" />
-                  Modelo Actuarial Dinámico (Tu Comercio)
+                  {language === 'en' ? 'Dynamic Actuarial Model (Your Store)' : 'Modelo Actuarial Dinámico (Tu Comercio)'}
                 </span>
                 <span className="text-[10px] bg-purple-200/70 text-purple-800 px-2 py-0.5 rounded-full font-extrabold">
-                  En Vivo
+                  {language === 'en' ? 'Live' : 'En Vivo'}
                 </span>
               </div>
               
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-white p-2 rounded-xl border border-purple-100/70 shadow-2xs">
-                  <span className="text-[9px] text-gray-400 block font-medium uppercase">Tasa Base</span>
+                  <span className="text-[9px] text-gray-400 block font-medium uppercase">
+                    {language === 'en' ? 'Base Rate' : 'Tasa Base'}
+                  </span>
                   <span className="font-extrabold text-xs text-gray-800">{merchant.baseInsuranceFee}%</span>
                 </div>
                 <div className="bg-white p-2 rounded-xl border border-purple-100/70 shadow-2xs">
-                  <span className="text-[9px] text-gray-400 block font-medium uppercase">Mora Histórica</span>
+                  <span className="text-[9px] text-gray-400 block font-medium uppercase">
+                    {language === 'en' ? 'Historical Default' : 'Mora Histórica'}
+                  </span>
                   <span className="font-extrabold text-xs text-rose-600">{merchant.defaultRate}%</span>
                 </div>
                 <div className="bg-white p-2 rounded-xl border border-purple-100/70 shadow-2xs">
-                  <span className="text-[9px] text-purple-600 block font-bold uppercase">Prima Actual</span>
+                  <span className="text-[9px] text-purple-600 block font-bold uppercase">
+                    {language === 'en' ? 'Current Premium' : 'Prima Actual'}
+                  </span>
                   <span className="font-extrabold text-xs text-purple-700">{merchant.currentInsuranceFee}%</span>
                 </div>
               </div>
 
               <p className="text-[10px] text-purple-800/90 leading-relaxed pt-0.5">
-                💡 <strong>Tarifa Adaptativa:</strong> El seguro no es un costo fijo arbitrario. Premia la buena gestión barrial: si cuidas a quién fías y mantienes alta cobrabilidad, tu prima baja hacia el piso del {merchant.baseInsuranceFee}%. Si aumentan los incobrables, sube para proteger el fondo común PDA.
+                💡 <strong>{language === 'en' ? 'Adaptive Rate:' : 'Tarifa Adaptativa:'}</strong>{' '}
+                {language === 'en'
+                  ? `Insurance is not an arbitrary fixed fee. It rewards good neighborhood management: if you maintain high collection rates, your premium decreases toward the ${merchant.baseInsuranceFee}% floor. If defaults rise, it increases to protect the mutual PDA vault.`
+                  : `El seguro no es un costo fijo arbitrario. Premia la buena gestión barrial: si cuidas a quién fías y mantienes alta cobrabilidad, tu prima baja hacia el piso del ${merchant.baseInsuranceFee}%. Si aumentan los incobrables, sube para proteger el fondo común PDA.`}
               </p>
             </div>
 
@@ -241,7 +276,7 @@ export const InsurancePoolView: React.FC = () => {
               >
                 <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-0.5 rounded-bl-xl shadow-2xs flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5 fill-white" />
-                  Más Elegida • Cobertura 100%
+                  {language === 'en' ? 'Most Popular • 100% Coverage' : 'Más Elegida • Cobertura 100%'}
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -250,15 +285,22 @@ export const InsurancePoolView: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-extrabold text-gray-900">Opción Oro (Completa)</h4>
+                      <h4 className="text-sm font-extrabold text-gray-900">
+                        {language === 'en' ? 'Gold Option (Full)' : 'Opción Oro (Completa)'}
+                      </h4>
                       {selectedPlan === 'ORO' && (
                         <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.2 rounded-full">
-                          ACTIVO
+                          {language === 'en' ? 'ACTIVE' : 'ACTIVO'}
                         </span>
                       )}
                     </div>
                     <p className="text-[11px] font-extrabold text-amber-700 mt-0.5">
-                      Prima adaptativa: {merchant.currentInsuranceFee}% por fiado <span className="text-[10px] font-normal text-gray-500">(Baja al 2.5% con alta cobrabilidad)</span>
+                      {language === 'en'
+                        ? `Adaptive premium: ${merchant.currentInsuranceFee}% per credit `
+                        : `Prima adaptativa: ${merchant.currentInsuranceFee}% por fiado `}
+                      <span className="text-[10px] font-normal text-gray-500">
+                        {language === 'en' ? '(Decreases to 2.5% with high collection)' : '(Baja al 2.5% con alta cobrabilidad)'}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -266,15 +308,27 @@ export const InsurancePoolView: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-amber-200/60 space-y-1.5 text-xs text-gray-600">
                   <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-[11px]">
                     <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    <span>100% del capital garantizado ante morosidad barrial</span>
+                    <span>
+                      {language === 'en'
+                        ? '100% capital guaranteed against customer defaults'
+                        : '100% del capital garantizado ante morosidad barrial'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    <span>Liquidación automática de siniestros vía Smart Contract PDA</span>
+                    <span>
+                      {language === 'en'
+                        ? 'Automatic claims settlement via Smart Contract PDA'
+                        : 'Liquidación automática de siniestros vía Smart Contract PDA'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    <span>Scoring predictivo barrial antifraude incluido</span>
+                    <span>
+                      {language === 'en'
+                        ? 'Anti-fraud predictive neighborhood scoring included'
+                        : 'Scoring predictivo barrial antifraude incluido'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -294,15 +348,22 @@ export const InsurancePoolView: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-extrabold text-gray-900">Opción Estándar (Mínimo)</h4>
+                      <h4 className="text-sm font-extrabold text-gray-900">
+                        {language === 'en' ? 'Standard Option (Minimum)' : 'Opción Estándar (Mínimo)'}
+                      </h4>
                       {selectedPlan === 'STANDAR' && (
                         <span className="text-[10px] font-black text-blue-700 bg-blue-100 px-2 py-0.2 rounded-full">
-                          ACTIVO
+                          {language === 'en' ? 'ACTIVE' : 'ACTIVO'}
                         </span>
                       )}
                     </div>
                     <p className="text-[11px] font-extrabold text-blue-700 mt-0.5">
-                      Prima reducida: {(merchant.currentInsuranceFee * 0.6).toFixed(1)}% por fiado <span className="text-[10px] font-normal text-gray-500">(60% de tu tasa actuarial)</span>
+                      {language === 'en'
+                        ? `Reduced premium: ${(merchant.currentInsuranceFee * 0.6).toFixed(1)}% per credit `
+                        : `Prima reducida: ${(merchant.currentInsuranceFee * 0.6).toFixed(1)}% por fiado `}
+                      <span className="text-[10px] font-normal text-gray-500">
+                        {language === 'en' ? '(60% of your actuarial rate)' : '(60% de tu tasa actuarial)'}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -310,15 +371,27 @@ export const InsurancePoolView: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-600">
                   <div className="flex items-center gap-1.5 text-blue-900 font-semibold text-[11px]">
                     <Check className="w-3.5 h-3.5 text-blue-600 stroke-[2.5]" />
-                    <span>60% de cobertura de capital ante mora de clientes</span>
+                    <span>
+                      {language === 'en'
+                        ? '60% capital coverage against client default'
+                        : '60% de cobertura de capital ante mora de clientes'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-blue-600 stroke-[2.5]" />
-                    <span>Acceso al fondo común de contingencia PDA</span>
+                    <span>
+                      {language === 'en'
+                        ? 'Access to contingency PDA vault'
+                        : 'Acceso al fondo común de contingencia PDA'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-blue-600 stroke-[2.5]" />
-                    <span>Ideal para almacenes con muy baja tasa de fiados</span>
+                    <span>
+                      {language === 'en'
+                        ? 'Ideal for stores with low credit volume'
+                        : 'Ideal para almacenes con muy baja tasa de fiados'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -338,15 +411,20 @@ export const InsurancePoolView: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-extrabold text-gray-900">Versión Free (Sin Seguro)</h4>
+                      <h4 className="text-sm font-extrabold text-gray-900">
+                        {language === 'en' ? 'Free Version (No Insurance)' : 'Versión Free (Sin Seguro)'}
+                      </h4>
                       {selectedPlan === 'FREE' && (
                         <span className="text-[10px] font-black text-gray-700 bg-gray-200 px-2 py-0.2 rounded-full">
-                          ACTIVO
+                          {language === 'en' ? 'ACTIVE' : 'ACTIVO'}
                         </span>
                       )}
                     </div>
                     <p className="text-[11px] font-extrabold text-gray-600 mt-0.5">
-                      0% de prima <span className="text-[10px] font-normal text-gray-400">(Sin costo mensual ni por liquidación)</span>
+                      {language === 'en' ? '0% premium ' : '0% de prima '}
+                      <span className="text-[10px] font-normal text-gray-400">
+                        {language === 'en' ? '(No monthly or settlement cost)' : '(Sin costo mensual ni por liquidación)'}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -354,15 +432,27 @@ export const InsurancePoolView: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-500">
                   <div className="flex items-center gap-1.5 text-rose-700 font-semibold text-[11px]">
                     <X className="w-3.5 h-3.5 text-rose-500 stroke-[2.5]" />
-                    <span>0% de cobertura: Asumes el 100% del riesgo de impago</span>
+                    <span>
+                      {language === 'en'
+                        ? '0% coverage: You assume 100% of default risk'
+                        : '0% de cobertura: Asumes el 100% del riesgo de impago'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <X className="w-3.5 h-3.5 text-rose-500 stroke-[2.5]" />
-                    <span>Sin rescate ni liquidación del fondo PDA</span>
+                    <span>
+                      {language === 'en'
+                        ? 'No rescue or payout from PDA vault'
+                        : 'Sin rescate ni liquidación del fondo PDA'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-gray-600 text-[11px]">
                     <Check className="w-3.5 h-3.5 text-gray-400 stroke-[2]" />
-                    <span>Libreta digital, tickets y recordatorios básicos</span>
+                    <span>
+                      {language === 'en'
+                        ? 'Digital passbook, receipts and basic reminders'
+                        : 'Libreta digital, tickets y recordatorios básicos'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -373,7 +463,7 @@ export const InsurancePoolView: React.FC = () => {
                 onClick={() => setIsSubscriptionModalOpen(false)}
                 className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-black text-white font-bold text-xs shadow-md active:scale-98 transition-all cursor-pointer"
               >
-                Confirmar y Cerrar
+                {language === 'en' ? 'Confirm and Close' : 'Confirmar y Cerrar'}
               </button>
             </div>
           </div>

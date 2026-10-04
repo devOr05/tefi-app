@@ -28,6 +28,23 @@ export const translations = {
     navScore: 'Score Crediticio',
     navLoyalty: 'Fidelidad',
 
+    // Merchant Dashboard
+    totalPendingFiados: 'Total por Cobrar (Fiados)',
+    salesOnCredit: 'Ventas Fiadas',
+    collected: 'Cobrados',
+    onHold: 'En Espera',
+    fiadosToCollect: 'Fiados por Cobrar',
+    filterAll: 'Todos',
+    filterActive: 'Pendientes',
+    filterPaid: 'Cobrados',
+    collectBtn: 'Cobrar',
+    claimInsuranceBtn: 'Reclamar Seguro',
+    dynamicRiskRate: 'Tasa Dinámica de Riesgo',
+    dynamicRiskDesc: 'El valor del seguro varía según el índice de cobrabilidad de tu almacén.',
+    activeCoverage: 'Cobertura al 100% activa',
+    noFiadosFound: 'No hay fiados registrados en esta sección.',
+    equivArs: 'Equiv. aprox:',
+
     // Loyalty View
     loyaltyTitle: 'Programa Fidelidad Barrial',
     loyaltySubtitle: 'Puntos acumulados por pagar a término',
@@ -40,6 +57,7 @@ export const translations = {
     noPastFiados: 'Aún no registras fiados saldados.',
     noPastFiadosSub: 'Cada compra al fiado que abones a tiempo sumará puntos canjeables aquí.',
     viewOnDevnet: 'Ver en Devnet',
+    rewardCredited: 'Recompensa acreditada:',
 
     // Partner Stores & Promos
     promosTitle: 'Promociones & Comercios Adheridos',
@@ -56,6 +74,9 @@ export const translations = {
     categoryPlaceholder: 'Rubro (Almacén, Fiambrería, Panadería, etc.)',
     submitJoin: 'Solicitar Adhesión Gratuita',
     joinSuccess: '¡Solicitud recibida! El equipo de Tefi se contactará para validar tu comercio en la red Solana.',
+    promoTefi: 'Promo Tefi',
+    joinStoreBtn: 'Sumar Comercio',
+    storesCount: 'adheridos',
 
     // Passbook / Libreta
     totalConsumptions: 'Total de consumos en la libreta',
@@ -68,16 +89,89 @@ export const translations = {
     scanQrBtn: 'Escanear QR',
     allSettled: '¡Estás al día!',
     noActiveFiados: 'No tienes consumos pendientes en tu libreta.',
+    linkedAccountsTitle: 'Billeteras & Cuentas Vinculadas',
+    linkedAccountsSubtitle: 'Rampas de pago para tus fiados',
+    linkEditBtn: 'Vincular / Editar',
+    linkedBadge: 'Vinculada',
+    offBadge: 'Desvinculada',
+    paymentConfirmedAlert: '¡Pago confirmado! +5 pts de score y +150 puntos Tefi ganados.',
+    dueOn: 'Vence el',
+    finalFeeBadge: 'Final con 1% red & app',
+    closeReceipt: 'Cerrar Comprobante',
+    approxInStores: 'Aprox. en comercios',
 
     // Credit Score
-    creditScoreTitle: 'Score de Crédito On-Chain',
+    creditScoreTitle: 'Score Crediticio On-Chain',
     abundanceTitle: 'Fuente de la Abundancia',
     howScoreWorks: '¿Cómo funciona tu Score Tefi?',
     howScoreWorksDesc: 'A diferencia del Veraz bancario que solo castiga, Tefi premia tu lealtad barrial. Cada vez que compras al fiado y pagas dentro del plazo:',
+    howScoreLi1: 'Ganas +5 puntos en tu score de reputación on-chain.',
+    howScoreLi2: 'Tu límite de crédito disponible se expande automáticamente en +$5 USDC.',
+    howScoreLi3: 'Acumulas puntos canjeables por descuentos en todos los almacenes de la red.',
+    category: 'Categoría',
+    tier: 'Nivel',
+    didTitle: 'Identidad DID',
+    unverifiedBio: 'Sin validar biométricamente',
+    verifiedBio: 'Verificada con biometría Solana',
+    nationalPortability: 'Portabilidad Nacional',
+    nationalPortabilityText: 'Tu historial te acompaña a cualquier almacén del país. No se puede falsificar ni eludir compromisos.',
+    availableLimit: 'Límite de Fiado Disponible',
+    consumed: 'Consumido:',
+    totalLimit: 'Límite total:',
+    repaidHistorical: 'Saldado histórico',
+    punctualityRate: 'Tasa puntualidad',
+    onTime100: '100% a término',
+    rescanBtn: 'Re-escanear',
+    verifyBtn: 'Verificar',
+    scoreExcellent: 'Excelente',
+    scoreGood: 'Bueno',
+    scoreFair: 'Regular',
+    scoreRisky: 'Riesgoso',
 
-    // A11y labels
+    // Abundance Fountain
+    fountainTitle: 'Fuente de la Abundancia',
+    fountainSub: 'Micro-Ahorro, Rendimiento y Respaldo Mutuo',
+    savedBalance: 'Saldo Ahorrado en Garantía',
+    yieldGenerated: 'Rendimiento Generado',
+    depositSavingsBtn: 'Depositar Ahorro',
+    withdrawFundsBtn: 'Retirar Fondos',
+    settleAllDebtBtn: 'Liquidar Fiados con mi Ahorro',
+
+    // Insurance Pool
+    insuranceVaultTitle: 'Fondo Común de Garantía (Insurance Vault)',
+    insuranceStatusOk: 'Tu seguro está al día',
+    smartContractPda: 'Smart Contract PDA en Solana',
+    viewInsurancesBtn: 'Ver seguros',
+    activePolicyTitle: 'Póliza Activa',
+    solanaActuarialTitle: 'Modelo Actuarial Dinámico',
+    solanaActuarialDesc: 'El valor de las pólizas se adapta automáticamente al índice de cobrabilidad del comercio.',
+    claimInsuranceModalTitle: 'Reclamar Seguro de Fiado',
+
+    // New Fiado View
+    newFiadoTitle: 'Nuevo Fiado para Vecino',
+    amountInArs: 'Monto en Pesos (ARS)',
+    itemsDetailLabel: 'Detalle de Productos / Ticket',
+    generateQrFiadoBtn: 'Generar QR de Fiado para el Vecino',
+
+    // Modals & A11y
     closeModal: 'Cerrar ventana',
-    cameraAria: 'Abrir escáner o cámara'
+    cameraAria: 'Abrir escáner o cámara',
+    paymentMethodModalTitle: 'Saldar Fiado',
+    selectPaymentMethod: 'Seleccioná cómo deseas abonar tu consumo:',
+    autoReconciled: 'Conciliado automático',
+    cameraPhotoTicket: 'Foto del Ticket o Mercadería',
+    immutableOnChain: 'Inmutable on-chain',
+    cameraOptimizing: 'Optimizando y comprimiendo foto...',
+    cameraMobileReady: 'Asegurando rendimiento y compatibilidad móvil',
+    capturePhotoBtn: 'Capturar Foto',
+    cancelBtn: 'Cancelar',
+    photoLoaded: 'Foto cargada',
+    changePhoto: 'Cambiar Foto',
+    takePhotoOrTicket: 'Sacar foto a los productos o ticket',
+    avoidDisputes: 'Evita disputas: el cliente ve exactamente qué compró',
+    openCameraBtn: 'Abrir Cámara',
+    galleryBtn: 'Galería',
+    quickDemo: 'Demo rápida:'
   },
   en: {
     // Header & Global
@@ -106,6 +200,23 @@ export const translations = {
     navScore: 'Credit Score',
     navLoyalty: 'Loyalty',
 
+    // Merchant Dashboard
+    totalPendingFiados: 'Total Pending Receivables',
+    salesOnCredit: 'Credit Sales',
+    collected: 'Collected',
+    onHold: 'Pending',
+    fiadosToCollect: 'Credits to Collect',
+    filterAll: 'All',
+    filterActive: 'Pending',
+    filterPaid: 'Collected',
+    collectBtn: 'Collect',
+    claimInsuranceBtn: 'Claim Insurance',
+    dynamicRiskRate: 'Dynamic Risk Rate',
+    dynamicRiskDesc: 'Insurance pricing dynamically adjusts to your store collection score.',
+    activeCoverage: '100% active coverage',
+    noFiadosFound: 'No store credits found in this view.',
+    equivArs: 'Approx. equiv:',
+
     // Loyalty View
     loyaltyTitle: 'Neighborhood Loyalty Program',
     loyaltySubtitle: 'Points accumulated by paying on time',
@@ -118,6 +229,7 @@ export const translations = {
     noPastFiados: 'No repaid credits yet.',
     noPastFiadosSub: 'Every credit you pay on time earns redeemable points here.',
     viewOnDevnet: 'View on Devnet',
+    rewardCredited: 'Reward credited:',
 
     // Partner Stores & Promos
     promosTitle: 'Promotions & Partner Stores',
@@ -134,6 +246,9 @@ export const translations = {
     categoryPlaceholder: 'Category (Grocery, Bakery, Deli, etc.)',
     submitJoin: 'Request Free Affiliation',
     joinSuccess: 'Request received! The Tefi team will reach out to verify your store on the Solana network.',
+    promoTefi: 'Tefi Promo',
+    joinStoreBtn: 'Join Store',
+    storesCount: 'affiliated',
 
     // Passbook / Libreta
     totalConsumptions: 'Total passbook consumptions',
@@ -146,15 +261,88 @@ export const translations = {
     scanQrBtn: 'Scan QR',
     allSettled: 'You are all caught up!',
     noActiveFiados: 'No pending consumptions in your passbook.',
+    linkedAccountsTitle: 'Linked Wallets & Accounts',
+    linkedAccountsSubtitle: 'Payment on-ramps for your credits',
+    linkEditBtn: 'Link / Edit',
+    linkedBadge: 'Linked',
+    offBadge: 'Off',
+    paymentConfirmedAlert: 'Payment confirmed! +5 credit score pts and +150 Tefi points earned.',
+    dueOn: 'Due on',
+    finalFeeBadge: 'Final with 1% net & app',
+    closeReceipt: 'Close Receipt',
+    approxInStores: 'Approx. across stores',
 
     // Credit Score
     creditScoreTitle: 'On-Chain Credit Score',
     abundanceTitle: 'Abundance Fountain',
     howScoreWorks: 'How does your Tefi Score work?',
     howScoreWorksDesc: 'Unlike banking credit bureaus that only penalize, Tefi rewards neighborhood loyalty. Every time you buy on credit and repay on time:',
+    howScoreLi1: 'You earn +5 points in your on-chain reputation score.',
+    howScoreLi2: 'Your available credit limit automatically expands by +$5 USDC.',
+    howScoreLi3: 'You accumulate points redeemable for discounts across all network stores.',
+    category: 'Category',
+    tier: 'Tier',
+    didTitle: 'DID Identity',
+    unverifiedBio: 'Unverified biometric DID',
+    verifiedBio: 'Verified with Solana biometrics',
+    nationalPortability: 'National Portability',
+    nationalPortabilityText: 'Your reputation travels with you to any store in the country. It cannot be forged or evaded.',
+    availableLimit: 'Available Credit Limit',
+    consumed: 'Used:',
+    totalLimit: 'Total limit:',
+    repaidHistorical: 'Repaid to date',
+    punctualityRate: 'Punctual rate',
+    onTime100: '100% on-time',
+    rescanBtn: 'Re-scan',
+    verifyBtn: 'Verify',
+    scoreExcellent: 'Excellent',
+    scoreGood: 'Good',
+    scoreFair: 'Fair',
+    scoreRisky: 'Risky',
 
-    // A11y labels
+    // Abundance Fountain
+    fountainTitle: 'Abundance Fountain',
+    fountainSub: 'Micro-Savings, Yield and Mutual Credit Backing',
+    savedBalance: 'Collateral Savings Balance',
+    yieldGenerated: 'Yield Earned',
+    depositSavingsBtn: 'Deposit Savings',
+    withdrawFundsBtn: 'Withdraw Funds',
+    settleAllDebtBtn: 'Settle Credits with My Savings',
+
+    // Insurance Pool
+    insuranceVaultTitle: 'Mutual Guarantee Fund (Insurance Vault)',
+    insuranceStatusOk: 'Your insurance is up to date',
+    smartContractPda: 'Solana Smart Contract PDA',
+    viewInsurancesBtn: 'View insurance plans',
+    activePolicyTitle: 'Active Policy',
+    solanaActuarialTitle: 'Dynamic Actuarial Model',
+    solanaActuarialDesc: 'Policy premiums automatically adjust to the store default and collection score.',
+    claimInsuranceModalTitle: 'Claim Credit Default Insurance',
+
+    // New Fiado View
+    newFiadoTitle: 'New Credit for Neighbor',
+    amountInArs: 'Amount in Pesos (ARS)',
+    itemsDetailLabel: 'Items Description / Ticket',
+    generateQrFiadoBtn: 'Generate Credit QR for Neighbor',
+
+    // Modals & A11y
     closeModal: 'Close modal',
-    cameraAria: 'Open scanner or camera'
+    cameraAria: 'Open scanner or camera',
+    paymentMethodModalTitle: 'Settle Store Credit',
+    selectPaymentMethod: 'Select how you want to pay your balance:',
+    autoReconciled: 'Auto-reconciled',
+    cameraPhotoTicket: 'Receipt or Goods Photo',
+    immutableOnChain: 'Immutable on-chain',
+    cameraOptimizing: 'Optimizing and compressing photo...',
+    cameraMobileReady: 'Ensuring mobile performance and compatibility',
+    capturePhotoBtn: 'Take Photo',
+    cancelBtn: 'Cancel',
+    photoLoaded: 'Photo uploaded',
+    changePhoto: 'Change Photo',
+    takePhotoOrTicket: 'Take a photo of products or receipt',
+    avoidDisputes: 'Avoid disputes: customer sees exactly what was purchased',
+    openCameraBtn: 'Open Camera',
+    galleryBtn: 'Gallery',
+    quickDemo: 'Quick demo:'
   }
 };
