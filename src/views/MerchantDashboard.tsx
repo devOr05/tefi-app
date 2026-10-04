@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { FiadoRecord } from '../types/tefi';
-import { DollarSign, ShieldAlert, Users, Clock, AlertTriangle, CheckCircle, Image as ImageIcon, ChevronRight } from 'lucide-react';
+import { DollarSign, ShieldAlert, Users, Clock, AlertTriangle, CheckCircle, Image as ImageIcon, ChevronRight, Plus } from 'lucide-react';
 import { QrModal } from '../components/QrModal';
 import { RepayModal } from '../components/RepayModal';
 
@@ -43,9 +43,15 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
 
           <button
             onClick={onNavigateToNew}
-            className="bg-white text-emerald-800 text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs active:scale-95 transition-transform"
+            className="flex flex-col items-center group active:scale-95 transition-transform cursor-pointer"
           >
-            + Fiar
+            {/* Moneda Dorada con Signo Más (+) */}
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600 p-0.5 shadow-md shadow-emerald-950/40 border-2 border-yellow-200/90 flex items-center justify-center">
+              <div className="w-full h-full rounded-full border border-amber-600/30 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-500 shadow-inner">
+                <Plus className="w-6 h-6 text-white stroke-[3.5] drop-shadow-[0_1px_2px_rgba(120,53,15,0.6)]" />
+              </div>
+            </div>
+            <span className="text-[10px] font-black text-amber-200 mt-1 tracking-tight drop-shadow-xs">Fiar</span>
           </button>
         </div>
 
