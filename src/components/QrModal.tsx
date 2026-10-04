@@ -47,7 +47,8 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
     typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
       : 'https://tefi-app-virid.vercel.app';
-  const fiadoUrl = `${baseUrl}/?fiado=${encodeURIComponent(JSON.stringify(qrPayload))}`;
+  // URL compacta (<100 chars): crea un QR de cuadraditos grandes y gruesos para escaneo instantáneo
+  const fiadoUrl = `${baseUrl}/?f=${encodeURIComponent(fiado.id)}&m=${encodeURIComponent(fiado.merchantId)}&n=${encodeURIComponent(fiado.merchantName)}&ars=${fiado.amountArs}&usdc=${fiado.amountUsdc}&d=${encodeURIComponent(fiado.itemsDescription || 'Compra')}`;
 
   useEffect(() => {
     let isMounted = true;

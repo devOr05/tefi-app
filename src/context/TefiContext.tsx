@@ -215,6 +215,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const searchParams = new URLSearchParams(window.location.search);
       const fiadoParam = searchParams.get('fiado');
+      const fId = searchParams.get('f');
+
       if (fiadoParam) {
         const decoded = JSON.parse(decodeURIComponent(fiadoParam));
         if (decoded) {
@@ -228,6 +230,31 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setPendingFiadoFromUrl(payload);
           window.history.replaceState({}, document.title, window.location.pathname);
         }
+      } else if (fId) {
+        const ars = parseFloat(searchParams.get('ars') || '15000');
+        const usdc = parseFloat(searchParams.get('usdc') || (ars / 1615).toFixed(2));
+        const payload: FiadoQrPayload = {
+          protocol: 'tefi',
+          version: '1.0',
+          action: 'FIADO_REQUEST',
+          data: {
+            id: fId,
+            merchantId: searchParams.get('m') || 'merch-tito-01',
+            merchantName: decodeURIComponent(searchParams.get('n') || 'Almacén Don Tito'),
+            customerId: 'cust-matias-01',
+            customerName: 'Matías González',
+            amountArs: ars,
+            amountUsdc: usdc,
+            itemsDescription: decodeURIComponent(searchParams.get('d') || 'Compra de almacén'),
+            photoReceiptUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
+            createdAt: new Date().toISOString(),
+            dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+            nonce: 3
+          }
+        };
+        setRole('CUSTOMER');
+        setPendingFiadoFromUrl(payload);
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     } catch (e) {
       console.warn('Error al leer fiado desde URL:', e);

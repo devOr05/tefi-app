@@ -22,7 +22,37 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
   const parseScannedText = (decodedText: string): FiadoQrPayload | null => {
     try {
-      // Caso 1: Es una URL con parámetro ?fiado= o #fiado=
+      // Caso 1: URL compacta (?f=...&ars=...&usdc=...)
+      if (decodedText.includes('f=') || decodedText.includes('ars=') || decodedText.includes('usdc=')) {
+        const url = new URL(decodedText.startsWith('http') ? decodedText : `https://tefi.app/${decodedText}`);
+        const fId = url.searchParams.get('f') || `f-${Date.now().toString().slice(-4)}`;
+        const ars = parseFloat(url.searchParams.get('ars') || '15000');
+        const usdc = parseFloat(url.searchParams.get('usdc') || (ars / 1615).toFixed(2));
+        const merchantName = url.searchParams.get('n') || 'Almacén Don Tito';
+        const merchantId = url.searchParams.get('m') || 'merch-tito-01';
+        const itemsDescription = url.searchParams.get('d') || 'Compra de almacén';
+        return {
+          protocol: 'tefi',
+          version: '1.0',
+          action: 'FIADO_REQUEST',
+          data: {
+            id: fId,
+            merchantId,
+            merchantName: decodeURIComponent(merchantName),
+            customerId: 'cust-matias-01',
+            customerName: 'Matías González',
+            amountArs: ars,
+            amountUsdc: usdc,
+            itemsDescription: decodeURIComponent(itemsDescription),
+            photoReceiptUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
+            createdAt: new Date().toISOString(),
+            dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+            nonce: 3
+          }
+        };
+      }
+
+      // Caso 2: Es una URL con parámetro ?fiado= o #fiado=
       if (decodedText.includes('fiado=')) {
         const url = new URL(decodedText.startsWith('http') ? decodedText : `https://tefi.app/${decodedText}`);
         const fiadoParam = url.searchParams.get('fiado') || new URLSearchParams(url.hash.replace('#', '')).get('fiado');
@@ -38,7 +68,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         }
       }
 
-      // Caso 2: Es un JSON directo
+      // Caso 3: Es un JSON directo
       const parsed = JSON.parse(decodedText);
       if (parsed.protocol === 'tefi') return parsed;
       if (parsed.data && parsed.data.amountUsdc) {
@@ -89,14 +119,26 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
     setCameraError(null);
     try {
       if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode('tefi-qr-reader');
+        scannerRef.current = new Html5Qrcode('tefi-qr-reader', {
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          },
+          verbose: false
+        });
       }
+
+      // Escanear área amplia (85% del visor) para que nunca corte esquinas en pantallas
+      const qrboxCalc = (viewfinderWidth: number, viewfinderHeight: number) => {
+        const edge = Math.min(viewfinderWidth, viewfinderHeight);
+        const size = Math.floor(edge * 0.88);
+        return { width: size, height: size };
+      };
 
       await scannerRef.current.start(
         { facingMode: 'environment' },
         {
-          fps: 10,
-          qrbox: { width: 230, height: 230 },
+          fps: 15,
+          qrbox: qrboxCalc,
           aspectRatio: 1.0
         },
         (decodedText) => {
