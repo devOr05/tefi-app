@@ -151,10 +151,10 @@ export const CustomerLibretaView: React.FC = () => {
         </div>
       </div>
 
-      {/* Banner de Deuda Total */}
+      {/* Banner de Consumos Totales */}
       <div className="bg-gradient-to-r from-gray-950 via-[#18112c] to-gray-900 text-white rounded-3xl p-5 shadow-sm border border-purple-900/30 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
-        <span className="text-[11px] font-semibold text-purple-200/80 uppercase tracking-wider relative z-10">Tu Deuda Total en la Libreta</span>
+        <span className="text-[11px] font-semibold text-purple-200/80 uppercase tracking-wider relative z-10">Total de consumos en la libreta</span>
         <div className="flex items-baseline gap-2 mt-1 relative z-10">
           <span className="text-3xl font-extrabold tracking-tight text-white">${customer.currentDebt.toFixed(2)}</span>
           <span className="text-sm font-semibold text-emerald-400">USDC</span>
@@ -184,7 +184,7 @@ export const CustomerLibretaView: React.FC = () => {
           <div className="text-center py-6 glass-card rounded-3xl border border-gray-100 p-6">
             <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
             <p className="text-xs font-bold text-gray-800">¡Estás al día!</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">No tienes deudas pendientes en tu libreta.</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">No tienes consumos pendientes en tu libreta.</p>
           </div>
         ) : (
           activeFiados.map(f => (
