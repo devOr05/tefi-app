@@ -66,8 +66,8 @@ export const AbundanceFountainCard: React.FC = () => {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-sm">
-            <Droplets className="w-5 h-5 fill-white/80" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-xs">
+            <Coins className="w-5 h-5 text-amber-200 fill-amber-200/40" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
@@ -78,7 +78,8 @@ export const AbundanceFountainCard: React.FC = () => {
           </div>
         </div>
 
-        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60 shadow-2xs">
+        <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-50 via-amber-50 to-emerald-50 text-purple-900 border border-purple-200/70 shadow-2xs flex items-center gap-1">
+          <Zap className="w-2.5 h-2.5 text-purple-600 fill-purple-600" />
           ~7.4% APY
         </span>
       </div>

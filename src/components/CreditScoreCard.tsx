@@ -49,47 +49,52 @@ export const CreditScoreCard: React.FC = () => {
 
         <div className="flex flex-col items-end">
           <span className="text-[11px] text-gray-400 font-medium">Categoría</span>
-          <span className="text-xs font-bold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-full mt-0.5">
+          <span className="text-xs font-extrabold text-amber-900 bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border border-amber-300/80 px-2.5 py-0.5 rounded-full mt-0.5 flex items-center gap-1 shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
             Nivel {customer.tier}
           </span>
         </div>
       </div>
 
       {/* Identidad Digital DID & Reputación Portable */}
-      <div className="mt-4 bg-purple-50/70 rounded-2xl p-3 border border-purple-100/90">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <div className="mt-4 bg-purple-50/70 rounded-2xl p-3 border border-purple-100/90 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          {/* Lado izquierdo: Ícono + Identidad DID */}
+          <div className="flex items-center gap-2 min-w-0">
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${customer.isDidVerified ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
               <Fingerprint className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-purple-950">Identidad Única (DID)</span>
-                {customer.isDidVerified ? (
-                  <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" /> 1 Persona = 1 Cuenta
-                  </span>
-                ) : (
-                  <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
-                    Pendiente
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] text-purple-700/90 font-mono truncate max-w-[170px]">
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-purple-950 block leading-tight">Identidad DID</span>
+              <p className="text-[10px] text-purple-700/80 font-mono truncate max-w-[130px] sm:max-w-[180px]">
                 {customer.isDidVerified ? (customer.didUri || `did:sol:devnet:${customer.walletAddress}`) : 'Sin validar biométricamente'}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setIsDidModalOpen(true)}
-            className="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-xs transition-colors shrink-0"
-          >
-            {customer.isDidVerified ? 'Re-escanear' : 'Verificar'}
-          </button>
+          {/* Lado derecho: Badge y Botón perfectamente alineados al mismo nivel horizontal */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {customer.isDidVerified ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-1 rounded-xl shrink-0 h-7 border border-emerald-200/60">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                <span>1 Persona = 1 Cuenta</span>
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-1 rounded-xl shrink-0 h-7 flex items-center border border-amber-200/60">
+                Pendiente
+              </span>
+            )}
+
+            <button
+              onClick={() => setIsDidModalOpen(true)}
+              className="text-[11px] font-bold px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white shadow-xs transition-all shrink-0 h-7 flex items-center justify-center cursor-pointer"
+            >
+              {customer.isDidVerified ? 'Re-escanear' : 'Verificar'}
+            </button>
+          </div>
         </div>
 
-        <p className="text-[10px] text-purple-800/80 mt-2 border-t border-purple-100/80 pt-1.5">
+        <p className="text-[10px] text-purple-800/80 border-t border-purple-100/80 pt-1.5">
           🔒 <strong>Portabilidad Nacional:</strong> Tu historial te acompaña a cualquier almacén del país. No se puede falsificar ni evadir deudas.
         </p>
       </div>

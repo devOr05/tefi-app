@@ -112,11 +112,11 @@ export const Header: React.FC = () => {
           <button
             onClick={handleAirdropClick}
             disabled={isAirdropLoading}
-            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold text-[10px] hover:bg-purple-100 disabled:opacity-50 transition-colors border border-purple-200"
+            className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-50 via-amber-50/50 to-purple-50 text-purple-900 font-bold text-[10px] hover:from-purple-100 hover:to-amber-100 disabled:opacity-50 transition-all border border-purple-200/90 shadow-2xs cursor-pointer"
             title="Solicitar 1 SOL gratuito para gas en Devnet"
           >
-            <Coins className="w-2.5 h-2.5 text-purple-600" />
-            <span>{isAirdropLoading ? 'Airdrop...' : '+1 SOL'}</span>
+            <span className="w-3 h-3 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[8px] font-black leading-none shadow-2xs">+</span>
+            <span>{isAirdropLoading ? 'Airdrop...' : '1 SOL'}</span>
           </button>
         </div>
       </div>

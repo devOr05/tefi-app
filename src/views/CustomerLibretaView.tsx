@@ -152,13 +152,14 @@ export const CustomerLibretaView: React.FC = () => {
       </div>
 
       {/* Banner de Deuda Total */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-3xl p-5 shadow-sm">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Tu Deuda Total en la Libreta</span>
-        <div className="flex items-baseline gap-2 mt-1">
-          <span className="text-3xl font-extrabold tracking-tight">${customer.currentDebt.toFixed(2)}</span>
+      <div className="bg-gradient-to-r from-gray-950 via-[#18112c] to-gray-900 text-white rounded-3xl p-5 shadow-sm border border-purple-900/30 relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+        <span className="text-[11px] font-semibold text-purple-200/80 uppercase tracking-wider relative z-10">Tu Deuda Total en la Libreta</span>
+        <div className="flex items-baseline gap-2 mt-1 relative z-10">
+          <span className="text-3xl font-extrabold tracking-tight text-white">${customer.currentDebt.toFixed(2)}</span>
           <span className="text-sm font-semibold text-emerald-400">USDC</span>
         </div>
-        <p className="text-[11px] text-gray-400 mt-1">
+        <p className="text-[11px] text-gray-400 mt-1 relative z-10">
           Aprox. ${(customer.currentDebt * rate).toLocaleString('es-AR')} ARS en {activeFiados.length} comercios ({exchangeRate.source})
         </p>
       </div>
