@@ -34,9 +34,7 @@ export const Header: React.FC = () => {
       <div className="max-w-md mx-auto flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl gradient-tefi flex items-center justify-center text-white font-extrabold text-lg shadow-xs">
-            T
-          </div>
+          <img src="/icon.svg" alt="Tefi Logo" className="w-8 h-8 rounded-xl object-contain shadow-xs border border-gray-100 bg-white" />
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-base tracking-tight text-gray-900">tefi</span>
