@@ -143,7 +143,7 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
 
           <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg w-full">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>QR P2P Directo • Sin Intermediarios</span>
+            <span>QR Oficial On-Chain • Solana</span>
           </div>
         </div>
 

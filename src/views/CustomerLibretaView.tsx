@@ -51,12 +51,7 @@ export const CustomerLibretaView: React.FC = () => {
               <QrCode className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded-full">
-                  P2P Sin Base de Datos
-                </span>
-              </div>
-              <h3 className="text-sm font-black text-white mt-0.5">¿En el Almacén?</h3>
+              <h3 className="text-sm font-black text-white">¿En el Almacén?</h3>
               <p className="text-[11px] text-emerald-100 font-medium">
                 Escaneá el QR de Don Tito para recibir y firmar tu fiado
               </p>
