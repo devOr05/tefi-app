@@ -2,44 +2,35 @@ import React from 'react';
 import { useTefi } from '../context/TefiContext';
 import { Store, Plus, ShieldAlert, BookOpen, Award } from 'lucide-react';
 
-// Icono personalizado de 3 monedas creciendo de menor a mayor (Score & Límite)
-const GrowingCoinsIcon: React.FC<{ className?: string; isActive?: boolean }> = ({ className = "w-5 h-5", isActive }) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
-    {/* Moneda 1 (Pequeña - Abajo Izquierda) */}
-    <circle
-      cx="4.5"
-      cy="17"
-      r="3"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      fill={isActive ? "currentColor" : "none"}
-      fillOpacity={isActive ? "0.2" : "0"}
-    />
-    <path d="M4.5 15.6V18.4 M3.1 17H5.9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+// Icono de 3 monedas doradas amarillas en la misma línea creciendo de menor a mayor (Score & Límite)
+const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ className = "w-7 h-5" }) => (
+  <svg viewBox="0 0 28 20" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="scoreGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FDE047"/>
+        <stop offset="45%" stop-color="#F59E0B"/>
+        <stop offset="100%" stop-color="#D97706"/>
+      </linearGradient>
+      <filter id="scoreCoinShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#78350F" flood-opacity="0.30"/>
+      </filter>
+    </defs>
+    <g filter="url(#scoreCoinShadow)">
+      {/* Moneda 1 (Chica - Izquierda) */}
+      <circle cx="5" cy="10" r="3.4" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="0.8"/>
+      <path d="M5 8.3V11.7 M3.3 10H6.7" stroke="#78350F" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M5 8.3V11.7 M3.3 10H6.7" stroke="#FFFFFF" strokeWidth="0.9" strokeLinecap="round"/>
 
-    {/* Moneda 2 (Mediana - Centro) */}
-    <circle
-      cx="11.5"
-      cy="12"
-      r="4.2"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      fill={isActive ? "currentColor" : "none"}
-      fillOpacity={isActive ? "0.2" : "0"}
-    />
-    <path d="M11.5 10.2V13.8 M9.7 12H13.3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      {/* Moneda 2 (Mediana - Centro) */}
+      <circle cx="12.5" cy="10" r="4.8" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="0.9"/>
+      <path d="M12.5 7.8V12.2 M10.3 10H14.7" stroke="#78350F" strokeWidth="1.9" strokeLinecap="round"/>
+      <path d="M12.5 7.8V12.2 M10.3 10H14.7" stroke="#FFFFFF" strokeWidth="1.1" strokeLinecap="round"/>
 
-    {/* Moneda 3 (Grande - Arriba Derecha) */}
-    <circle
-      cx="18.5"
-      cy="6.5"
-      r="5"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      fill={isActive ? "currentColor" : "none"}
-      fillOpacity={isActive ? "0.2" : "0"}
-    />
-    <path d="M18.5 4.3V8.7 M16.3 6.5H20.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Moneda 3 (Grande - Derecha) */}
+      <circle cx="21" cy="10" r="6.6" fill="url(#scoreGoldGrad)" stroke="#FEF08A" strokeWidth="1.0"/>
+      <path d="M21 7.0V13.0 M18.0 10H24.0" stroke="#78350F" strokeWidth="2.2" strokeLinecap="round"/>
+      <path d="M21 7.0V13.0 M18.0 10H24.0" stroke="#FFFFFF" strokeWidth="1.3" strokeLinecap="round"/>
+    </g>
   </svg>
 );
 
@@ -107,7 +98,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                 currentTab === 'credit' ? 'text-blue-600 font-bold' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <GrowingCoinsIcon className="w-5 h-5" isActive={currentTab === 'credit'} />
+              <GrowingGoldCoinsIcon className="w-7 h-5" />
               <span className="text-[10px]">Score & Límite</span>
             </button>
 
