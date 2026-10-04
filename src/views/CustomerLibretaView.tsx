@@ -1,23 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { CreditScoreCard } from '../components/CreditScoreCard';
 import { AbundanceFountainCard } from '../components/AbundanceFountainCard';
 import { RepayModal } from '../components/RepayModal';
 import { LinkedAccountsModal } from '../components/LinkedAccountsModal';
-import { FiadoRecord } from '../types/tefi';
-import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles, Link2 } from 'lucide-react';
+import { QrScannerModal } from '../components/QrScannerModal';
+import { FiadoConfirmationModal } from '../components/FiadoConfirmationModal';
+import { FiadoRecord, FiadoQrPayload } from '../types/tefi';
+import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles, Link2, Camera, QrCode, ArrowDownRight } from 'lucide-react';
 import { getSolanaExplorerUrl } from '../solana/connection';
 
 export const CustomerLibretaView: React.FC = () => {
-  const { customer, fiados, repayFiado, exchangeRate } = useTefi();
+  const { customer, fiados, repayFiado, exchangeRate, pendingFiadoFromUrl, clearPendingFiadoFromUrl } = useTefi();
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const [justPaidId, setJustPaidId] = useState<string | null>(null);
+  const [justAcceptedFiado, setJustAcceptedFiado] = useState<FiadoRecord | null>(null);
   const [payingFiado, setPayingFiado] = useState<FiadoRecord | null>(null);
   const [isLinkedAccountsModalOpen, setIsLinkedAccountsModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [pendingScannedFiado, setPendingScannedFiado] = useState<FiadoQrPayload | null>(null);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const pastFiados = fiados.filter(f => f.status === 'PAID');
   const rate = exchangeRate.rate || 1615;
+
+  // Si se abrió la app con un enlace de fiado (?fiado=...), abrir el modal de confirmación
+  useEffect(() => {
+    if (pendingFiadoFromUrl) {
+      setPendingScannedFiado(pendingFiadoFromUrl);
+      clearPendingFiadoFromUrl();
+    }
+  }, [pendingFiadoFromUrl, clearPendingFiadoFromUrl]);
 
   const handlePay = (fiadoId: string) => {
     const res = repayFiado(fiadoId);
@@ -29,6 +42,55 @@ export const CustomerLibretaView: React.FC = () => {
 
   return (
     <div className="space-y-4 pb-20">
+      {/* Botón Principal: Escanear QR de Fiado de Don Tito (P2P Óptico entre Celulares) */}
+      <div className="rounded-3xl p-4 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-lg shadow-emerald-700/20 relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="flex items-center justify-between gap-3 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs text-white flex items-center justify-center shrink-0 border border-white/25">
+              <QrCode className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded-full">
+                  P2P Sin Base de Datos
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-white mt-0.5">¿En el Almacén?</h3>
+              <p className="text-[11px] text-emerald-100 font-medium">
+                Escaneá el QR de Don Tito para recibir y firmar tu fiado
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="px-4 py-3 rounded-2xl bg-white text-emerald-900 font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <Camera className="w-4 h-4 text-emerald-700" />
+            <span>Escanear QR</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Alerta de Fiado Aceptado */}
+      {justAcceptedFiado && (
+        <div className="p-3.5 rounded-2xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-between shadow-lg shadow-emerald-600/25 animate-in slide-in-from-top">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
+            <span>
+              ¡Fiado de ${justAcceptedFiado.amountArs.toLocaleString('es-AR')} ARS ({justAcceptedFiado.amountUsdc} USDC) registrado en tu libreta!
+            </span>
+          </div>
+          <button
+            onClick={() => setJustAcceptedFiado(null)}
+            className="text-white/80 hover:text-white p-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Score Card del Cliente */}
       <CreditScoreCard />
 
@@ -279,6 +341,29 @@ export const CustomerLibretaView: React.FC = () => {
         isOpen={isLinkedAccountsModalOpen}
         onClose={() => setIsLinkedAccountsModalOpen(false)}
       />
+
+      {/* Modal Lector QR con Cámara Real */}
+      <QrScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={(payload) => {
+          setIsScannerOpen(false);
+          setPendingScannedFiado(payload);
+        }}
+      />
+
+      {/* Modal de Confirmación y Firma On-Chain del Fiado */}
+      {pendingScannedFiado && (
+        <FiadoConfirmationModal
+          payload={pendingScannedFiado}
+          onClose={() => setPendingScannedFiado(null)}
+          onConfirmed={(newFiado) => {
+            setPendingScannedFiado(null);
+            setJustAcceptedFiado(newFiado);
+            setTimeout(() => setJustAcceptedFiado(null), 6000);
+          }}
+        />
+      )}
     </div>
   );
 };

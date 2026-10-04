@@ -83,3 +83,25 @@ export interface WebhookNotification {
   timestamp: string;
 }
 
+export interface FiadoQrPayload {
+  protocol: 'tefi';
+  version: '1.0';
+  action: 'FIADO_REQUEST';
+  data: {
+    id: string;
+    merchantId: string;
+    merchantName: string;
+    merchantAddress?: string;
+    customerId?: string;
+    customerName?: string;
+    amountArs: number;
+    amountUsdc: number;
+    itemsDescription: string;
+    photoReceiptUrl: string;
+    createdAt: string;
+    dueDate: string;
+    nonce?: number;
+    txSignature?: string;
+  };
+}
+

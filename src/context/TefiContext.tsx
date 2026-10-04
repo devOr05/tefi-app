@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier, PaymentMethod, WebhookNotification } from '../types/tefi';
+import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier, PaymentMethod, WebhookNotification, FiadoQrPayload } from '../types/tefi';
 import {
   generateMockSolanaSignature,
   getOrCreateRoleKeypair,
@@ -23,6 +23,9 @@ interface TefiContextType {
   webhookNotification: WebhookNotification | null;
   dismissWebhookNotification: () => void;
   createFiado: (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => { success: boolean; error?: string; fiado?: FiadoRecord };
+  acceptScannedFiado: (payload: FiadoQrPayload) => { success: boolean; error?: string; fiado?: FiadoRecord };
+  pendingFiadoFromUrl: FiadoQrPayload | null;
+  clearPendingFiadoFromUrl: () => void;
   repayFiado: (fiadoId: string, paymentMethod?: PaymentMethod) => { success: boolean; signature?: string };
   claimInsurance: (fiadoId: string) => { success: boolean; payoutAmount?: number; signature?: string };
   requestAirdrop: () => Promise<{ success: boolean; signature?: string; error?: string }>;
@@ -197,9 +200,38 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [solanaBalance, setSolanaBalance] = useState<number>(0);
   const [isAirdropLoading, setIsAirdropLoading] = useState<boolean>(false);
   const [webhookNotification, setWebhookNotification] = useState<WebhookNotification | null>(null);
+  const [pendingFiadoFromUrl, setPendingFiadoFromUrl] = useState<FiadoQrPayload | null>(null);
 
   const dismissWebhookNotification = useCallback(() => {
     setWebhookNotification(null);
+  }, []);
+
+  const clearPendingFiadoFromUrl = useCallback(() => {
+    setPendingFiadoFromUrl(null);
+  }, []);
+
+  // Detectar fiado compartido por URL / QR nativo al iniciar
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const fiadoParam = searchParams.get('fiado');
+      if (fiadoParam) {
+        const decoded = JSON.parse(decodeURIComponent(fiadoParam));
+        if (decoded) {
+          const payload: FiadoQrPayload = decoded.protocol === 'tefi' ? decoded : {
+            protocol: 'tefi',
+            version: '1.0',
+            action: 'FIADO_REQUEST',
+            data: decoded.data || decoded
+          };
+          setRole('CUSTOMER');
+          setPendingFiadoFromUrl(payload);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    } catch (e) {
+      console.warn('Error al leer fiado desde URL:', e);
+    }
   }, []);
 
   // Consultar Oráculo en vivo
@@ -326,6 +358,69 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       totalSalesUsdc: +(prev.totalSalesUsdc + data.amountUsdc).toFixed(2),
       fiadoNonce: currentNonce + 1
     }));
+
+    return { success: true, fiado: newFiado };
+  };
+
+  // 1b. Cliente acepta un Fiado escaneado via QR P2P (Lectura óptica directa entre celulares)
+  const acceptScannedFiado = (payload: FiadoQrPayload) => {
+    const data = payload.data;
+    if (!data || !data.amountUsdc || data.amountUsdc <= 0) {
+      return { success: false, error: 'Datos del fiado corruptos o incompletos.' };
+    }
+
+    const availableLimit = customer.maxCreditLimit - customer.currentDebt;
+    if (data.amountUsdc > availableLimit) {
+      return {
+        success: false,
+        error: `Supera tu límite disponible (${availableLimit.toFixed(1)} USDC). Solicitado: ${data.amountUsdc.toFixed(1)} USDC.`
+      };
+    }
+
+    // Evitar duplicar si ya fue aceptado
+    const alreadyExists = fiados.some(f => f.id === data.id && f.status === 'ACTIVE');
+    if (alreadyExists) {
+      return { success: false, error: 'Este fiado ya se encuentra registrado y activo en tu libreta.' };
+    }
+
+    const txSig = data.txSignature || generateMockSolanaSignature();
+
+    const newFiado: FiadoRecord = {
+      id: data.id,
+      merchantId: data.merchantId || merchant.id,
+      merchantName: data.merchantName || 'Almacén Don Tito',
+      customerId: customer.id,
+      customerName: customer.name,
+      amountUsdc: data.amountUsdc,
+      amountArs: data.amountArs,
+      itemsDescription: data.itemsDescription || 'Compra de almacén',
+      photoReceiptUrl: data.photoReceiptUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
+      createdAt: data.createdAt || new Date().toISOString(),
+      dueDate: data.dueDate || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'ACTIVE',
+      nonce: data.nonce ?? 0,
+      txSignature: txSig
+    };
+
+    setFiados(prev => [newFiado, ...prev.filter(f => f.id !== newFiado.id)]);
+
+    setCustomer(prev => ({
+      ...prev,
+      currentDebt: +(prev.currentDebt + newFiado.amountUsdc).toFixed(2)
+    }));
+
+    // Transmitir evento on-chain de confirmación de fiado en Solana Devnet con la wallet del cliente
+    broadcastSolanaFiadoEvent(customerKeypair, {
+      type: 'NEW_FIADO',
+      fiadoId: newFiado.id,
+      amountUsdc: newFiado.amountUsdc
+    }).then(realSig => {
+      if (realSig) {
+        setFiados(curr =>
+          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
+        );
+      }
+    });
 
     return { success: true, fiado: newFiado };
   };
@@ -723,6 +818,9 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         solanaBalance,
         isAirdropLoading,
         createFiado,
+        acceptScannedFiado,
+        pendingFiadoFromUrl,
+        clearPendingFiadoFromUrl,
         repayFiado,
         claimInsurance,
         requestAirdrop: handleAirdrop,
