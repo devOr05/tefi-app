@@ -14,9 +14,9 @@ export const InsurancePoolView: React.FC = () => {
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-purple-200">
             Smart Contract PDA en Solana
           </span>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>Reserva Activa</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[11px] font-bold text-emerald-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Tu seguro está al día</span>
           </div>
         </div>
 
@@ -26,6 +26,22 @@ export const InsurancePoolView: React.FC = () => {
             <span className="text-3xl font-extrabold tracking-tight">${insurancePool.totalBalanceUsdc.toLocaleString('es-AR')}</span>
             <span className="text-sm font-semibold text-purple-300">USDC</span>
           </div>
+        </div>
+
+        {/* Tarjeta de Estado: Tu seguro está al día */}
+        <div className="mt-3.5 flex items-center justify-between bg-white/10 backdrop-blur-md rounded-2xl px-3.5 py-2.5 border border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shadow-inner">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-white block">Tu seguro está al día</span>
+              <span className="text-[10px] text-purple-200">Cobertura activa ante impagos y siniestros</span>
+            </div>
+          </div>
+          <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/25 border border-emerald-400/35 px-2.5 py-0.5 rounded-full">
+            100% ACTIVO
+          </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-purple-800/60 text-xs">

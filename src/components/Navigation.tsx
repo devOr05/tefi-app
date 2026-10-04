@@ -1,6 +1,47 @@
 import React from 'react';
 import { useTefi } from '../context/TefiContext';
-import { Store, Plus, ShieldAlert, BookOpen, Award, TrendingUp } from 'lucide-react';
+import { Store, Plus, ShieldAlert, BookOpen, Award } from 'lucide-react';
+
+// Icono personalizado de 3 monedas creciendo de menor a mayor (Score & Límite)
+const GrowingCoinsIcon: React.FC<{ className?: string; isActive?: boolean }> = ({ className = "w-5 h-5", isActive }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    {/* Moneda 1 (Pequeña - Abajo Izquierda) */}
+    <circle
+      cx="4.5"
+      cy="17"
+      r="3"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      fill={isActive ? "currentColor" : "none"}
+      fillOpacity={isActive ? "0.2" : "0"}
+    />
+    <path d="M4.5 15.6V18.4 M3.1 17H5.9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+
+    {/* Moneda 2 (Mediana - Centro) */}
+    <circle
+      cx="11.5"
+      cy="12"
+      r="4.2"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      fill={isActive ? "currentColor" : "none"}
+      fillOpacity={isActive ? "0.2" : "0"}
+    />
+    <path d="M11.5 10.2V13.8 M9.7 12H13.3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+
+    {/* Moneda 3 (Grande - Arriba Derecha) */}
+    <circle
+      cx="18.5"
+      cy="6.5"
+      r="5"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      fill={isActive ? "currentColor" : "none"}
+      fillOpacity={isActive ? "0.2" : "0"}
+    />
+    <path d="M18.5 4.3V8.7 M16.3 6.5H20.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
 
 interface NavigationProps {
   currentTab: string;
@@ -35,7 +76,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                   <Plus className="w-7 h-7 text-white stroke-[3.5] drop-shadow-[0_1px_2px_rgba(120,53,15,0.6)]" />
                 </div>
               </div>
-              <span className="text-[10px] font-black text-amber-700 mt-1 tracking-tight">Fiar Ahora</span>
+              <span className="text-[10px] font-black text-amber-700 mt-1 tracking-tight">Fiar</span>
             </button>
 
             <button
@@ -66,7 +107,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                 currentTab === 'credit' ? 'text-blue-600 font-bold' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <TrendingUp className="w-5 h-5" />
+              <GrowingCoinsIcon className="w-5 h-5" isActive={currentTab === 'credit'} />
               <span className="text-[10px]">Score & Límite</span>
             </button>
 

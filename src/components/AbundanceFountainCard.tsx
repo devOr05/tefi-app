@@ -66,9 +66,11 @@ export const AbundanceFountainCard: React.FC = () => {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 via-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-xs">
-            <Coins className="w-5 h-5 text-amber-200 fill-amber-200/40" />
-          </div>
+          <img
+            src="/icon.svg"
+            alt="Fuente de la Abundancia"
+            className="w-10 h-10 rounded-2xl shadow-xs border border-emerald-200/60 object-cover"
+          />
           <div>
             <div className="flex items-center gap-1.5">
               <h3 className="text-sm font-extrabold text-gray-900 tracking-tight">Fuente de la Abundancia</h3>
@@ -213,9 +215,11 @@ export const AbundanceFountainCard: React.FC = () => {
             </button>
 
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <Droplets className="w-4 h-4 fill-emerald-600" />
-              </div>
+              <img
+                src="/icon.svg"
+                alt="Fuente de la Abundancia"
+                className="w-8 h-8 rounded-xl shadow-xs border border-emerald-200/60 object-cover"
+              />
               <div>
                 <h4 className="text-sm font-extrabold text-gray-900">Fuente de la Abundancia</h4>
                 <p className="text-[10px] text-gray-400">Micro-ahorro con rendimiento en Solana</p>

@@ -142,9 +142,11 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
-                        <Droplets className="w-4 h-4 fill-white" />
-                      </div>
+                      <img
+                        src="/icon.svg"
+                        alt="Fuente de la Abundancia"
+                        className="w-8 h-8 rounded-xl shadow-xs border border-purple-200/60 object-cover"
+                      />
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-bold text-gray-900">Fuente de la Abundancia</span>
