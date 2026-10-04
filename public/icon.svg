@@ -10,22 +10,22 @@
 
     <!-- Gradiente Monedas Oro y Abundancia de Alto Contraste -->
     <linearGradient id="goldGradWhite" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="0%" stop-color="#FDE047"/>
       <stop offset="40%" stop-color="#F59E0B"/>
       <stop offset="100%" stop-color="#B45309"/>
     </linearGradient>
 
-    <!-- Sombra suave para fondo blanco -->
+    <!-- Sombras suaves para fondo blanco -->
     <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
       <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.12"/>
     </filter>
 
     <filter id="coinShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#78350F" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#78350F" flood-opacity="0.25"/>
     </filter>
   </defs>
 
-  <!-- FONDO BLANCO PURO (Como solicitado para integrar perfecto con la app) -->
+  <!-- FONDO BLANCO PURO -->
   <rect width="512" height="512" rx="128" fill="#FFFFFF"/>
   <rect width="508" height="508" x="2" y="2" rx="126" stroke="#E2E8F0" stroke-width="2"/>
 
@@ -38,33 +38,33 @@
     <path d="M232 174 H280 C287 174 293 179 291 186 L272 295 C271 301 265 306 259 306 H245 C239 306 234 301 235 295 L247 186 C248 179 253 174 232 174 Z" fill="url(#solGradWhite)"/>
   </g>
 
-  <!-- BASE DE LA ABUNDANCIA: CASCADA DE MONEDAS CON TILDE CHECK CADA UNA -->
+  <!-- BASE DE LA ABUNDANCIA: CASCADA DE MONEDAS CON SIGNO MÁS (+) CADA UNA -->
   
-  <!-- Moneda Izquierda con Tilde -->
+  <!-- Moneda Izquierda con Signo Más (+) -->
   <g filter="url(#coinShadow)">
     <circle cx="160" cy="385" r="44" fill="url(#goldGradWhite)" stroke="#FEF08A" stroke-width="3"/>
     <circle cx="160" cy="385" r="36" fill="none" stroke="#78350F" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.35"/>
-    <!-- Tilde blanca nítida -->
-    <path d="M144 385 L155 396 L176 374" stroke="#78350F" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M144 385 L155 396 L176 374" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Signo Más (+) Blanco con Reborde Contraste -->
+    <path d="M144 385 H176 M160 369 V401" stroke="#78350F" stroke-width="7" stroke-linecap="round"/>
+    <path d="M144 385 H176 M160 369 V401" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round"/>
   </g>
 
-  <!-- Moneda Derecha con Tilde -->
+  <!-- Moneda Derecha con Signo Más (+) -->
   <g filter="url(#coinShadow)">
     <circle cx="352" cy="385" r="44" fill="url(#goldGradWhite)" stroke="#FEF08A" stroke-width="3"/>
     <circle cx="352" cy="385" r="36" fill="none" stroke="#78350F" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.35"/>
-    <!-- Tilde blanca nítida -->
-    <path d="M336 385 L347 396 L368 374" stroke="#78350F" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M336 385 L347 396 L368 374" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Signo Más (+) Blanco con Reborde Contraste -->
+    <path d="M336 385 H368 M352 369 V401" stroke="#78350F" stroke-width="7" stroke-linecap="round"/>
+    <path d="M336 385 H368 M352 369 V401" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round"/>
   </g>
 
-  <!-- Moneda Central Principal al Frente (Más grande, con Tilde de Confirmación) -->
+  <!-- Moneda Central Principal al Frente (Más grande, con Signo Más (+) de Fiar / Abundancia) -->
   <g filter="url(#coinShadow)">
     <circle cx="256" cy="365" r="54" fill="url(#goldGradWhite)" stroke="#FEF08A" stroke-width="4"/>
     <circle cx="256" cy="365" r="44" fill="none" stroke="#78350F" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/>
-    <!-- Tilde blanca nítida -->
-    <path d="M236 365 L250 379 L277 350" stroke="#78350F" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M236 365 L250 379 L277 350" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Signo Más (+) Principal -->
+    <path d="M234 365 H278 M256 343 V387" stroke="#78350F" stroke-width="9" stroke-linecap="round"/>
+    <path d="M234 365 H278 M256 343 V387" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round"/>
   </g>
 
   <!-- Pequeño destello cian de Solana en la esquina superior derecha -->

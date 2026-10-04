@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTefi } from '../context/TefiContext';
-import { Store, PlusCircle, ShieldAlert, BookOpen, Award, TrendingUp } from 'lucide-react';
+import { Store, Plus, ShieldAlert, BookOpen, Award, TrendingUp } from 'lucide-react';
 
 interface NavigationProps {
   currentTab: string;
@@ -27,12 +27,15 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
 
             <button
               onClick={() => onTabChange('new-fiado')}
-              className="flex flex-col items-center -mt-5"
+              className="flex flex-col items-center -mt-5 group"
             >
-              <div className="w-12 h-12 rounded-full gradient-tefi text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform">
-                <PlusCircle className="w-6 h-6" />
+              {/* Moneda Dorada con Signo Más (+) */}
+              <div className="w-13 h-13 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/35 border-2 border-yellow-200/90 active:scale-95 transition-all flex items-center justify-center relative">
+                <div className="w-full h-full rounded-full border border-amber-600/30 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-500 shadow-inner">
+                  <Plus className="w-7 h-7 text-white stroke-[3.5] drop-shadow-[0_1px_2px_rgba(120,53,15,0.6)]" />
+                </div>
               </div>
-              <span className="text-[10px] font-bold text-tefi-primary mt-1">Fiar Ahora</span>
+              <span className="text-[10px] font-black text-amber-700 mt-1 tracking-tight">Fiar Ahora</span>
             </button>
 
             <button
