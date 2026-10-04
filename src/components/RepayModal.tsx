@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiadoRecord, PaymentMethod } from '../types/tefi';
 import { useTefi } from '../context/TefiContext';
-import { X, Check, Copy, ArrowRight, ShieldCheck, Zap, Sparkles, Building, Banknote, Wallet, ExternalLink, Droplets } from 'lucide-react';
+import { X, Check, Copy, ArrowRight, ShieldCheck, Zap, Sparkles, Building, Banknote, Wallet, ExternalLink, Droplets, Info } from 'lucide-react';
 
 interface RepayModalProps {
   isOpen: boolean;
@@ -22,7 +22,17 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
   if (!isOpen || !fiado) return null;
 
   const rate = exchangeRate.rate || 1615;
-  const calculatedArs = Math.round(fiado.amountUsdc * rate);
+  const baseUsdc = fiado.amountUsdc;
+  const baseArs = fiado.amountArs || Math.round(baseUsdc * rate);
+
+  // Comisión mínima pautada (1%): incluye costo de red Solana ($0.00025 on-chain) + mantenimiento de la app
+  const feeRate = 0.01;
+  const feeUsdc = +(baseUsdc * feeRate).toFixed(2);
+  const feeArs = Math.round(baseArs * feeRate);
+
+  const totalFinalUsdc = +(baseUsdc + feeUsdc).toFixed(2);
+  const totalFinalArs = baseArs + feeArs;
+  const calculatedArs = totalFinalArs;
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -105,22 +115,45 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               </p>
             </div>
 
-            {/* Monto Card */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-4 shadow-sm">
-              <div className="flex justify-between items-baseline">
+            {/* Monto Card Desglosado con Comisión Mínima */}
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-4 shadow-sm space-y-2.5">
+              <div className="flex justify-between items-baseline border-b border-gray-700/60 pb-2">
                 <div>
-                  <span className="text-[11px] text-gray-400 font-medium">Monto a abonar</span>
-                  <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-2xl font-extrabold tracking-tight">${fiado.amountUsdc.toFixed(2)}</span>
-                    <span className="text-xs font-bold text-emerald-400">USDC</span>
+                  <span className="text-[10px] text-gray-400 font-medium">Subtotal Productos</span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-xs font-bold text-gray-200">${baseUsdc.toFixed(2)} USDC</span>
+                    <span className="text-[10px] text-gray-400">(${baseArs.toLocaleString('es-AR')} ARS)</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[11px] text-gray-400 font-medium">En pesos (Oráculo)</span>
-                  <p className="text-base font-bold text-white mt-0.5">
-                    ${calculatedArs.toLocaleString('es-AR')} <span className="text-xs text-gray-400">ARS</span>
+                  <span className="text-[10px] text-emerald-400 font-semibold">Comisión Red + App (1%)</span>
+                  <p className="text-xs font-bold text-emerald-300 mt-0.5">
+                    +${feeUsdc.toFixed(2)} USDC <span className="text-[10px] text-emerald-400/80">(+${feeArs.toLocaleString('es-AR')} ARS)</span>
                   </p>
                 </div>
+              </div>
+
+              <div className="flex justify-between items-baseline pt-0.5">
+                <div>
+                  <span className="text-[11px] text-gray-300 font-bold uppercase tracking-wider">Monto Final a Abonar</span>
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <span className="text-2xl font-black tracking-tight text-white">${totalFinalUsdc.toFixed(2)}</span>
+                    <span className="text-xs font-extrabold text-emerald-400">USDC</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-gray-400 font-medium">Total en Pesos</span>
+                  <p className="text-base font-black text-emerald-300 mt-0.5">
+                    ${totalFinalArs.toLocaleString('es-AR')} <span className="text-xs text-gray-300">ARS</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-1.5 border-t border-gray-700/50 flex items-start gap-1.5 text-[10px] text-gray-400 leading-snug">
+                <Info className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <p>
+                  <strong>Comisión mínima pautada (1%):</strong> Cubre el costo de transacción de la red Solana y el mantenimiento de la app. Ya se encuentra calculada en el monto final.
+                </p>
               </div>
             </div>
 
@@ -390,7 +423,7 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               </span>
               <h3 className="text-lg font-black text-gray-900 mt-2">Fiado Cancelado con Éxito</h3>
               <p className="text-xs text-gray-500 mt-1">
-                Abonaste <strong>${calculatedArs.toLocaleString('es-AR')} ARS</strong> ({fiado.amountUsdc} USDC) vía{' '}
+                Abonaste <strong>${totalFinalArs.toLocaleString('es-AR')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, con costo de red Solana y app incluidos) vía{' '}
                 <strong className="text-gray-800">
                   {selectedMethod === 'MERCADO_PAGO' && 'Mercado Pago'}
                   {selectedMethod === 'CUENTA_DNI' && 'Cuenta DNI'}

@@ -7,7 +7,7 @@ import { LinkedAccountsModal } from '../components/LinkedAccountsModal';
 import { QrScannerModal } from '../components/QrScannerModal';
 import { FiadoConfirmationModal } from '../components/FiadoConfirmationModal';
 import { FiadoRecord, FiadoQrPayload } from '../types/tefi';
-import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles, Link2, Camera, QrCode, ArrowDownRight } from 'lucide-react';
+import { BookOpen, Calendar, CheckCircle2, DollarSign, Image as ImageIcon, ExternalLink, Sparkles, Link2, Camera, QrCode, ArrowDownRight, Info } from 'lucide-react';
 import { getSolanaExplorerUrl } from '../solana/connection';
 
 export const CustomerLibretaView: React.FC = () => {
@@ -162,6 +162,10 @@ export const CustomerLibretaView: React.FC = () => {
         <p className="text-[11px] text-gray-400 mt-1 relative z-10">
           Aprox. ${(customer.currentDebt * rate).toLocaleString('es-AR')} ARS en {activeFiados.length} comercios ({exchangeRate.source})
         </p>
+        <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-white/10 text-[10px] text-purple-200/90 relative z-10">
+          <Info className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span>Al abonar, se calcula la comisión mínima (1%) por costo de red Solana y mantenimiento de la app.</span>
+        </div>
       </div>
 
       {justPaidId && (
@@ -213,8 +217,11 @@ export const CustomerLibretaView: React.FC = () => {
                 </div>
 
                 <div className="text-right">
-                  <span className="text-sm font-extrabold text-gray-900 block">${f.amountUsdc} USDC</span>
-                  <span className="text-[10px] text-gray-400">${f.amountArs.toLocaleString('es-AR')} ARS</span>
+                  <span className="text-sm font-extrabold text-gray-900 block">${(f.amountUsdc * 1.01).toFixed(2)} USDC</span>
+                  <span className="text-[10px] text-gray-400 block">${Math.round(f.amountArs * 1.01).toLocaleString('es-AR')} ARS</span>
+                  <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.2 rounded-md inline-block mt-0.5" title="Monto final con comisión de red Solana (1%) y mantenimiento de app">
+                    Final con 1% red & app
+                  </span>
                 </div>
               </div>
 

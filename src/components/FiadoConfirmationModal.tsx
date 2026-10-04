@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiadoQrPayload, FiadoRecord } from '../types/tefi';
 import { useTefi } from '../context/TefiContext';
-import { CheckCircle2, AlertTriangle, ShieldCheck, X, Store, Calendar, ArrowRight, Loader2, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ShieldCheck, X, Store, Calendar, ArrowRight, Loader2, Image as ImageIcon, Info } from 'lucide-react';
 import { getSolanaExplorerUrl } from '../solana/connection';
 
 interface FiadoConfirmationModalProps {
@@ -82,14 +82,24 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
               <h4 className="text-xs font-bold text-gray-900">{data.merchantName || 'Almacén Don Tito'}</h4>
             </div>
             <div className="text-right">
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Monto</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Monto Final a Abonar</span>
               <p className="text-base font-black text-emerald-700 leading-tight">
-                ${data.amountArs.toLocaleString('es-AR')} ARS
+                ${Math.round(data.amountArs * 1.01).toLocaleString('es-AR')} ARS
               </p>
               <span className="text-[10px] font-extrabold text-gray-500 font-mono">
-                ≈ {data.amountUsdc} USDC
+                ≈ {(data.amountUsdc * 1.01).toFixed(2)} USDC
+              </span>
+              <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200/70 px-1 py-0.2 rounded block mt-0.5">
+                Incluye 1% red & app
               </span>
             </div>
+          </div>
+
+          <div className="p-2 bg-emerald-50/80 border border-emerald-100/90 rounded-xl text-[10px] text-emerald-900 leading-snug flex items-start gap-1.5">
+            <Info className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+            <p>
+              <strong>Comisión Mínima Pautada (1%):</strong> Cubre el costo de red Solana ($0.00025) y el mantenimiento de la app. El monto final ya la incluye calculada.
+            </p>
           </div>
 
           <div>
