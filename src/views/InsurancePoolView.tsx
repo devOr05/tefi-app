@@ -90,14 +90,14 @@ export const InsurancePoolView: React.FC = () => {
             onClick={() => setIsSubscriptionModalOpen(true)}
             className="text-[10px] font-bold text-white bg-white/15 hover:bg-white/25 active:scale-95 border border-white/25 px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-xs shrink-0 cursor-pointer"
           >
-            <span>Ver suscripciones</span>
+            <span>Ver seguros</span>
             <ChevronRight className="w-3 h-3 text-purple-200" />
           </button>
         </div>
 
         {justChangedPlan && (
           <div className="mt-2 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 rounded-lg px-2 py-1 text-center animate-in fade-in">
-            ✓ Suscripción actualizada con éxito a {justChangedPlan}
+            ✓ Seguro actualizado con éxito a {justChangedPlan}
           </div>
         )}
 
