@@ -177,10 +177,10 @@ export const AbundanceFountainCard: React.FC = () => {
 
         <button
           onClick={handleOpenWithdraw}
-          className="py-2.5 px-3 rounded-2xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-xs shadow-2xs active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          className="py-2.5 px-3 rounded-2xl bg-white dark:bg-gray-800 border-2 border-emerald-600/40 dark:border-emerald-500/50 hover:bg-emerald-50/40 dark:hover:bg-gray-750 text-gray-950 dark:text-white font-extrabold text-xs shadow-2xs active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
-          <ArrowDownLeft className="w-4 h-4 text-gray-500" />
-          <span>{language === 'en' ? 'Withdraw to Bank' : 'Retirar a mi Banco'}</span>
+          <ArrowDownLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          <span className="text-gray-950 dark:text-white font-extrabold">{language === 'en' ? 'Withdraw to Bank' : 'Retirar a mi Banco'}</span>
         </button>
       </div>
 
