@@ -53,39 +53,39 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-5 text-center shadow-2xl relative border border-gray-100 my-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-5 text-center shadow-2xl relative border border-gray-100 dark:border-gray-800 my-auto">
         <button
           onClick={onClose}
           disabled={isSigning}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2 shadow-inner">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto mb-2 shadow-inner">
           <Store className="w-6 h-6" />
         </div>
 
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800">
           {language === 'en' ? 'P2P Credit Detected' : 'Fiado P2P Detectado'}
         </span>
-        <h3 className="text-lg font-black text-gray-900 mt-1">
+        <h3 className="text-lg font-black text-gray-900 dark:text-white mt-1">
           {language === 'en' ? 'Accept this Store Credit?' : '¿Aceptar este Fiado?'}
         </h3>
-        <p className="text-[11px] text-gray-500">
+        <p className="text-[11px] text-gray-500 dark:text-gray-400">
           {language === 'en'
             ? 'Review the receipt and confirm registration in your Tefi Passbook'
             : 'Revisa el comprobante y confirma el registro en tu Libreta Tefi'}
         </p>
 
         {/* Tarjeta del Comercio & Monto */}
-        <div className="mt-3.5 p-3.5 bg-gray-50 rounded-2xl border border-gray-200/80 text-left space-y-2.5">
-          <div className="flex items-center justify-between border-b border-gray-200/60 pb-2">
+        <div className="mt-3.5 p-3.5 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-200/80 dark:border-gray-700 text-left space-y-2.5">
+          <div className="flex items-center justify-between border-b border-gray-200/60 dark:border-gray-700/60 pb-2">
             <div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">
+              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase">
                 {language === 'en' ? 'Merchant' : 'Comercio'}
               </span>
-              <h4 className="text-xs font-bold text-gray-900">{data.merchantName || 'Almacén Don Tito'}</h4>
+              <h4 className="text-xs font-bold text-gray-900 dark:text-white">{data.merchantName || 'Almacén Don Tito'}</h4>
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-gray-400 uppercase">

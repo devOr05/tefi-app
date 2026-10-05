@@ -80,37 +80,37 @@ export const DidVerificationModal: React.FC<DidModalProps> = ({ isOpen, onClose 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative border border-gray-100 dark:border-gray-800 overflow-hidden">
         {/* Glow de fondo */}
         <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
         {scanStep === 'idle' && (
           <div className="space-y-4 pt-2">
-            <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center mx-auto shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 flex items-center justify-center mx-auto shadow-inner">
               <ScanFace className="w-7 h-7" />
             </div>
 
             <div>
-              <h3 className="text-base font-extrabold text-gray-900">
+              <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
                 {language === 'en' ? 'Unique Digital Identity (DID)' : 'Identidad Digital Única (DID)'}
               </h3>
-              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
                 {language === 'en' ? (
-                  <>Link your facial biometrics to your Solana wallet. <br /><strong className="text-gray-800">1 Person = 1 Account.</strong></>
+                  <>Link your facial biometrics to your Solana wallet. <br /><strong className="text-gray-800 dark:text-gray-200">1 Person = 1 Account.</strong></>
                 ) : (
-                  <>Vincula tu rostro biométrico a tu billetera de Solana. <br /><strong className="text-gray-800">1 Persona = 1 Cuenta Única.</strong></>
+                  <>Vincula tu rostro biométrico a tu billetera de Solana. <br /><strong className="text-gray-800 dark:text-gray-200">1 Persona = 1 Cuenta Única.</strong></>
                 )}
               </p>
             </div>
 
-            <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 text-left text-xs space-y-2 text-gray-600">
+            <div className="p-3.5 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-700 text-left text-xs space-y-2 text-gray-600 dark:text-gray-300">
               <div className="flex items-start gap-2">
                 <Globe2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>

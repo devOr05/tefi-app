@@ -232,25 +232,25 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-5 text-center shadow-2xl relative border border-gray-100 my-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-5 text-center shadow-2xl relative border border-gray-100 dark:border-gray-800 my-auto">
         <button
           onClick={() => {
             stopScanner();
             onClose();
           }}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors z-20"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors z-20"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2">
+        <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto mb-2">
           <Camera className="w-6 h-6" />
         </div>
 
-        <h3 className="text-base font-extrabold text-gray-900">
+        <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
           {language === 'en' ? "Scan Don Tito's QR" : 'Escanear QR de Don Tito'}
         </h3>
-        <p className="text-[11px] text-gray-500 mt-0.5">
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
           {language === 'en'
             ? "Point your camera at the merchant's screen to receive the credit"
             : 'Apunta tu cámara a la pantalla del almacenero para recibir el fiado'}

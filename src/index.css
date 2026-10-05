@@ -107,6 +107,58 @@
   background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
+/* Soporte Universal de Modo Oscuro para Todos los Modales y Diálogos */
+.dark .fixed.inset-0 > div:not([class*="bg-black"]) {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark .fixed.inset-0 input,
+.dark .fixed.inset-0 textarea,
+.dark .fixed.inset-0 select {
+  background-color: #1f2937 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.dark .fixed.inset-0 .bg-white {
+  background-color: #111827 !important;
+}
+
+.dark .fixed.inset-0 .bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .fixed.inset-0 .bg-gray-100 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .fixed.inset-0 .border-gray-100,
+.dark .fixed.inset-0 .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.dark .fixed.inset-0 .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+.dark .fixed.inset-0 .text-gray-800 {
+  color: #f3f4f6 !important;
+}
+
+.dark .fixed.inset-0 .text-gray-700 {
+  color: #e5e7eb !important;
+}
+
+.dark .fixed.inset-0 .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+.dark .fixed.inset-0 .text-gray-500 {
+  color: #9ca3af !important;
+}
+
 .gradient-tefi {
   background: linear-gradient(135deg, #00A650 0%, #008740 100%);
 }

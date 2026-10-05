@@ -94,10 +94,10 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-left shadow-2xl relative border border-gray-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-6 text-left shadow-2xl relative border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -106,14 +106,14 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
           <div className="space-y-4">
             {/* Header */}
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-200/50 dark:border-purple-800/60">
                 {language === 'en' ? 'Multichannel Settlement' : 'Liquidación Multicanal'}
               </span>
-              <h3 className="text-lg font-extrabold text-gray-900 mt-1">
+              <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mt-1">
                 {language === 'en' ? 'Pay Store Credit' : 'Pagar Fiado'}
               </h3>
-              <p className="text-xs text-gray-500">
-                {language === 'en' ? 'Store:' : 'Comercio:'} <strong className="text-gray-800">{fiado.merchantName}</strong>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {language === 'en' ? 'Store:' : 'Comercio:'} <strong className="text-gray-800 dark:text-gray-200">{fiado.merchantName}</strong>
               </p>
             </div>
 

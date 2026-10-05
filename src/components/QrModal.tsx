@@ -101,23 +101,23 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-5 text-center shadow-2xl relative border border-gray-100 my-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-5 text-center shadow-2xl relative border border-gray-100 dark:border-gray-800 my-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors"
           aria-label="Cerrar"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2 shadow-inner">
+        <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto mb-2 shadow-inner">
           <QrCode className="w-6 h-6" />
         </div>
 
-        <h3 className="text-base font-black text-gray-900">
+        <h3 className="text-base font-black text-gray-900 dark:text-white">
           {language === 'en' ? 'Generated Credit QR' : 'QR de Fiado Generado'}
         </h3>
-        <p className="text-[11px] text-gray-500 mt-0.5">
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
           {language === 'en'
             ? 'The customer scans this QR from Tefi or using their phone camera'
             : 'El cliente escanea este QR desde su Tefi o con la cámara de su celular'}

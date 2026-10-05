@@ -195,20 +195,20 @@ export const InsurancePoolView: React.FC = () => {
       {isSubscriptionModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div 
-            className="bg-white rounded-3xl max-w-md w-full p-5 max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 border border-gray-100"
+            className="bg-white dark:bg-gray-900 rounded-3xl max-w-md w-full p-5 max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 border border-gray-100 dark:border-gray-800"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5 text-purple-700" />
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-purple-700 dark:text-purple-300" />
                   </div>
-                  <h3 className="text-base font-extrabold text-gray-900">
+                  <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
                     {language === 'en' ? 'Insurance Options' : 'Opciones de Seguro'}
                   </h3>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                   {language === 'en'
                     ? 'Insurance rates dynamically adapt based on your store collection rate and historical track record.'
                     : 'El valor de los seguros se adapta dinámicamente según el índice de cobrabilidad y comportamiento histórico de tu almacén.'}
@@ -216,7 +216,7 @@ export const InsurancePoolView: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsSubscriptionModalOpen(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

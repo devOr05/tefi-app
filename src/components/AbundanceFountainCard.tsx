@@ -237,10 +237,10 @@ export const AbundanceFountainCard: React.FC = () => {
       {/* MODAL DE APORTE */}
       {isDepositOpen && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-5 text-left shadow-2xl relative border border-gray-100" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-5 text-left shadow-2xl relative border border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setIsDepositOpen(false)}
-              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100"
+              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800"
             >
               <X className="w-4 h-4" />
             </button>
@@ -252,8 +252,8 @@ export const AbundanceFountainCard: React.FC = () => {
                 className="w-8 h-8 rounded-xl shadow-xs border border-emerald-200/60 object-cover"
               />
               <div>
-                <h4 className="text-sm font-extrabold text-gray-900">{t('abundanceTitle')}</h4>
-                <p className="text-[10px] text-gray-400">
+                <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">{t('abundanceTitle')}</h4>
+                <p className="text-[10px] text-gray-400 dark:text-gray-400">
                   {language === 'en' ? 'Micro-savings with yield on Solana' : 'Micro-ahorro con rendimiento en Solana'}
                 </p>
               </div>
@@ -351,23 +351,23 @@ export const AbundanceFountainCard: React.FC = () => {
       {/* MODAL DE RETIRO */}
       {isWithdrawOpen && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-5 text-left shadow-2xl relative border border-gray-100" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-5 text-left shadow-2xl relative border border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setIsWithdrawOpen(false)}
-              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100"
+              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 flex items-center justify-center">
                 <Coins className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-sm font-extrabold text-gray-900">
+                <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">
                   {language === 'en' ? 'Withdraw from Fountain' : 'Retirar de tu Fuente'}
                 </h4>
-                <p className="text-[10px] text-gray-400">
+                <p className="text-[10px] text-gray-400 dark:text-gray-400">
                   {language === 'en' ? 'Instant transfer to your account' : 'Transferencia instantánea a tu cuenta'}
                 </p>
               </div>

@@ -37,22 +37,22 @@ export const LinkedAccountsModal: React.FC<LinkedAccountsModalProps> = ({ isOpen
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-left shadow-2xl relative border border-gray-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-6 text-left shadow-2xl relative border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full bg-gray-100 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="mb-4">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800">
             {language === 'en' ? 'Fiat / Crypto Ramp' : 'Rampa Fiat / Cripto'}
           </span>
-          <h3 className="text-lg font-extrabold text-gray-900 mt-1">
+          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mt-1">
             {language === 'en' ? 'Linked Accounts & Wallets' : 'Cuentas & Billeteras Vinculadas'}
           </h3>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {language === 'en'
               ? 'Associated with your Unique Digital Identity (DID) on Solana.'
               : 'Asociadas a tu Identidad Digital Única (DID) en Solana.'}
