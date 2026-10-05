@@ -195,9 +195,16 @@ export const CustomerLibretaView: React.FC = () => {
                   <button
                     onClick={() => setViewingPhoto(f.photoReceiptUrl)}
                     aria-label={t('viewTicketPhoto')}
-                    className="relative w-13 h-13 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 group cursor-pointer"
+                    className="relative w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 group cursor-pointer aspect-square"
                   >
-                    <img src={f.photoReceiptUrl} alt="Comprobante" className="w-full h-full object-cover" />
+                    <img
+                      src={f.photoReceiptUrl}
+                      alt="Comprobante"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80';
+                      }}
+                    />
                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <ImageIcon className="w-4 h-4 text-white" />
                     </div>
