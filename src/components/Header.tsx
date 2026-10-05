@@ -85,13 +85,13 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Quick Controls: Idioma, Modo Oscuro / Día, y Accesibilidad */}
-        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Switch Idioma ES / EN */}
           <button
             onClick={toggleLanguage}
             aria-label={t('toggleLang')}
             title={t('toggleLang')}
-            className="w-6.5 h-6.5 sm:w-7 sm:h-7 text-[9.5px] sm:text-[10px] font-black rounded-lg sm:rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0"
+            className="w-8 h-8 sm:w-8.5 sm:h-8.5 text-[11px] sm:text-xs font-black rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all cursor-pointer border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0 shadow-2xs"
           >
             {language === 'es' ? 'EN' : 'ES'}
           </button>
@@ -101,9 +101,9 @@ export const Header: React.FC = () => {
             onClick={toggleTheme}
             aria-label={t('toggleTheme')}
             title={t('toggleTheme')}
-            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-amber-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0"
+            className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-amber-400 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all cursor-pointer border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0 shadow-2xs"
           >
-            {theme === 'dark' ? <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <Moon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-gray-700" />}
           </button>
 
           {/* A11y: Botón de texto grande para personas con visión reducida */}
@@ -111,13 +111,13 @@ export const Header: React.FC = () => {
             onClick={toggleA11yLargeText}
             aria-label={t('largeText')}
             title={a11yLargeText ? t('normalText') : t('largeText')}
-            className={`w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl transition-colors cursor-pointer border flex items-center justify-center shrink-0 ${
+            className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl active:scale-95 transition-all cursor-pointer border flex items-center justify-center shrink-0 shadow-2xs ${
               a11yLargeText
                 ? 'bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 border-purple-300 dark:border-purple-600 font-black'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border-gray-200 dark:border-gray-700'
             }`}
           >
-            <Type className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <Type className="w-4 h-4" />
           </button>
         </div>
       </div>

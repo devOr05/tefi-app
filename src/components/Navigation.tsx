@@ -65,7 +65,7 @@ export const SolanaLibretaIcon: React.FC<{ className?: string }> = ({ className 
 );
 
 // 3. Icono de 3 Monedas Doradas para Score Crediticio (Proporcionadas y armónicas)
-export const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ className = "w-7.5 h-5" }) => (
+export const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ className = "w-9.5 h-6" }) => (
   <svg viewBox="0 0 34 22" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="scoreGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -153,8 +153,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
       aria-label="Navegación principal"
       className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 py-1 shadow-lg safe-area-pb flex justify-center"
     >
-      {/* Contenedor compacto y angosto (max-w-[270px]): elegante, angosto y centralizado */}
-      <div className="w-full max-w-[270px] sm:max-w-[300px] px-1 grid grid-cols-3 items-center justify-items-center">
+      {/* Contenedor armónico, bien distribuido a lo ancho (max-w-md) sin estar apretado en el centro */}
+      <div className="w-full max-w-md px-4 sm:px-6 grid grid-cols-3 items-center justify-items-center">
         {role === 'MERCHANT' ? (
           <>
             {/* Columna 1: Almacén */}
@@ -167,8 +167,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaStoreIcon className="w-5 h-5" />
-              <span className="text-[9.5px] text-center">{t('navStore')}</span>
+              <SolanaStoreIcon className="w-6.5 h-6.5 sm:w-7 sm:h-7" />
+              <span className="text-[10px] sm:text-[11px] font-semibold text-center mt-0.5">{t('navStore')}</span>
             </button>
 
             {/* Columna 2: Botón Central Fiar (+) Idéntica Moneda que el Banner Superior */}
@@ -178,7 +178,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
               className="flex flex-col items-center justify-center -mt-3.5 group cursor-pointer focus:outline-hidden"
             >
               <GoldFiarCoin size="md" />
-              <span className="text-[9.5px] font-black text-amber-700 dark:text-amber-400 mt-0.5 tracking-tight">{t('navFiar')}</span>
+              <span className="text-[10px] sm:text-[11px] font-black text-amber-700 dark:text-amber-400 mt-0.5 tracking-tight">{t('navFiar')}</span>
             </button>
 
             {/* Columna 3: Seguro & Riesgo */}
@@ -191,8 +191,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaShieldIcon className="w-5 h-5" />
-              <span className="text-[9.5px] text-center leading-tight">{t('navInsurance')}</span>
+              <SolanaShieldIcon className="w-6.5 h-6.5 sm:w-7 sm:h-7" />
+              <span className="text-[10px] sm:text-[11px] font-semibold text-center leading-tight mt-0.5">{t('navInsurance')}</span>
             </button>
           </>
         ) : (
@@ -207,11 +207,11 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaLibretaIcon className="w-5 h-5" />
-              <span className="text-[9.5px] text-center">{t('navLibreta')}</span>
+              <SolanaLibretaIcon className="w-6.5 h-6.5 sm:w-7 sm:h-7" />
+              <span className="text-[10px] sm:text-[11px] font-semibold text-center mt-0.5">{t('navLibreta')}</span>
             </button>
 
-            {/* Columna 2: Score Crediticio (Monedas Doradas proporcionadas) */}
+            {/* Columna 2: Score Crediticio (Monedas Doradas destacadas y proporcionales) */}
             <button
               onClick={() => onTabChange('credit')}
               aria-label={t('navScore')}
@@ -221,8 +221,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <GrowingGoldCoinsIcon className="w-7.5 h-5" />
-              <span className="text-[9.5px] font-bold text-center">{t('navScore')}</span>
+              <GrowingGoldCoinsIcon className="w-9.5 h-6 sm:w-10.5 sm:h-6.5" />
+              <span className="text-[10px] sm:text-[11px] font-bold text-center mt-0.5">{t('navScore')}</span>
             </button>
 
             {/* Columna 3: Fidelidad */}
@@ -235,8 +235,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaLoyaltyMedalIcon className="w-5 h-5" />
-              <span className="text-[9.5px] text-center">{t('navLoyalty')}</span>
+              <SolanaLoyaltyMedalIcon className="w-6.5 h-6.5 sm:w-7 sm:h-7" />
+              <span className="text-[10px] sm:text-[11px] font-semibold text-center mt-0.5">{t('navLoyalty')}</span>
             </button>
           </>
         )}

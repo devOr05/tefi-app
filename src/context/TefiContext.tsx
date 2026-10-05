@@ -214,14 +214,20 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [webhookNotification, setWebhookNotification] = useState<WebhookNotification | null>(null);
   const [pendingFiadoFromUrl, setPendingFiadoFromUrl] = useState<FiadoQrPayload | null>(null);
 
-  // Idioma (Español / Inglés)
+  // Idioma (English / Spanish) - Comienza en inglés ('en') por defecto
   const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem('tefi_language') as Language) || 'es';
+    const stored = localStorage.getItem('tefi_language_v2');
+    if (stored === 'es' || stored === 'en') {
+      return stored;
+    }
+    return 'en';
   });
 
   const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
+    localStorage.setItem('tefi_language_v2', lang);
     localStorage.setItem('tefi_language', lang);
+    document.documentElement.lang = lang;
   }, []);
 
   const toggleLanguage = useCallback(() => {
@@ -233,6 +239,14 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (localStorage.getItem('tefi_theme') as 'light' | 'dark') || 'light';
   });
 
+  const updateStatusBarColor = useCallback((currentTheme: 'light' | 'dark') => {
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      // En modo oscuro se mimetiza con el fondo oscuro (#0c0f17); en claro fondo blanco (#ffffff)
+      metaThemeColor.setAttribute('content', currentTheme === 'dark' ? '#0c0f17' : '#ffffff');
+    }
+  }, []);
+
   const setTheme = useCallback((newTheme: 'light' | 'dark') => {
     setThemeState(newTheme);
     localStorage.setItem('tefi_theme', newTheme);
@@ -241,11 +255,23 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, []);
+    updateStatusBarColor(newTheme);
+  }, [updateStatusBarColor]);
 
   const toggleTheme = useCallback(() => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   }, [theme, setTheme]);
+
+  // Sincronizar tema e idioma al montar la app
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    updateStatusBarColor(theme);
+    document.documentElement.lang = language;
+  }, [theme, language, updateStatusBarColor]);
 
   // Accesibilidad para personas con capacidades reducidas
   const [a11yLargeText, setA11yLargeText] = useState<boolean>(() => {
