@@ -64,8 +64,8 @@ export const SolanaLibretaIcon: React.FC<{ className?: string }> = ({ className 
   </svg>
 );
 
-// 3. Icono de 3 Monedas Doradas para Score Crediticio (Dimensiones generosas parecidas al botón fiar)
-export const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ className = "w-11 h-7.5" }) => (
+// 3. Icono de 3 Monedas Doradas para Score Crediticio (Proporcionadas y armónicas)
+export const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ className = "w-7.5 h-5" }) => (
   <svg viewBox="0 0 34 22" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="scoreGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -97,7 +97,7 @@ export const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ classNa
 );
 
 // 4. Icono Medalla con Moneda Dorada y Cintas Azul/Violeta (Fidelidad)
-export const SolanaLoyaltyMedalIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+export const SolanaLoyaltyMedalIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="medalGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -123,7 +123,7 @@ export const SolanaLoyaltyMedalIcon: React.FC<{ className?: string }> = ({ class
 );
 
 // 5. Icono Escudo en Violeta Solana (Seguro & Riesgo)
-export const SolanaShieldIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+export const SolanaShieldIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="shieldVioletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -151,48 +151,48 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
     <nav
       role="navigation"
       aria-label="Navegación principal"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-gray-100 dark:border-gray-800 py-1.5 shadow-lg safe-area-pb flex justify-center"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 py-1 shadow-lg safe-area-pb flex justify-center"
     >
-      {/* Contenedor compacto en grid de 3 columnas (max-w-sm): centraliza Fiar (+) y Score Crediticio exactamente al 50% */}
-      <div className="w-full max-w-sm px-3 grid grid-cols-3 items-center justify-items-center">
+      {/* Contenedor compacto y angosto (max-w-[270px]): elegante, angosto y centralizado */}
+      <div className="w-full max-w-[270px] sm:max-w-[300px] px-1 grid grid-cols-3 items-center justify-items-center">
         {role === 'MERCHANT' ? (
           <>
             {/* Columna 1: Almacén */}
             <button
               onClick={() => onTabChange('dashboard')}
               aria-label={t('navStore')}
-              className={`flex flex-col items-center justify-center gap-1 w-full py-0.5 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+              className={`flex flex-col items-center justify-center gap-0.5 w-full py-0.5 transition-all active:scale-95 cursor-pointer ${
                 currentTab === 'dashboard'
                   ? 'text-tefi-primary dark:text-emerald-400 font-bold'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaStoreIcon className="w-6 h-6" />
-              <span className="text-[10px] text-center">{t('navStore')}</span>
+              <SolanaStoreIcon className="w-5 h-5" />
+              <span className="text-[9.5px] text-center">{t('navStore')}</span>
             </button>
 
             {/* Columna 2: Botón Central Fiar (+) Idéntica Moneda que el Banner Superior */}
             <button
               onClick={() => onTabChange('new-fiado')}
               aria-label={t('navFiar')}
-              className="flex flex-col items-center justify-center -mt-4.5 group cursor-pointer touch-target-accessible focus:outline-hidden"
+              className="flex flex-col items-center justify-center -mt-3.5 group cursor-pointer focus:outline-hidden"
             >
-              <GoldFiarCoin size="lg" />
-              <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 mt-0.5 tracking-tight">{t('navFiar')}</span>
+              <GoldFiarCoin size="md" />
+              <span className="text-[9.5px] font-black text-amber-700 dark:text-amber-400 mt-0.5 tracking-tight">{t('navFiar')}</span>
             </button>
 
             {/* Columna 3: Seguro & Riesgo */}
             <button
               onClick={() => onTabChange('insurance')}
               aria-label={t('navInsurance')}
-              className={`flex flex-col items-center justify-center gap-1 w-full py-0.5 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+              className={`flex flex-col items-center justify-center gap-0.5 w-full py-0.5 transition-all active:scale-95 cursor-pointer ${
                 currentTab === 'insurance'
                   ? 'text-purple-700 dark:text-purple-400 font-bold'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaShieldIcon className="w-6 h-6" />
-              <span className="text-[10px] text-center leading-tight">{t('navInsurance')}</span>
+              <SolanaShieldIcon className="w-5 h-5" />
+              <span className="text-[9.5px] text-center leading-tight">{t('navInsurance')}</span>
             </button>
           </>
         ) : (
@@ -201,42 +201,42 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
             <button
               onClick={() => onTabChange('libreta')}
               aria-label={t('navLibreta')}
-              className={`flex flex-col items-center justify-center gap-1 w-full py-0.5 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+              className={`flex flex-col items-center justify-center gap-0.5 w-full py-0.5 transition-all active:scale-95 cursor-pointer ${
                 currentTab === 'libreta'
                   ? 'text-emerald-700 dark:text-emerald-400 font-bold'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaLibretaIcon className="w-6 h-6" />
-              <span className="text-[10px] text-center">{t('navLibreta')}</span>
+              <SolanaLibretaIcon className="w-5 h-5" />
+              <span className="text-[9.5px] text-center">{t('navLibreta')}</span>
             </button>
 
-            {/* Columna 2: Score Crediticio (Monedas Doradas de dimensiones generosas como el botón Fiar) */}
+            {/* Columna 2: Score Crediticio (Monedas Doradas proporcionadas) */}
             <button
               onClick={() => onTabChange('credit')}
               aria-label={t('navScore')}
-              className={`flex flex-col items-center justify-center gap-1 w-full py-0.5 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+              className={`flex flex-col items-center justify-center gap-0.5 w-full py-0.5 transition-all active:scale-95 cursor-pointer ${
                 currentTab === 'credit'
                   ? 'text-amber-700 dark:text-amber-400 font-bold'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <GrowingGoldCoinsIcon className="w-12 h-8" />
-              <span className="text-[10px] font-bold text-center">{t('navScore')}</span>
+              <GrowingGoldCoinsIcon className="w-7.5 h-5" />
+              <span className="text-[9.5px] font-bold text-center">{t('navScore')}</span>
             </button>
 
             {/* Columna 3: Fidelidad */}
             <button
               onClick={() => onTabChange('loyalty')}
               aria-label={t('navLoyalty')}
-              className={`flex flex-col items-center justify-center gap-1 w-full py-0.5 transition-all active:scale-95 cursor-pointer touch-target-accessible ${
+              className={`flex flex-col items-center justify-center gap-0.5 w-full py-0.5 transition-all active:scale-95 cursor-pointer ${
                 currentTab === 'loyalty'
                   ? 'text-blue-700 dark:text-blue-400 font-bold'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SolanaLoyaltyMedalIcon className="w-6 h-6" />
-              <span className="text-[10px] text-center">{t('navLoyalty')}</span>
+              <SolanaLoyaltyMedalIcon className="w-5 h-5" />
+              <span className="text-[9.5px] text-center">{t('navLoyalty')}</span>
             </button>
           </>
         )}

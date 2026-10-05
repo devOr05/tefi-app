@@ -118,7 +118,16 @@
 /* Accesibilidad: Personas con Capacidades Reducidas */
 /* Modo de Texto Grande para baja visión */
 html.a11y-large-text {
-  font-size: 115%;
+  font-size: 108%;
+}
+
+html.a11y-large-text main {
+  font-size: 1.06rem;
+}
+
+/* Evitar que el encabezado y navegación fija se desborden de la pantalla en móviles al activar texto grande */
+html.a11y-large-text header {
+  font-size: 0.92rem;
 }
 
 /* Modo de Alto Contraste */
