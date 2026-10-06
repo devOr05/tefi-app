@@ -80,16 +80,6 @@ const INITIAL_PARTNER_STORES: PartnerStore[] = [
 export const LoyaltyBadge: React.FC = () => {
   const { customer, fiados, t, language } = useTefi();
   const [partnerStores, setPartnerStores] = useState<PartnerStore[]>(INITIAL_PARTNER_STORES);
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-  const [joinSubmitted, setJoinSubmitted] = useState(false);
-
-  // Formulario de adhesión de nuevo comercio
-  const [newStoreName, setNewStoreName] = useState('');
-  const [newStoreCategory, setNewStoreCategory] = useState('');
-  const [newStoreAddress, setNewStoreAddress] = useState('');
-  const [newStorePhone, setNewStorePhone] = useState('');
-  const [newStorePromo, setNewStorePromo] = useState('');
-
   const pastFiados = fiados.filter(f => f.status === 'PAID');
 
   const PERKS = [
@@ -97,35 +87,6 @@ export const LoyaltyBadge: React.FC = () => {
     { title: language === 'en' ? 'Extra 7 days repayment grace' : 'Plazo extra de 7 días', points: 500, unlocked: customer.loyaltyPoints >= 500 },
     { title: language === 'en' ? 'Zero late penalty fee' : 'Sin interés de penalización', points: 750, unlocked: customer.loyaltyPoints >= 750 }
   ];
-
-  const handleJoinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStoreName.trim() || !newStoreAddress.trim()) return;
-
-    const newStore: PartnerStore = {
-      id: `store-${Date.now()}`,
-      name: newStoreName.trim(),
-      category: newStoreCategory.trim() || 'Almacén de Barrio',
-      categoryEn: newStoreCategory.trim() || 'Local Grocery Store',
-      address: newStoreAddress.trim(),
-      discountPromo: newStorePromo.trim() || 'Descuentos exclusivos con libreta Tefi',
-      discountPromoEn: newStorePromo.trim() || 'Exclusive discounts with Tefi passbook',
-      verified: true,
-      image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=200&auto=format&fit=crop&q=80'
-    };
-
-    setPartnerStores(prev => [newStore, ...prev]);
-    setJoinSubmitted(true);
-    setTimeout(() => {
-      setJoinSubmitted(false);
-      setIsJoinModalOpen(false);
-      setNewStoreName('');
-      setNewStoreCategory('');
-      setNewStoreAddress('');
-      setNewStorePhone('');
-      setNewStorePromo('');
-    }, 2500);
-  };
 
   return (
     <div className="space-y-4">
@@ -195,15 +156,6 @@ export const LoyaltyBadge: React.FC = () => {
               <p className="text-[10px] text-gray-400 dark:text-gray-400">{t('promosSubtitle')}</p>
             </div>
           </div>
-
-          <button
-            onClick={() => setIsJoinModalOpen(true)}
-            aria-label={t('joinNetworkBtn')}
-            className="flex items-center gap-1 text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/50 px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800 transition-colors cursor-pointer touch-target-accessible"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>{language === 'en' ? 'Join Store' : 'Sumar Comercio'}</span>
-          </button>
         </div>
 
         {/* Banners Destacados de Productos & Promos de Almacenes */}
@@ -289,15 +241,6 @@ export const LoyaltyBadge: React.FC = () => {
             </div>
           ))}
         </div>
-
-        {/* Botón Destacado de Adhesión para nuevos comercios */}
-        <button
-          onClick={() => setIsJoinModalOpen(true)}
-          className="w-full py-2.5 mt-2 rounded-2xl border-2 border-dashed border-emerald-300 dark:border-emerald-700/60 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/40 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer touch-target-accessible"
-        >
-          <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{t('joinNetworkBtn')}</span>
-        </button>
       </div>
 
       {/* 4. Historial de Cumplimiento con Detalle de Puntos Sumados */}
@@ -396,131 +339,6 @@ export const LoyaltyBadge: React.FC = () => {
           })
         )}
       </div>
-
-      {/* Modal de Solicitud de Adhesión Comercial */}
-      {isJoinModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('joinModalTitle')}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
-          onClick={() => setIsJoinModalOpen(false)}
-        >
-          <div
-            className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl p-5 border border-gray-100 dark:border-gray-800 shadow-2xl space-y-4"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 flex items-center justify-center">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('joinModalTitle')}</h3>
-              </div>
-              <button
-                onClick={() => setIsJoinModalOpen(false)}
-                aria-label={t('closeModal')}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg touch-target-accessible"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              {t('joinModalDesc')}
-            </p>
-
-            {joinSubmitted ? (
-              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-center space-y-2 animate-in zoom-in-95">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mx-auto" />
-                <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                  {t('joinSuccess')}
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleJoinSubmit} className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    {language === 'en' ? 'Store Name' : 'Nombre del Comercio'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newStoreName}
-                    onChange={e => setNewStoreName(e.target.value)}
-                    placeholder={t('storeNamePlaceholder')}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 outline-hidden"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      {language === 'en' ? 'Category' : 'Rubro'}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newStoreCategory}
-                      onChange={e => setNewStoreCategory(e.target.value)}
-                      placeholder={t('categoryPlaceholder')}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 outline-hidden"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                      {language === 'en' ? 'Phone / WhatsApp' : 'Teléfono / WhatsApp'}
-                    </label>
-                    <input
-                      type="text"
-                      value={newStorePhone}
-                      onChange={e => setNewStorePhone(e.target.value)}
-                      placeholder={t('phonePlaceholder')}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 outline-hidden"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    {language === 'en' ? 'Address / Location' : 'Dirección / Zona'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newStoreAddress}
-                    onChange={e => setNewStoreAddress(e.target.value)}
-                    placeholder={t('addressPlaceholder')}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 outline-hidden"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 block mb-1">
-                    {language === 'en' ? 'Promotion for Tefi neighbors (optional)' : 'Promoción para vecinos Tefi (opcional)'}
-                  </label>
-                  <input
-                    type="text"
-                    value={newStorePromo}
-                    onChange={e => setNewStorePromo(e.target.value)}
-                    placeholder={language === 'en' ? 'e.g. 10% OFF on dairy' : 'Ej: 10% de descuento en lácteos'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 outline-hidden"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 mt-1 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer touch-target-accessible"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{t('submitJoin')}</span>
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

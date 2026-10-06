@@ -128,7 +128,7 @@ export const InsurancePoolView: React.FC = () => {
           <div>
             <h3 className="text-xs font-bold text-gray-800">{t('solanaActuarialTitle')}</h3>
             <p className="text-[10px] text-gray-400">
-              {language === 'en' ? 'Designed to prevent fraud and adverse selection' : 'Diseñado para evitar fraude y selección adversa'}
+              {language === 'en' ? 'Actuarial risk management model' : 'Modelo actuarial de gestión de riesgo'}
             </p>
           </div>
         </div>
@@ -326,8 +326,8 @@ export const InsurancePoolView: React.FC = () => {
                     <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
                     <span>
                       {language === 'en'
-                        ? 'Anti-fraud predictive neighborhood scoring included'
-                        : 'Scoring predictivo barrial antifraude incluido'}
+                        ? 'On-chain neighborhood credit scoring included'
+                        : 'Scoring predictivo barrial on-chain incluido'}
                     </span>
                   </div>
                 </div>

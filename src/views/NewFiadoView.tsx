@@ -68,38 +68,18 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Límite disponible del cliente */}
-      <div className="bg-emerald-50/80 border border-emerald-100 rounded-2xl p-3 flex items-center justify-between text-xs">
+      {/* Resumen del Vecino y Cupo Disponible */}
+      <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/50 rounded-2xl p-3 flex items-center justify-between text-xs">
         <div>
-          <span className="text-[10px] text-emerald-800 font-semibold block">
-            {language === 'en' ? `Available credit for ${customer.name}` : `Crédito disponible de ${customer.name}`}
+          <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold block">
+            {language === 'en' ? `Customer: ${customer.name}` : `Vecino: ${customer.name}`}
           </span>
-          <span className="text-xs text-emerald-950 font-extrabold">{availableLimit} USDC (${(availableLimit * rate).toLocaleString('es-AR')} ARS)</span>
+          <span className="text-xs text-emerald-950 dark:text-emerald-100 font-extrabold">
+            {language === 'en' ? 'Available:' : 'Cupo disponible:'} {availableLimit} USDC (${(availableLimit * rate).toLocaleString('es-AR')} ARS)
+          </span>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900">
+        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-200/80 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100">
           Score: {customer.creditScore} pts
-        </span>
-      </div>
-
-      {/* Identidad Universal Descentralizada (DID) */}
-      <div className="bg-purple-50/80 border border-purple-100 rounded-2xl p-2.5 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-[10px] font-bold">
-            DID
-          </div>
-          <div>
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-bold text-purple-950">
-                {language === 'en' ? 'Verified Unique Identity' : 'Identidad Única Verificada'}
-              </span>
-            </div>
-            <p className="text-[10px] text-purple-700 font-mono truncate max-w-[200px]">
-              {customer.didUri || `did:sol:devnet:${customer.walletAddress}`}
-            </p>
-          </div>
-        </div>
-        <span className="text-[10px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-md">
-          {language === 'en' ? 'Anti-Fraud' : 'Anti-Fraude'}
         </span>
       </div>
 

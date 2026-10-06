@@ -126,10 +126,10 @@ export const DidVerificationModal: React.FC<DidModalProps> = ({ isOpen, onClose 
               <div className="flex items-start gap-2">
                 <Lock className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>{language === 'en' ? 'Anti-Fraud:' : 'Anti-Fraude:'}</strong>{' '}
+                  <strong>{language === 'en' ? 'Immutable Key:' : 'Clave Inmutable:'}</strong>{' '}
                   {language === 'en'
-                    ? 'No one can duplicate accounts to evade debts. Your reputation is immutable.'
-                    : 'Nadie puede duplicar cuentas para eludir compromisos. Tu reputación es inmutable.'}
+                    ? 'Unique cryptographic keypair on Solana. Your reputation stays portable.'
+                    : 'Par de claves criptográficas en Solana. Tu historial crediticio es portable.'}
                 </span>
               </div>
             </div>

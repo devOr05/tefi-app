@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { FiadoRecord } from '../types/tefi';
-import { DollarSign, ShieldAlert, Users, Clock, AlertTriangle, CheckCircle, Image as ImageIcon, ChevronRight, Plus } from 'lucide-react';
+import { DollarSign, ShieldAlert, Users, Clock, AlertTriangle, CheckCircle, Image as ImageIcon, ChevronRight, Plus, Building2 } from 'lucide-react';
 import { QrModal } from '../components/QrModal';
 import { RepayModal } from '../components/RepayModal';
 import { GoldFiarCoin } from '../components/GoldFiarCoin';
+import { JoinStoreModal } from '../components/JoinStoreModal';
 
 export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ onNavigateToNew }) => {
   const { merchant, fiados, claimInsurance, exchangeRate, t, language } = useTefi();
   const [selectedFiadoForQr, setSelectedFiadoForQr] = useState<FiadoRecord | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
   const [payingFiado, setPayingFiado] = useState<FiadoRecord | null>(null);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const paidFiados = fiados.filter(f => f.status === 'PAID');
@@ -116,6 +118,15 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
           </p>
         </div>
       </div>
+
+      {/* Botón Destacado de Adhesión para nuevos almacenes */}
+      <button
+        onClick={() => setIsJoinModalOpen(true)}
+        className="w-full py-2.5 rounded-2xl border-2 border-dashed border-emerald-300 dark:border-emerald-700/60 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/40 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer touch-target-accessible shadow-2xs"
+      >
+        <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        <span>{t('joinNetworkBtn')}</span>
+      </button>
 
       {/* Lista de Fiados Activos con Foto */}
       <div className="space-y-2">
@@ -244,6 +255,12 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
           </div>
         </div>
       )}
+
+      {/* Modal Adhesión de Comercio */}
+      <JoinStoreModal
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
+      />
     </div>
   );
 };
