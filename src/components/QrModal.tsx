@@ -183,6 +183,18 @@ export const QrModal: React.FC<QrModalProps> = ({ fiado, onClose }) => {
           </div>
         </div>
 
+        {/* Marco Legal y Consentimiento Bilateral (Ley 24.240 / 25.326) */}
+        <div className="p-2 rounded-xl bg-gray-50 dark:bg-gray-850 border border-gray-200/60 dark:border-gray-800 text-[10px] text-gray-500 dark:text-gray-400 text-left leading-relaxed mb-3">
+          <p>
+            <span className="font-bold text-gray-700 dark:text-gray-300">
+              {language === 'en' ? '⚖️ Legal Notice: ' : '⚖️ Marco Legal: '}
+            </span>
+            {language === 'en'
+              ? 'By scanning, the customer consents to bilateral credit recording (Consumer Protection Law 24.240) and authorizes on-chain credit score tracking (Data Protection Law 25.326).'
+              : 'Al escanear y confirmar, el vecino presta conformidad al fiado bilateral (Ley 24.240 de Defensa del Consumidor) y autoriza el cómputo de su historial on-chain (Ley 25.326).'}
+          </p>
+        </div>
+
         {/* Botones de Compartir Alternativos */}
         <div className="grid grid-cols-2 gap-2 mb-3">
           <button

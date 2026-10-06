@@ -188,7 +188,19 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
           </div>
         )}
 
-        <div className="mt-4 space-y-2">
+        {/* Marco Legal y Consentimiento Informado (Ley 24.240 / 25.326) */}
+        <div className="mt-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 text-[10px] text-gray-500 dark:text-gray-400 text-left leading-relaxed">
+          <p>
+            <span className="font-bold text-gray-700 dark:text-gray-300">
+              {language === 'en' ? '⚖️ Legal Consent: ' : '⚖️ Consentimiento Legal: '}
+            </span>
+            {language === 'en'
+              ? 'By confirming, you formally consent to this store debt registration under Consumer Protection Law 24.240 and authorize recording of your on-time repayment history under Data Protection Law 25.326.'
+              : 'Al confirmar, prestás conformidad formal al registro de esta deuda de almacén bajo la Ley 24.240 de Defensa del Consumidor y autorizás el cómputo de tu historial crediticio bajo la Ley 25.326.'}
+          </p>
+        </div>
+
+        <div className="mt-3 space-y-2">
           <button
             onClick={handleConfirm}
             disabled={isSigning || isOverLimit}
