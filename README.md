@@ -76,7 +76,9 @@ The Anchor program (`contracts/tefi_program/src/lib.rs`) enforces bilateral coun
 4. `repay_fiado`: Settle debt, updates customer on-chain score (+5), and raises credit limit.
 5. `claim_insurance`: Actuarial default recovery with mandatory 30-day grace period enforcement.
 
-* **Program ID**: `H7afUaQecBwFRLRahfAQSM7ZdGXRfX5TiBEPQgahMHdr` (Solana Devnet)
+* **Program ID**: [`3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc`](https://explorer.solana.com/address/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet) (Executable Anchor Program on Solana Devnet)
+* **Solscan Devnet**: [https://solscan.io/account/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet](https://solscan.io/account/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet)
+* **Deployment Tx**: [`5nx39Tk5k9jCjee1tRr3yW7jMSyLXRxMwZVmDYUCZuTKPzRpgMyHdPAdhzGqaPqb2vuYVhHy61WAB9vc7xLeNCdc`](https://explorer.solana.com/tx/5nx39Tk5k9jCjee1tRr3yW7jMSyLXRxMwZVmDYUCZuTKPzRpgMyHdPAdhzGqaPqb2vuYVhHy61WAB9vc7xLeNCdc?cluster=devnet)
 
 ---
 

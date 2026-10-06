@@ -10,7 +10,7 @@ import {
 } from '@solana/web3.js';
 
 export const SOLANA_DEVNET_RPC = 'https://api.devnet.solana.com';
-export const PROGRAM_ID_STR = 'H7afUaQecBwFRLRahfAQSM7ZdGXRfX5TiBEPQgahMHdr';
+export const PROGRAM_ID_STR = '3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc';
 export const TEFI_PROGRAM_ID = new PublicKey(PROGRAM_ID_STR);
 export const INSURANCE_VAULT_PDA = 'HvmJdEQD7ZrU6jMVZjpUyLkNtJmQitRGxDPJsRhX3rE6';
 

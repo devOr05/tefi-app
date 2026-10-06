@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("H7afUaQecBwFRLRahfAQSM7ZdGXRfX5TiBEPQgahMHdr");
+declare_id!("3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc");
 
 pub const GRACE_PERIOD_SECONDS: i64 = 30 * 86400; // 30 días de gracia obligatorios antes de seguro
 pub const BASE_INSURANCE_FEE_BPS: u16 = 250; // 2.50% base
