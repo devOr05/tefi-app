@@ -24,6 +24,7 @@ export const Header: React.FC = () => {
   } = useTefi();
 
   const [copied, setCopied] = useState(false);
+  const [airdropFeedback, setAirdropFeedback] = useState<string | null>(null);
   const activeAddress = role === 'MERCHANT' ? merchant.walletAddress : customer.walletAddress;
 
   const handleCopy = () => {
@@ -33,7 +34,14 @@ export const Header: React.FC = () => {
   };
 
   const handleAirdropClick = async () => {
-    await requestAirdrop();
+    const res = await requestAirdrop();
+    if (res?.note) {
+      setAirdropFeedback(res.note);
+      setTimeout(() => setAirdropFeedback(null), 5000);
+    } else if (res?.success) {
+      setAirdropFeedback(language === 'en' ? '✓ +1 SOL credited on Devnet!' : '✓ ¡+1 SOL acreditado en Devnet!');
+      setTimeout(() => setAirdropFeedback(null), 3500);
+    }
   };
 
   return (
@@ -173,6 +181,19 @@ export const Header: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Feedback de Airdrop / Faucet */}
+      {airdropFeedback && (
+        <div className="max-w-md mx-auto mt-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-[9px] sm:text-[10px] flex items-center justify-between gap-1 shadow-2xs">
+          <span className="font-medium leading-tight">{airdropFeedback}</span>
+          <button
+            onClick={() => setAirdropFeedback(null)}
+            className="text-amber-700 dark:text-amber-400 font-bold px-1 hover:text-amber-950 cursor-pointer"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Oráculo de Precio en Tiempo Real */}
       <div className="max-w-md mx-auto mt-1 flex items-center justify-between text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 bg-emerald-50/60 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg border border-emerald-100/60 dark:border-emerald-900/40 overflow-hidden">

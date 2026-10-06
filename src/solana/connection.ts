@@ -14,8 +14,11 @@ export const PROGRAM_ID_STR = '3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc';
 export const TEFI_PROGRAM_ID = new PublicKey(PROGRAM_ID_STR);
 export const INSURANCE_VAULT_PDA = 'HvmJdEQD7ZrU6jMVZjpUyLkNtJmQitRGxDPJsRhX3rE6';
 
-// Instancia de conexión RPC a Solana Devnet
-export const solanaConnection = new Connection(SOLANA_DEVNET_RPC, 'confirmed');
+// Instancia de conexión RPC a Solana Devnet con timeout rápido anti-bloqueo
+export const solanaConnection = new Connection(SOLANA_DEVNET_RPC, {
+  commitment: 'confirmed',
+  disableRetryOnRateLimit: true
+});
 
 export function getSolanaExplorerUrl(signature: string): string {
   return `https://solscan.io/tx/${signature}?cluster=devnet`;
@@ -62,20 +65,36 @@ export async function getDevnetBalance(publicKey: PublicKey): Promise<number> {
   }
 }
 
-// Solicitar Airdrop de 1 SOL en Devnet
+// Solicitar Airdrop de 1 SOL en Devnet (con control rápido de timeout y rate limits)
 export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ success: boolean; signature?: string; error?: string }> {
   try {
-    const sig = await solanaConnection.requestAirdrop(publicKey, 1 * LAMPORTS_PER_SOL);
-    const latestBlockhash = await solanaConnection.getLatestBlockhash();
-    await solanaConnection.confirmTransaction({
-      signature: sig,
-      blockhash: latestBlockhash.blockhash,
-      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
-    });
+    const airdropPromise = (async () => {
+      const sig = await solanaConnection.requestAirdrop(publicKey, 1 * LAMPORTS_PER_SOL);
+      const latestBlockhash = await solanaConnection.getLatestBlockhash();
+      await solanaConnection.confirmTransaction({
+        signature: sig,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+      });
+      return sig;
+    })();
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT_DEVNET')), 6000)
+    );
+
+    const sig = await Promise.race([airdropPromise, timeoutPromise]);
     return { success: true, signature: sig };
   } catch (err: any) {
-    console.error('Error al solicitar airdrop en Devnet:', err);
-    return { success: false, error: err.message || 'Límite de airdrop alcanzado o RPC ocupado.' };
+    console.warn('[Solana Devnet Faucet] Respuesta del faucet:', err?.message || err);
+    const msg = err?.message || '';
+    let friendlyError = 'Límite de airdrop alcanzado o faucet de Devnet ocupado.';
+    if (msg.includes('429') || msg.includes('limit') || msg.includes('Internal error')) {
+      friendlyError = 'Límite diario del faucet de Solana alcanzado (máx. 1-2 SOL por día por IP).';
+    } else if (msg.includes('TIMEOUT_DEVNET')) {
+      friendlyError = 'El nodo de Solana tardó en responder. Reintentá en unos momentos.';
+    }
+    return { success: false, error: friendlyError };
   }
 }
 
@@ -98,17 +117,24 @@ export async function pingSolanaDevnet(): Promise<boolean> {
   }
 }
 
-// Transmitir evento real a Solana Devnet (usando SPL Memo Program con firma criptográfica)
+// Transmitir evento real a Solana Devnet (usando SPL Memo Program con firma y patrocinio de gas)
 export async function broadcastSolanaFiadoEvent(
   payer: Keypair,
-  eventData: { type: 'NEW_FIADO' | 'REPAY' | 'INSURANCE_CLAIM'; fiadoId: string; amountUsdc: number }
+  eventData: { type: 'NEW_FIADO' | 'REPAY' | 'INSURANCE_CLAIM'; fiadoId: string; amountUsdc: number },
+  sponsorKeypair?: Keypair
 ): Promise<string | null> {
   try {
-    // Si el payer no tiene balance, intentar airdrop automático en devnet
+    let effectiveFeePayer = payer;
     const balance = await getDevnetBalance(payer.publicKey);
-    if (balance < 0.005) {
-      console.log(`[Tefi on-chain] Solicitando gas para ${payer.publicKey.toBase58()}...`);
-      await requestDevnetAirdrop(payer.publicKey);
+
+    // Si el payer no tiene saldo, usar el sponsor (ej: almacén financia al vecino)
+    if (balance < 0.002) {
+      if (sponsorKeypair) {
+        const sponsorBalance = await getDevnetBalance(sponsorKeypair.publicKey);
+        if (sponsorBalance >= 0.002) {
+          effectiveFeePayer = sponsorKeypair;
+        }
+      }
     }
 
     const memoProgramId = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
@@ -127,7 +153,13 @@ export async function broadcastSolanaFiadoEvent(
     });
 
     const tx = new Transaction().add(memoInstruction);
-    const signature = await sendAndConfirmTransaction(solanaConnection, tx, [payer], {
+    tx.feePayer = effectiveFeePayer.publicKey;
+
+    const signers = effectiveFeePayer.publicKey.equals(payer.publicKey)
+      ? [payer]
+      : [payer, effectiveFeePayer];
+
+    const signature = await sendAndConfirmTransaction(solanaConnection, tx, signers, {
       commitment: 'confirmed'
     });
     console.log(`[Tefi on-chain] Transacción real confirmada en Devnet: ${signature}`);

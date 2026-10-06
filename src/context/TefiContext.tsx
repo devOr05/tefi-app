@@ -39,7 +39,7 @@ interface TefiContextType {
   clearPendingFiadoFromUrl: () => void;
   repayFiado: (fiadoId: string, paymentMethod?: PaymentMethod) => { success: boolean; signature?: string };
   claimInsurance: (fiadoId: string) => { success: boolean; payoutAmount?: number; signature?: string };
-  requestAirdrop: () => Promise<{ success: boolean; signature?: string; error?: string }>;
+  requestAirdrop: () => Promise<{ success: boolean; signature?: string; error?: string; note?: string }>;
   refreshBalance: () => Promise<void>;
   resetDemoData: () => void;
   updateLinkedAccounts: (data: { cuentaDniAlias?: string; cuentaDniLinked?: boolean; mercadoPagoAlias?: string; mercadoPagoLinked?: boolean }) => void;
@@ -400,7 +400,12 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshBalance = useCallback(async () => {
     try {
       const bal = await getDevnetBalance(activeKeypair.publicKey);
-      setSolanaBalance(bal);
+      if (bal > 0) {
+        setSolanaBalance(bal);
+      } else {
+        // Si la blockchain reporta 0 pero hay saldo local acreditado para la demo, preservarlo
+        setSolanaBalance(prev => (prev > 0 ? prev : bal));
+      }
     } catch (e) {
       console.warn('Error al consultar balance Devnet:', e);
     }
@@ -410,19 +415,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshBalance();
   }, [role, refreshBalance]);
 
-  // Solicitar 1 SOL de airdrop en Devnet (con respaldo optimista para demos ante congestión de RPC)
-  const handleAirdrop = async () => {
+  // Solicitar 1 SOL de airdrop en Devnet (con respaldo optimista para demos ante límites o congestión de RPC)
+  const handleAirdrop = async (): Promise<{ success: boolean; signature?: string; error?: string; note?: string }> => {
     setIsAirdropLoading(true);
     try {
       const res = await requestDevnetAirdrop(activeKeypair.publicKey);
       if (res.success) {
         await refreshBalance();
-        return res;
+        return { success: true, signature: res.signature };
       } else {
         // Si el faucet público de Devnet está agotado o limitado por IP (error 429),
         // acreditar saldo de prueba local para asegurar una demo impecable sin bloqueos
         setSolanaBalance(prev => +(prev + 1.0).toFixed(2));
-        return { success: true };
+        return { success: true, note: res.error };
       }
     } finally {
       setIsAirdropLoading(false);
@@ -554,12 +559,12 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentDebt: +(prev.currentDebt + newFiado.amountUsdc).toFixed(2)
     }));
 
-    // Transmitir evento on-chain de confirmación de fiado en Solana Devnet con la wallet del cliente
+    // Transmitir evento on-chain de confirmación de fiado en Solana Devnet con la wallet del cliente (patrocinado por el almacén)
     broadcastSolanaFiadoEvent(customerKeypair, {
       type: 'NEW_FIADO',
       fiadoId: newFiado.id,
       amountUsdc: newFiado.amountUsdc
-    }).then(realSig => {
+    }, merchantKeypair).then(realSig => {
       if (realSig) {
         setFiados(curr =>
           curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
@@ -588,12 +593,12 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
-    // Transmitir evento real on-chain a Solana Devnet si la wallet tiene fondos
+    // Transmitir evento real on-chain a Solana Devnet (patrocinado por el almacén si el vecino no tiene gas)
     broadcastSolanaFiadoEvent(customerKeypair, {
       type: 'REPAY',
       fiadoId,
       amountUsdc: target.amountUsdc
-    }).then(realSig => {
+    }, merchantKeypair).then(realSig => {
       if (realSig) {
         setFiados(curr =>
           curr.map(f => (f.id === fiadoId ? { ...f, txSignature: realSig } : f))
@@ -922,12 +927,12 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
-    // Transmitir a Solana
+    // Transmitir a Solana con patrocinio del almacén
     broadcastSolanaFiadoEvent(customerKeypair, {
       type: 'REPAY',
       fiadoId: 'ALL_ACTIVE_SETTLED',
       amountUsdc: totalDebt
-    });
+    }, merchantKeypair);
 
     setCustomer(prev => {
       const newSavingsUsdc = Math.max(0, +(prev.abundanceSavingsUsdc! - totalDebt).toFixed(2));
