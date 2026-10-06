@@ -46,16 +46,10 @@ jobs:
       - name: Add Solana to PATH
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Cache Anchor CLI
-        uses: actions/cache@v4
-        id: cache-anchor
-        with:
-          path: ~/.cargo/bin/anchor
-          key: anchor-cli-0.30.1
-
       - name: Install Anchor CLI
-        if: steps.cache-anchor.outputs.cache-hit != 'true'
-        run: cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli --locked
+        uses: coral-xyz/setup-anchor@v1
+        with:
+          version: 0.30.1
 
       - name: Verify Solana & Anchor Installation
         run: |
