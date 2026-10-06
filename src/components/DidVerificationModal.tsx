@@ -98,6 +98,9 @@ export const DidVerificationModal: React.FC<DidModalProps> = ({ isOpen, onClose 
             </div>
 
             <div>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 mb-1.5">
+                {language === 'en' ? 'Roadmap · Demo Prototype' : 'Roadmap · Prototipo Simulado'}
+              </span>
               <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
                 {language === 'en' ? 'Unique Digital Identity (DID)' : 'Identidad Digital Única (DID)'}
               </h3>

@@ -79,16 +79,6 @@ export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ succ
   }
 }
 
-// Generador de firmas para eventos off-chain cuando el programa simulado registra el fiado
-export function generateMockSolanaSignature(): string {
-  const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  let sig = '';
-  for (let i = 0; i < 88; i++) {
-    sig += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return sig;
-}
-
 // Health check para Solana Devnet
 export async function pingSolanaDevnet(): Promise<boolean> {
   try {
@@ -108,12 +98,19 @@ export async function pingSolanaDevnet(): Promise<boolean> {
   }
 }
 
-// Transmitir evento real a Solana Devnet (usando SPL Memo Program) con fallback automático
+// Transmitir evento real a Solana Devnet (usando SPL Memo Program con firma criptográfica)
 export async function broadcastSolanaFiadoEvent(
   payer: Keypair,
   eventData: { type: 'NEW_FIADO' | 'REPAY' | 'INSURANCE_CLAIM'; fiadoId: string; amountUsdc: number }
-): Promise<string> {
+): Promise<string | null> {
   try {
+    // Si el payer no tiene balance, intentar airdrop automático en devnet
+    const balance = await getDevnetBalance(payer.publicKey);
+    if (balance < 0.005) {
+      console.log(`[Tefi on-chain] Solicitando gas para ${payer.publicKey.toBase58()}...`);
+      await requestDevnetAirdrop(payer.publicKey);
+    }
+
     const memoProgramId = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
     const memoInstruction = new TransactionInstruction({
       keys: [{ pubkey: payer.publicKey, isSigner: true, isWritable: true }],
@@ -136,8 +133,8 @@ export async function broadcastSolanaFiadoEvent(
     console.log(`[Tefi on-chain] Transacción real confirmada en Devnet: ${signature}`);
     return signature;
   } catch (err) {
-    console.warn('[Tefi on-chain] Devnet RPC sin SOL o con rate-limit, usando firma optimista:', err);
-    return generateMockSolanaSignature();
+    console.warn('[Tefi on-chain] Error al transmitir transacción en Devnet:', err);
+    return null;
   }
 }
 

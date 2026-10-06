@@ -26,3 +26,6 @@ dist-ssr
 # Solana & Target
 target/
 .anchor/
+
+# Temporary scratch directory
+scratch/

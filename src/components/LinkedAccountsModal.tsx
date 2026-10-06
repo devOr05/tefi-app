@@ -46,8 +46,8 @@ export const LinkedAccountsModal: React.FC<LinkedAccountsModalProps> = ({ isOpen
         </button>
 
         <div className="mb-4">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800">
-            {language === 'en' ? 'Fiat / Crypto Ramp' : 'Rampa Fiat / Cripto'}
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-800">
+            {language === 'en' ? 'Roadmap · Mock Fiat Rails' : 'Roadmap · Rieles Fiat Simulados'}
           </span>
           <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mt-1">
             {language === 'en' ? 'Linked Accounts & Wallets' : 'Cuentas & Billeteras Vinculadas'}

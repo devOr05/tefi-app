@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { CustomerProfile, MerchantProfile, FiadoRecord, InsurancePoolState, UserRole, LoyaltyTier, PaymentMethod, WebhookNotification, FiadoQrPayload } from '../types/tefi';
 import {
-  generateMockSolanaSignature,
   getOrCreateRoleKeypair,
   getDevnetBalance,
   requestDevnetAirdrop,
@@ -106,8 +105,7 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     createdAt: '2026-09-24T14:30:00Z',
     dueDate: '2026-10-09T14:30:00Z',
     status: 'ACTIVE',
-    nonce: 1,
-    txSignature: generateMockSolanaSignature()
+    nonce: 1
   },
   {
     id: 'f-102',
@@ -122,8 +120,7 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     createdAt: '2026-09-26T18:15:00Z',
     dueDate: '2026-10-11T18:15:00Z',
     status: 'ACTIVE',
-    nonce: 2,
-    txSignature: generateMockSolanaSignature()
+    nonce: 2
   },
   {
     id: 'f-100',
@@ -139,8 +136,7 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     dueDate: '2026-09-25T12:00:00Z',
     status: 'PAID',
     nonce: 0,
-    repaidAt: '2026-09-23T11:20:00Z',
-    txSignature: generateMockSolanaSignature()
+    repaidAt: '2026-09-23T11:20:00Z'
   }
 ];
 
@@ -466,7 +462,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    const txSig = generateMockSolanaSignature();
     const currentNonce = merchant.fiadoNonce || 0;
 
     const newFiado: FiadoRecord = {
@@ -482,8 +477,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'ACTIVE',
-      nonce: currentNonce,
-      txSignature: txSig
+      nonce: currentNonce
     };
 
     setFiados(prev => [newFiado, ...prev]);
@@ -536,8 +530,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Este fiado ya se encuentra registrado y activo en tu libreta.' };
     }
 
-    const txSig = data.txSignature || generateMockSolanaSignature();
-
     const newFiado: FiadoRecord = {
       id: data.id,
       merchantId: data.merchantId || merchant.id,
@@ -552,7 +544,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dueDate: data.dueDate || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'ACTIVE',
       nonce: data.nonce ?? 0,
-      txSignature: txSig
+      txSignature: data.txSignature
     };
 
     setFiados(prev => [newFiado, ...prev.filter(f => f.id !== newFiado.id)]);
@@ -583,8 +575,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const target = fiados.find(f => f.id === fiadoId);
     if (!target || target.status !== 'ACTIVE') return { success: false };
 
-    const txSig = generateMockSolanaSignature();
-
     setFiados(prev =>
       prev.map(f =>
         f.id === fiadoId
@@ -592,7 +582,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...f,
               status: 'PAID',
               repaidAt: new Date().toISOString(),
-              txSignature: txSig,
               paymentMethod
             }
           : f
@@ -683,7 +672,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
     }, 7000);
 
-    return { success: true, signature: txSig };
+    return { success: true };
   };
 
   // 3. Comercio reclama seguro por incobrable
@@ -691,12 +680,10 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const target = fiados.find(f => f.id === fiadoId);
     if (!target || target.status !== 'ACTIVE') return { success: false };
 
-    const txSig = generateMockSolanaSignature();
-
     setFiados(prev =>
       prev.map(f =>
         f.id === fiadoId
-          ? { ...f, status: 'INSURANCE_CLAIMED', txSignature: txSig }
+          ? { ...f, status: 'INSURANCE_CLAIMED' }
           : f
       )
     );
@@ -733,7 +720,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     });
 
-    return { success: true, payoutAmount: target.amountUsdc, signature: txSig };
+    return { success: true, payoutAmount: target.amountUsdc };
   };
 
   const resetDemoData = () => {
@@ -921,8 +908,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    const txSig = generateMockSolanaSignature();
-
     // Marcar todos los fiados activos como pagados
     setFiados(prev =>
       prev.map(f =>
@@ -931,7 +916,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...f,
               status: 'PAID',
               repaidAt: new Date().toISOString(),
-              txSignature: txSig,
               paymentMethod: 'ABUNDANCE_FOUNTAIN'
             }
           : f

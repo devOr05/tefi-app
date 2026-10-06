@@ -82,9 +82,9 @@ export const AbundanceFountainCard: React.FC = () => {
           </div>
         </div>
 
-        <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-50 via-amber-50 to-emerald-50 text-purple-900 border border-purple-200/70 shadow-2xs flex items-center gap-1">
-          <Zap className="w-2.5 h-2.5 text-purple-600 fill-purple-600" />
-          ~7.4% APY
+        <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 shadow-2xs flex items-center gap-1">
+          <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
+          {language === 'en' ? 'Roadmap · ~7.4% APY' : 'Roadmap · ~7.4% APY'}
         </span>
       </div>
 

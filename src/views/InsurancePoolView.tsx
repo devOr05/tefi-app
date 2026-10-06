@@ -38,8 +38,8 @@ export const InsurancePoolView: React.FC = () => {
       {/* Header del Pool */}
       <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-gray-900 text-white rounded-3xl p-5 shadow-sm relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-purple-200">
-            {t('smartContractPda')}
+          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/30">
+            Roadmap · Fondo Mutual Descentralizado
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[11px] font-bold text-emerald-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
