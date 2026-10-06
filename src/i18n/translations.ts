@@ -23,7 +23,7 @@ export const translations = {
     // Navigation
     navStore: 'Almacén',
     navFiar: 'Fiar',
-    navInsurance: 'Seguro & Riesgo',
+    navInsurance: 'Seguro',
     navLibreta: 'Mi Libreta',
     navScore: 'Score Crediticio',
     navLoyalty: 'Fidelidad',
@@ -195,7 +195,7 @@ export const translations = {
     // Navigation
     navStore: 'Store',
     navFiar: 'Credit',
-    navInsurance: 'Insurance & Risk',
+    navInsurance: 'Insurance',
     navLibreta: 'My Passbook',
     navScore: 'Credit Score',
     navLoyalty: 'Loyalty',

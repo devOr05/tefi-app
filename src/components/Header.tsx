@@ -159,16 +159,18 @@ export const Header: React.FC = () => {
         {/* SOL Balance, Airdrop y Reset Demo */}
         <div className="flex items-center gap-1 shrink-0">
           <span className="font-bold text-gray-800 dark:text-gray-200 text-[9.5px] sm:text-[10px]">{solanaBalance.toFixed(2)} SOL</span>
-          <button
-            onClick={handleAirdropClick}
-            disabled={isAirdropLoading}
-            aria-label={t('airdropTitle')}
-            className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-50 dark:from-purple-950/60 via-amber-50/50 dark:via-amber-950/40 to-purple-50 dark:to-purple-950/60 text-purple-900 dark:text-purple-200 font-bold text-[9px] sm:text-[10px] hover:from-purple-100 hover:to-amber-100 disabled:opacity-50 transition-all border border-purple-200/90 dark:border-purple-800 shadow-2xs cursor-pointer"
-            title={t('airdropTitle')}
-          >
-            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[7.5px] sm:text-[8px] font-black leading-none shadow-2xs">+</span>
-            <span>{isAirdropLoading ? '...' : '1 SOL'}</span>
-          </button>
+          {role === 'CUSTOMER' && (
+            <button
+              onClick={handleAirdropClick}
+              disabled={isAirdropLoading}
+              aria-label={t('airdropTitle')}
+              className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-50 dark:from-purple-950/60 via-amber-50/50 dark:via-amber-950/40 to-purple-50 dark:to-purple-950/60 text-purple-900 dark:text-purple-200 font-bold text-[9px] sm:text-[10px] hover:from-purple-100 hover:to-amber-100 disabled:opacity-50 transition-all border border-purple-200/90 dark:border-purple-800 shadow-2xs cursor-pointer"
+              title={t('airdropTitle')}
+            >
+              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[7.5px] sm:text-[8px] font-black leading-none shadow-2xs">+</span>
+              <span>{isAirdropLoading ? '...' : '1 SOL'}</span>
+            </button>
+          )}
 
           {/* Reset Demo Button */}
           <button

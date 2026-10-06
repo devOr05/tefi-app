@@ -210,13 +210,13 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [webhookNotification, setWebhookNotification] = useState<WebhookNotification | null>(null);
   const [pendingFiadoFromUrl, setPendingFiadoFromUrl] = useState<FiadoQrPayload | null>(null);
 
-  // Idioma (English / Spanish) - Comienza en inglés ('en') por defecto
+  // Idioma (Español / English) - Comienza en español ('es') por defecto para evitar traducciones automáticas invasivas
   const [language, setLanguageState] = useState<Language>(() => {
     const stored = localStorage.getItem('tefi_language_v2');
     if (stored === 'es' || stored === 'en') {
       return stored;
     }
-    return 'en';
+    return 'es';
   });
 
   const setLanguage = useCallback((lang: Language) => {

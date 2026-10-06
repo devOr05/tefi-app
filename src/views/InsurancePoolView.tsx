@@ -14,9 +14,11 @@ import {
   Check, 
   Sparkles, 
   Award,
-  Zap
+  Zap,
+  Building2
 } from 'lucide-react';
 import { INSURANCE_VAULT_PDA, getSolanaExplorerUrl } from '../solana/connection';
+import { JoinStoreModal } from '../components/JoinStoreModal';
 
 type InsurancePlan = 'FREE' | 'STANDAR' | 'ORO';
 
@@ -24,6 +26,7 @@ export const InsurancePoolView: React.FC = () => {
   const { insurancePool, merchant, language, t } = useTefi();
   const [selectedPlan, setSelectedPlan] = useState<InsurancePlan>('ORO');
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [justChangedPlan, setJustChangedPlan] = useState<string | null>(null);
 
   const handleSelectPlan = (plan: InsurancePlan) => {
@@ -39,7 +42,7 @@ export const InsurancePoolView: React.FC = () => {
       <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-gray-900 text-white rounded-3xl p-5 shadow-sm relative overflow-hidden">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/30">
-            Roadmap · Fondo Mutual Descentralizado
+            {language === 'en' ? 'Roadmap · Decentralized Mutual Fund' : 'Roadmap · Fondo Mutual Descentralizado'}
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[11px] font-bold text-emerald-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -117,6 +120,29 @@ export const InsurancePoolView: React.FC = () => {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Sumá tu Almacén a la Red Solana (Adhesión Free) */}
+      <div className="bg-emerald-50/90 dark:bg-emerald-950/40 rounded-3xl p-4 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Building2 className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
+              {language === 'en' ? 'Free Store Onboarding' : 'Adhesión Gratuita de Comercios'}
+            </h4>
+            <p className="text-[10px] text-emerald-800 dark:text-emerald-300">
+              {language === 'en' ? 'Join the Solana network at 0% fee with our Free Plan.' : 'Sumá tu comercio a Solana al 0% de costo con el Plan Free.'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsJoinModalOpen(true)}
+          className="text-[10.5px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-3 py-1.5 rounded-xl shadow-xs shrink-0 cursor-pointer transition-all"
+        >
+          {language === 'en' ? 'Join Free' : 'Sumarse Free'}
+        </button>
       </div>
 
       {/* Explicación del Modelo de Riesgo Dinámico */}
@@ -454,6 +480,21 @@ export const InsurancePoolView: React.FC = () => {
                         : 'Libreta digital, tickets y recordatorios básicos'}
                     </span>
                   </div>
+
+                  {/* Botón Adhesión Gratuita a la Red */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsJoinModalOpen(true);
+                      }}
+                      className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>{language === 'en' ? 'Register Store on Solana (Free Plan)' : 'Sumá tu Almacén a la Red Solana (Plan Free)'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -469,6 +510,12 @@ export const InsurancePoolView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Adhesión de Comercio */}
+      <JoinStoreModal
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
+      />
     </div>
   );
 };
