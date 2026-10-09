@@ -6,6 +6,7 @@ import {
   LAMPORTS_PER_SOL,
   Transaction,
   TransactionInstruction,
+  SystemProgram,
   sendAndConfirmTransaction
 } from '@solana/web3.js';
 
@@ -95,6 +96,32 @@ export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ succ
       friendlyError = 'El nodo de Solana tardó en responder. Reintentá en unos momentos.';
     }
     return { success: false, error: friendlyError };
+  }
+}
+
+// Transferir SOL entre billeteras en Solana Devnet (para auto-fondear gas del cliente)
+export async function transferDevnetSol(
+  fromKeypair: Keypair,
+  toPubkey: PublicKey,
+  amountSol: number
+): Promise<{ success: boolean; signature?: string; error?: string }> {
+  try {
+    const lamports = Math.round(amountSol * LAMPORTS_PER_SOL);
+    const tx = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: fromKeypair.publicKey,
+        toPubkey,
+        lamports
+      })
+    );
+    const signature = await sendAndConfirmTransaction(solanaConnection, tx, [fromKeypair], {
+      commitment: 'confirmed'
+    });
+    console.log(`[Tefi on-chain] Transferencia de ${amountSol} SOL exitosa: ${signature}`);
+    return { success: true, signature };
+  } catch (err: any) {
+    console.error('Error in transferDevnetSol:', err);
+    return { success: false, error: err?.message || String(err) };
   }
 }
 

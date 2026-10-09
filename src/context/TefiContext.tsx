@@ -4,7 +4,8 @@ import {
   getOrCreateRoleKeypair,
   getDevnetBalance,
   requestDevnetAirdrop,
-  broadcastSolanaFiadoEvent
+  broadcastSolanaFiadoEvent,
+  transferDevnetSol
 } from '../solana/connection';
 import {
   executeOnChainIssueFiado,
@@ -406,6 +407,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const bal = await getDevnetBalance(activeKeypair.publicKey);
       setSolanaBalance(bal);
+
+      // Si el almacén tiene fondos (>= 2 SOL) y el cliente tiene poco (< 0.5 SOL), transferir 2 SOL on-chain para gas
+      const custBal = await getDevnetBalance(customerKeypair.publicKey);
+      const merchBal = await getDevnetBalance(merchantKeypair.publicKey);
+      if (merchBal >= 2 && custBal < 0.5) {
+        console.log('[Tefi Devnet] Auto-fondeando Vecino desde Almacén con 2 SOL de gas...');
+        const transferRes = await transferDevnetSol(merchantKeypair, customerKeypair.publicKey, 2);
+        if (transferRes.success) {
+          console.log('[Tefi Devnet] Auto-fondeo exitoso, Tx:', transferRes.signature);
+          const updatedBal = await getDevnetBalance(activeKeypair.publicKey);
+          setSolanaBalance(updatedBal);
+        }
+      }
     } catch (e) {
       console.warn('Error al consultar balance Devnet:', e);
     }
@@ -424,6 +438,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await refreshBalance();
         return { success: true, signature: res.signature };
       } else {
+        // Fallback inteligente: si el grifo público está saturado, transferir desde el Almacén fondeado
+        const merchBal = await getDevnetBalance(merchantKeypair.publicKey);
+        if (role === 'CUSTOMER' && merchBal >= 1.5) {
+          const tRes = await transferDevnetSol(merchantKeypair, customerKeypair.publicKey, 1.5);
+          if (tRes.success) {
+            await refreshBalance();
+            return {
+              success: true,
+              signature: tRes.signature,
+              note: language === 'en' ? '✓ 1.5 SOL transferred on-chain from store wallet!' : '✓ ¡1.5 SOL transferidos on-chain desde el almacén!'
+            };
+          }
+        }
         return { success: false, error: res.error || 'Faucet de Devnet no disponible temporalmente.' };
       }
     } finally {
