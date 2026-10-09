@@ -160,7 +160,8 @@ export async function ensureProfilesInitialized(
   const customerInfo = await solanaConnection.getAccountInfo(customerPda);
   if (!customerInfo) {
     console.log('[Tefi Anchor] Inicializando CustomerProfile on-chain...');
-    await program.methods
+    const custProgram = getTefiProgram(customerKeypair);
+    await custProgram.methods
       .initializeCustomer()
       .accounts({
         customer: customerKeypair.publicKey,
