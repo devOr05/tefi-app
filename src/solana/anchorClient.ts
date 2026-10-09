@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import { AnchorProvider, Program, BN, Idl } from '@coral-xyz/anchor';
 import { PublicKey, Keypair, SystemProgram, Transaction, VersionedTransaction } from '@solana/web3.js';
 import idl from './idl.json';

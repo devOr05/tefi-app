@@ -1,4 +1,5 @@
 // Conexión y utilidades reales para Solana Devnet con @solana/web3.js
+import { Buffer } from 'buffer';
 import {
   Connection,
   PublicKey,
