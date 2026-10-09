@@ -35,15 +35,14 @@ jobs:
           solana-keygen new --no-bip39-passphrase --force -s -o ~/.config/solana/id.json
           solana config set --url http://127.0.0.1:8899 -k ~/.config/solana/id.json
 
-      - name: Install Anchor CLI v0.29.0 & Test Runner
+      - name: Install Anchor CLI v0.29.0
         run: |
-          npm install -g @coral-xyz/anchor-cli@0.29.0 ts-mocha mocha
+          npm install -g @coral-xyz/anchor-cli@0.29.0
 
-      - name: Install Project Dependencies & Test Runners
+      - name: Install Project & Contract Dependencies
         run: |
           npm ci
-          npm install --no-save mocha@^10.2.0 @types/mocha@^10.0.6 chai@^4.3.7 @types/chai@^4.3.5 ts-mocha@^10.0.0
-          cd contracts/tefi_program && npm install --no-save mocha@^10.2.0 @types/mocha@^10.0.6 chai@^4.3.7 @types/chai@^4.3.5 ts-mocha@^10.0.0
+          cd contracts/tefi_program && npm install
 
       - name: Build Anchor SBF Program Binary
         run: |
