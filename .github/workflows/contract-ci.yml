@@ -20,20 +20,24 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Setup Anchor, Solana & Node.js
-        uses: metadaoproject/setup-anchor@v3
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
         with:
-          anchor-version: '0.29.0'
-          solana-cli-version: '1.18.26'
-          node-version: '20'
+          node-version: 20
+          cache: 'npm'
 
-      - name: Generate Dummy Solana Wallet for Localnet
+      - name: Install Solana CLI v1.18.26 & Generate Wallet
         run: |
-          echo "/home/runner/solana-release/bin" >> $GITHUB_PATH
-          export PATH="/home/runner/solana-release/bin:$PATH"
+          sh -c "$(curl -sSfL https://release.solana.com/v1.18.26/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
           mkdir -p ~/.config/solana
           solana-keygen new --no-bip39-passphrase --force -s -o ~/.config/solana/id.json
           solana config set --url http://127.0.0.1:8899 -k ~/.config/solana/id.json
+
+      - name: Install Anchor CLI v0.29.0
+        run: |
+          npm install -g @coral-xyz/anchor-cli@0.29.0
 
       - name: Install Project Dependencies & Test Runners
         run: |
