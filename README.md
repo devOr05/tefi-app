@@ -6,7 +6,11 @@
 [![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?style=flat&logo=solana)](https://solana.com)
 [![Anchor](https://img.shields.io/badge/Anchor-0.30.1-50E3C2?style=flat)](https://anchor-lang.com)
 [![PWA](https://img.shields.io/badge/PWA-Ready-00A650?style=flat&logo=pwa)](https://web.dev/progressive-web-apps/)
+[![Live Demo](https://img.shields.io/badge/Live%20App-tef--iapp.vercel.app-blue)](https://tef-iapp.vercel.app/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+* 🌐 **Live Demo Web PWA**: [https://tef-iapp.vercel.app](https://tef-iapp.vercel.app/)
+* 📦 **Solana Devnet Program**: [`3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc`](https://explorer.solana.com/address/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet)
 
 ---
 
@@ -26,7 +30,7 @@ In Argentina and throughout Latin America, corner grocery stores (*almacenes de 
 
 * 📱 **Dual-Role Counter UX**: Instantly switch between **Store Mode** (*Almacén*) and **Neighbor Mode** (*Vecino*).
 * 🧾 **Bilateral QR Credit Issuance**: The merchant inputs the grocery amount in ARS (converted to USDC via live oracle), snaps a receipt photo, and generates a dynamic QR code. The customer scans the QR to sign and consent to the credit.
-* 🔗 **Load-Bearing On-Chain Settlement**: Credit issuance and repayments are broadcast to Solana Devnet, linking the counter transaction to cryptographic keypairs.
+* 🔗 **Load-Bearing On-Chain Settlement**: Credit issuance and repayments invoke our Anchor smart contract on Solana Devnet, linking the counter transaction to cryptographic keypairs.
 * 📈 **Portable Credit Score**: Each on-time settlement boosts the customer's on-chain score (+5 points) and expands their counter credit limit, creating an immutable history readable by third-party lenders.
 
 ---
@@ -42,9 +46,8 @@ Traditional finance and layer-1 blockchains like Ethereum cannot service **$1.50
 
 ## 💼 Business Model: Who Pays and How Tefi Earns
 
-* **Free for Corner Stores**: The digital ledger is 100% free for merchants, acting as a zero-cost viral acquisition channel.
-* **Monetization (Lenders & Fintechs)**: Microfinance institutions and fintechs pay an **origination fee (1-2%) or API query fee** to access pre-qualified, unbanked neighborhood borrowers who have established verified repayment discipline on Tefi.
-* **Transaction Fee**: A nominal 1% network maintenance fee upon final debt settlement.
+* **100% Free for Corner Stores & Neighbors**: The digital ledger is completely free for merchants and consumers, maximizing grassroots neighborhood adoption.
+* **Monetization (Lenders & Fintechs)**: Microfinance institutions and fintechs pay an **API query fee ($0.50 - $1.00 USD)** to inspect verified on-chain credit histories, or an **origination fee (1-2%)** on microloans successfully underwritten using Tefi's verified track records.
 
 ---
 

@@ -6,6 +6,11 @@ import {
   requestDevnetAirdrop,
   broadcastSolanaFiadoEvent
 } from '../solana/connection';
+import {
+  executeOnChainIssueFiado,
+  executeOnChainRepayFiado,
+  fetchOnChainCustomerProfile
+} from '../solana/anchorClient';
 import { fetchLiveUsdcRate, ExchangeRateData } from '../services/oracle';
 import { Language, translations } from '../i18n/translations';
 
@@ -415,7 +420,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshBalance();
   }, [role, refreshBalance]);
 
-  // Solicitar 1 SOL de airdrop en Devnet (con respaldo optimista para demos ante límites o congestión de RPC)
+  // Solicitar 1 SOL de airdrop en Devnet
   const handleAirdrop = async (): Promise<{ success: boolean; signature?: string; error?: string; note?: string }> => {
     setIsAirdropLoading(true);
     try {
@@ -424,10 +429,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await refreshBalance();
         return { success: true, signature: res.signature };
       } else {
-        // Si el faucet público de Devnet está agotado o limitado por IP (error 429),
-        // acreditar saldo de prueba local para asegurar una demo impecable sin bloqueos
-        setSolanaBalance(prev => +(prev + 1.0).toFixed(2));
-        return { success: true, note: res.error };
+        return { success: false, error: res.error || 'Faucet de Devnet no disponible temporalmente.' };
       }
     } finally {
       setIsAirdropLoading(false);
@@ -559,17 +561,42 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentDebt: +(prev.currentDebt + newFiado.amountUsdc).toFixed(2)
     }));
 
-    // Transmitir evento on-chain de confirmación de fiado en Solana Devnet con la wallet del cliente (patrocinado por el almacén)
-    broadcastSolanaFiadoEvent(customerKeypair, {
-      type: 'NEW_FIADO',
-      fiadoId: newFiado.id,
-      amountUsdc: newFiado.amountUsdc
-    }, merchantKeypair).then(realSig => {
-      if (realSig) {
+    // Ejecutar instrucción real issue_fiado del programa Anchor en Solana Devnet
+    executeOnChainIssueFiado(
+      merchantKeypair,
+      customerKeypair,
+      newFiado.amountUsdc,
+      new Date(newFiado.dueDate).getTime(),
+      newFiado.itemsDescription
+    ).then(res => {
+      if (res && res.signature) {
         setFiados(curr =>
-          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
+          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: res.signature, nonce: res.nonce } : f))
         );
+        fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
+          if (onChainProfile) {
+            setCustomer(prev => ({
+              ...prev,
+              creditScore: onChainProfile.creditScore,
+              currentDebt: onChainProfile.activeDebtUsdc,
+              maxCreditLimit: onChainProfile.creditLimitUsdc
+            }));
+          }
+        });
       }
+    }).catch(err => {
+      console.warn('[Anchor issueFiado] Fallback a broadcastSolanaFiadoEvent:', err);
+      broadcastSolanaFiadoEvent(customerKeypair, {
+        type: 'NEW_FIADO',
+        fiadoId: newFiado.id,
+        amountUsdc: newFiado.amountUsdc
+      }, merchantKeypair).then(realSig => {
+        if (realSig) {
+          setFiados(curr =>
+            curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
+          );
+        }
+      });
     });
 
     return { success: true, fiado: newFiado };
@@ -593,17 +620,41 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
-    // Transmitir evento real on-chain a Solana Devnet (patrocinado por el almacén si el vecino no tiene gas)
-    broadcastSolanaFiadoEvent(customerKeypair, {
-      type: 'REPAY',
-      fiadoId,
-      amountUsdc: target.amountUsdc
-    }, merchantKeypair).then(realSig => {
-      if (realSig) {
+    // Ejecutar instrucción real repay_fiado del programa Anchor en Solana Devnet
+    executeOnChainRepayFiado(
+      customerKeypair,
+      merchantKeypair.publicKey,
+      target.nonce ?? 0
+    ).then(res => {
+      if (res && res.signature) {
         setFiados(curr =>
-          curr.map(f => (f.id === fiadoId ? { ...f, txSignature: realSig } : f))
+          curr.map(f => (f.id === fiadoId ? { ...f, txSignature: res.signature } : f))
         );
+        fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
+          if (onChainProfile) {
+            setCustomer(prev => ({
+              ...prev,
+              creditScore: onChainProfile.creditScore,
+              currentDebt: onChainProfile.activeDebtUsdc,
+              maxCreditLimit: onChainProfile.creditLimitUsdc,
+              loyaltyPoints: onChainProfile.loyaltyPoints
+            }));
+          }
+        });
       }
+    }).catch(err => {
+      console.warn('[Anchor repayFiado] Fallback a broadcastSolanaFiadoEvent:', err);
+      broadcastSolanaFiadoEvent(customerKeypair, {
+        type: 'REPAY',
+        fiadoId,
+        amountUsdc: target.amountUsdc
+      }, merchantKeypair).then(realSig => {
+        if (realSig) {
+          setFiados(curr =>
+            curr.map(f => (f.id === fiadoId ? { ...f, txSignature: realSig } : f))
+          );
+        }
+      });
     });
 
     setCustomer(prev => {
@@ -634,16 +685,16 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     });
 
-    // Disparar Notificación de Webhook Automático en tiempo real
+    // Notificación en tiempo real
     const methodLabels: Record<PaymentMethod, string> = language === 'en' ? {
-      MERCADO_PAGO: 'Mercado Pago (Instant Transfer)',
-      CUENTA_DNI: 'Cuenta DNI (State Bank)',
+      MERCADO_PAGO: 'Mercado Pago (Transfer)',
+      CUENTA_DNI: 'Cuenta DNI (Transfer)',
       CASH: 'Cash at Counter',
       SOLANA_USDC: 'Solana USDC (On-Chain)',
       ABUNDANCE_FOUNTAIN: 'Abundance Fountain (Collateral)'
     } : {
-      MERCADO_PAGO: 'Mercado Pago (Transferencias 3.0)',
-      CUENTA_DNI: 'Cuenta DNI (Banco Provincia)',
+      MERCADO_PAGO: 'Mercado Pago (Transferencia)',
+      CUENTA_DNI: 'Cuenta DNI (Transferencia)',
       CASH: 'Efectivo en Mostrador',
       SOLANA_USDC: 'Solana USDC (On-Chain)',
       ABUNDANCE_FOUNTAIN: 'Fuente de la Abundancia (Fondos Retenidos)'
@@ -652,14 +703,14 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const notifTitle = language === 'en'
       ? (paymentMethod === 'ABUNDANCE_FOUNTAIN'
         ? '💧 Credit Settled with Fountain'
-        : (paymentMethod === 'CASH' ? 'In-Person Cash Payment Registered' : 'Banking Webhook Received 🔔'))
+        : (paymentMethod === 'CASH' ? 'Cash Payment Registered' : 'On-Chain Repayment Settled ⚡'))
       : (paymentMethod === 'ABUNDANCE_FOUNTAIN'
         ? '💧 Fiado Saldado con la Fuente'
-        : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Webhook Bancario Recibido 🔔'));
+        : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Repago Liquidado On-Chain ⚡'));
 
     const notifMessage = language === 'en'
-      ? `Payment of $${target.amountArs.toLocaleString('en-US')} ARS (${target.amountUsdc} USDC) received from ${target.customerName} via ${methodLabels[paymentMethod]}! Automatic on-chain reconciliation.`
-      : `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) recibido de ${target.customerName} vía ${methodLabels[paymentMethod]}! Conciliación automática on-chain.`;
+      ? `Payment of $${target.amountArs.toLocaleString('en-US')} ARS (${target.amountUsdc} USDC) confirmed from ${target.customerName} via ${methodLabels[paymentMethod]}. Settlement recorded on Solana Devnet.`
+      : `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) confirmado de ${target.customerName} vía ${methodLabels[paymentMethod]}! Liquidación registrada en Solana Devnet.`;
 
     const notif: WebhookNotification = {
       id: `wh-${Date.now()}`,

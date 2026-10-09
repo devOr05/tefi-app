@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
     "@solana/web3.js": "^1.99.0",
     "clsx": "^2.1.1",
     "html5-qrcode": "^2.3.8",

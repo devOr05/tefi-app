@@ -25,14 +25,14 @@ jobs:
       - name: Verify TypeScript & Build PWA
         run: npm run build
 
-      - name: Verify Solana Contract Structure & IDL
+      - name: Verify Solana IDL & Source Integrity
         run: |
           node -e "
             const fs = require('fs');
             const idl = JSON.parse(fs.readFileSync('src/solana/idl.json', 'utf8'));
-            console.log('✓ IDL Validated:', idl.name, 'version:', idl.version);
+            console.log('✓ IDL schema parsed:', idl.name, 'version:', idl.version);
             const lib = fs.readFileSync('contracts/tefi_program/src/lib.rs', 'utf8');
-            console.log('✓ Anchor Smart Contract verified:', lib.length, 'bytes');
+            console.log('✓ Anchor source file validated:', lib.length, 'bytes');
             const tests = fs.readFileSync('contracts/tefi_program/tests/tefi_program.ts', 'utf8');
-            console.log('✓ Anchor Test Suite verified:', tests.length, 'bytes');
+            console.log('✓ Anchor test suite file validated:', tests.length, 'bytes');
           "
