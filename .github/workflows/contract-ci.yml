@@ -35,14 +35,15 @@ jobs:
           solana-keygen new --no-bip39-passphrase --force -s -o ~/.config/solana/id.json
           solana config set --url http://127.0.0.1:8899 -k ~/.config/solana/id.json
 
-      - name: Install Anchor CLI v0.29.0
+      - name: Install Anchor CLI v0.29.0 & Test Runner
         run: |
-          npm install -g @coral-xyz/anchor-cli@0.29.0
+          npm install -g @coral-xyz/anchor-cli@0.29.0 ts-mocha mocha
 
       - name: Install Project Dependencies & Test Runners
         run: |
           npm ci
           npm install --no-save mocha@^10.2.0 @types/mocha@^10.0.6 chai@^4.3.7 @types/chai@^4.3.5 ts-mocha@^10.0.0
+          cd contracts/tefi_program && npm install --no-save mocha@^10.2.0 @types/mocha@^10.0.6 chai@^4.3.7 @types/chai@^4.3.5 ts-mocha@^10.0.0
 
       - name: Build Anchor SBF Program Binary
         run: |
@@ -54,3 +55,9 @@ jobs:
         run: |
           cd contracts/tefi_program
           anchor test --skip-build
+
+      - name: Diagnostic Logs on Failure
+        if: failure()
+        run: |
+          cat contracts/tefi_program/.anchor/test-ledger/test-ledger-log.txt || true
+          cat contracts/tefi_program/.anchor/test-ledger/validator.log || true
