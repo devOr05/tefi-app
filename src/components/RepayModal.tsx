@@ -12,7 +12,7 @@ interface RepayModalProps {
 
 export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, onRepaySuccess }) => {
   const { customer, repayFiado, exchangeRate, language, t } = useTefi();
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('ABUNDANCE_FOUNTAIN');
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('CASH');
   const [copied, setCopied] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processStep, setProcessStep] = useState<string>('');
@@ -25,13 +25,9 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
   const baseUsdc = fiado.amountUsdc;
   const baseArs = fiado.amountArs || Math.round(baseUsdc * rate);
 
-  // Comisión mínima pautada (1%): incluye costo de red Solana ($0.00025 on-chain) + mantenimiento de la app
-  const feeRate = 0.01;
-  const feeUsdc = +(baseUsdc * feeRate).toFixed(2);
-  const feeArs = Math.round(baseArs * feeRate);
-
-  const totalFinalUsdc = +(baseUsdc + feeUsdc).toFixed(2);
-  const totalFinalArs = baseArs + feeArs;
+  // 100% gratuito para el almacén y el vecino (sin comisiones intermedias)
+  const totalFinalUsdc = baseUsdc;
+  const totalFinalArs = baseArs;
   const calculatedArs = totalFinalArs;
 
   const handleCopy = (text: string, key: string) => {
@@ -42,47 +38,21 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
 
   const handleConfirmPayment = () => {
     setIsProcessing(true);
+    setProcessStep(
+      language === 'en'
+        ? 'Settling repay_fiado co-signed on Solana Devnet...'
+        : 'Liquidando repay_fiado co-firmado en Solana Devnet...'
+    );
 
-    if (selectedMethod === 'ABUNDANCE_FOUNTAIN') {
-      setProcessStep(language === 'en' ? '1/3: 💧 Verifying collateral in Fountain...' : '1/3: 💧 Verificando fondos retenidos en la Fuente...');
-      setTimeout(() => {
-        setProcessStep(language === 'en' ? '2/3: ⚡ Liquidating collateral to settle credit...' : '2/3: ⚡ Liquidando colateral para saldar fiado...');
-        setTimeout(() => {
-          setProcessStep(language === 'en' ? '3/3: 🛡️ Credit settled on Solana and funds unlocked...' : '3/3: 🛡️ Fiado saldado en Solana y saldo liberado...');
-          setTimeout(() => {
-            const res = repayFiado(fiado.id, selectedMethod);
-            setIsProcessing(false);
-            setProcessStep('');
+    const res = repayFiado(fiado.id, selectedMethod);
+    setIsProcessing(false);
+    setProcessStep('');
 
-            if (res.success) {
-              setIsSuccess(true);
-              if (res.signature) setTxSignature(res.signature);
-              if (onRepaySuccess) onRepaySuccess();
-            }
-          }, 700);
-        }, 700);
-      }, 700);
-      return;
+    if (res.success) {
+      setIsSuccess(true);
+      if (res.signature) setTxSignature(res.signature);
+      if (onRepaySuccess) onRepaySuccess();
     }
-
-    setProcessStep(language === 'en' ? '1/3: Sending bank transfer...' : '1/3: Enviando transferencia bancaria...');
-    setTimeout(() => {
-      setProcessStep(language === 'en' ? '2/3: 🔔 Bank webhook received (Coelsa/API)...' : '2/3: 🔔 Webhook bancario recibido (Coelsa/API)...');
-      setTimeout(() => {
-        setProcessStep(language === 'en' ? '3/3: ⚡ Automatically reconciling on Solana...' : '3/3: ⚡ Conciliando automáticamente en Solana...');
-        setTimeout(() => {
-          const res = repayFiado(fiado.id, selectedMethod);
-          setIsProcessing(false);
-          setProcessStep('');
-
-          if (res.success) {
-            setIsSuccess(true);
-            if (res.signature) setTxSignature(res.signature);
-            if (onRepaySuccess) onRepaySuccess();
-          }
-        }, 700);
-      }, 700);
-    }, 700);
   };
 
   const handleClose = () => {
@@ -131,10 +101,10 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-emerald-400 font-semibold">
-                    {language === 'en' ? 'Network + App Fee (1%)' : 'Comisión Red + App (1%)'}
+                    {language === 'en' ? 'App & Store Fee' : 'Comisión de App'}
                   </span>
                   <p className="text-xs font-bold text-emerald-300 mt-0.5">
-                    +${feeUsdc.toFixed(2)} USDC <span className="text-[10px] text-emerald-400/80">(+${feeArs.toLocaleString('es-AR')} ARS)</span>
+                    $0.00 USDC <span className="text-[10px] text-emerald-400/80">({language === 'en' ? '100% Free' : '100% Gratuito'})</span>
                   </p>
                 </div>
               </div>
@@ -465,9 +435,9 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               </h3>
               <p className="text-xs text-gray-500 mt-1">
                 {language === 'en' ? (
-                  <>You paid <strong>${totalFinalArs.toLocaleString('es-AR')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, with Solana network and app fees included) via{' '}</>
+                  <>You paid <strong>${totalFinalArs.toLocaleString('en-US')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, 100% free for store and customer) via{' '}</>
                 ) : (
-                  <>Abonaste <strong>${totalFinalArs.toLocaleString('es-AR')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, con costo de red Solana y app incluidos) vía{' '}</>
+                  <>Abonaste <strong>${totalFinalArs.toLocaleString('es-AR')} ARS</strong> (${totalFinalUsdc.toFixed(2)} USDC, 100% sin comisiones para vos ni el almacén) vía{' '}</>
                 )}
                 <strong className="text-gray-800">
                   {selectedMethod === 'MERCADO_PAGO' && 'Mercado Pago'}

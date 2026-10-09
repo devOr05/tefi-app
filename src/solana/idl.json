@@ -42,6 +42,7 @@
     {
       "name": "repayFiado",
       "accounts": [
+        { "name": "merchant", "isMut": true, "isSigner": true },
         { "name": "customer", "isMut": true, "isSigner": true },
         { "name": "customerProfile", "isMut": true, "isSigner": false },
         { "name": "fiadoRecord", "isMut": true, "isSigner": false },

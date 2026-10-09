@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTefi } from '../context/TefiContext';
-import { ShieldCheck, TrendingUp, Fingerprint, CheckCircle2, AlertCircle } from 'lucide-react';
-import { DidVerificationModal } from './DidVerificationModal';
+import { ShieldCheck, TrendingUp, Fingerprint, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 
 export const CreditScoreCard: React.FC = () => {
   const { customer, language } = useTefi();
-  const [isDidModalOpen, setIsDidModalOpen] = useState(false);
 
   const availableLimit = Math.max(0, +(customer.maxCreditLimit - customer.currentDebt).toFixed(1));
   const debtPercentage = Math.min(100, Math.round((customer.currentDebt / (customer.maxCreditLimit || 1)) * 100));
@@ -60,42 +58,41 @@ export const CreditScoreCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Identidad Digital DID & Reputación Portable (Sin badge invasivo que pisa en móvil) */}
+      {/* Identidad Criptográfica en Solana (Ed25519) */}
       <div className="mt-4 bg-purple-50/70 dark:bg-purple-950/30 rounded-2xl p-3 border border-purple-100/90 dark:border-purple-800/40 space-y-2">
         <div className="flex items-center justify-between gap-3">
-          {/* Lado izquierdo: Ícono + Identidad DID */}
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${customer.isDidVerified ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-purple-600 text-white shadow-xs">
               <Fingerprint className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">
                 <span className="text-xs font-bold text-purple-950 dark:text-purple-200 leading-tight">
-                  {language === 'en' ? 'DID Identity' : 'Identidad DID'}
+                  {language === 'en' ? 'Solana Devnet Wallet' : 'Billetera en Solana Devnet'}
                 </span>
-                {customer.isDidVerified && (
-                  <span title="Verificada">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  </span>
-                )}
+                <span title="Ed25519 Activa">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                </span>
               </div>
               <p className="text-[10px] text-purple-700/80 dark:text-purple-300/70 font-mono truncate">
-                {customer.isDidVerified ? (customer.didUri || `did:sol:devnet:${customer.walletAddress}`) : (language === 'en' ? 'Unverified biometric DID' : 'Sin validar biométricamente')}
+                {customer.walletAddress}
               </p>
             </div>
           </div>
 
-          {/* Lado derecho: Botón despejado sin solapamientos */}
-          <button
-            onClick={() => setIsDidModalOpen(true)}
-            className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white shadow-xs transition-all shrink-0 flex items-center justify-center cursor-pointer touch-target-accessible"
+          <a
+            href={`https://explorer.solana.com/address/${customer.walletAddress}?cluster=devnet`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white shadow-xs transition-all shrink-0 flex items-center gap-1 cursor-pointer"
           >
-            {customer.isDidVerified ? (language === 'en' ? 'Re-scan' : 'Re-escanear') : (language === 'en' ? 'Verify' : 'Verificar')}
-          </button>
+            <span>Explorer</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
 
         <p className="text-[10px] text-purple-800/80 dark:text-purple-300/80 border-t border-purple-100/80 dark:border-purple-800/40 pt-1.5 leading-snug">
-          🔒 <strong>{language === 'en' ? 'National Portability:' : 'Portabilidad Nacional:'}</strong> {language === 'en' ? 'Your reputation travels with you to any store in the country on Solana Devnet.' : 'Tu historial te acompaña a cualquier almacén del país. No se puede falsificar ni eludir compromisos.'}
+          🔒 <strong>{language === 'en' ? 'On-Chain Portability:' : 'Portabilidad On-Chain:'}</strong> {language === 'en' ? 'Your credit score and history are stored directly in your Solana CustomerProfile PDA.' : 'Tu historial crediticio y reputación residen en tu cuenta PDA CustomerProfile en Solana Devnet.'}
         </p>
       </div>
 
@@ -144,8 +141,6 @@ export const CreditScoreCard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <DidVerificationModal isOpen={isDidModalOpen} onClose={() => setIsDidModalOpen(false)} />
     </div>
   );
 };

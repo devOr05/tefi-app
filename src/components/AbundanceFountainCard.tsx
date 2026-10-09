@@ -77,14 +77,14 @@ export const AbundanceFountainCard: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
             </div>
             <p className="text-[10px] text-gray-400 font-medium">
-              {language === 'en' ? 'Neighborhood micro-savings with Solana yield' : 'Micro-ahorro barrial con rendimiento en Solana'}
+              {language === 'en' ? 'Neighborhood micro-savings (Roadmap Concept)' : 'Micro-ahorro barrial (Concepto en Roadmap)'}
             </p>
           </div>
         </div>
 
         <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 shadow-2xs flex items-center gap-1">
           <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
-          {language === 'en' ? 'Roadmap · ~7.4% APY' : 'Roadmap · ~7.4% APY'}
+          {language === 'en' ? 'Roadmap · DeFi Sandbox' : 'Roadmap · Sandbox DeFi'}
         </span>
       </div>
 

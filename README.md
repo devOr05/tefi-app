@@ -79,9 +79,47 @@ The Anchor program (`contracts/tefi_program/src/lib.rs`) enforces bilateral coun
 4. `repay_fiado`: Settle debt, updates customer on-chain score (+5), and raises credit limit.
 5. `claim_insurance`: Actuarial default recovery with mandatory 30-day grace period enforcement.
 
-* **Program ID**: [`3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc`](https://explorer.solana.com/address/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet) (Executable Anchor Program on Solana Devnet)
+### 🔗 Live Solana Devnet Verified Transactions & State
+
+| Operation / Instruction | Signers | Devnet Transaction Hash / Account | Verified On-Chain State |
+| :--- | :--- | :--- | :--- |
+| **Program Deployment** | Deployer | [`5nx39Tk5k9jC...`](https://explorer.solana.com/tx/5nx39Tk5k9jCjee1tRr3yW7jMSyLXRxMwZVmDYUCZuTKPzRpgMyHdPAdhzGqaPqb2vuYVhHy61WAB9vc7xLeNCdc?cluster=devnet) | Program Executable on Devnet |
+| **`initialize_merchant`** | Merchant | [`22TwQz1wgrzo...`](https://explorer.solana.com/tx/22TwQz1wgrzoRcKqik8zrirg12e2menvnKFt3jsSr7wwdxEX59rYLon7YgzzVVJLgdRiGfh27yrBxZgtQaihTgCT?cluster=devnet) | Merchant PDA created (`53DzLq...`) |
+| **`initialize_customer`** | Customer | [`36aArF4bZSY6...`](https://explorer.solana.com/tx/36aArF4bZSY6dVnvwB6LRuufgVcFoZRdMHA8dHzC4Vdiwi5RA6SbAr7v8TNtxqivSd6re2KSQR3hYicVTmDhhBsC?cluster=devnet) | Base Score: 65, Base Limit: $50 USDC |
+| **`issue_fiado`** | **Bilateral** (Store + Neighbor) | [`3xpfrYgdHyGo...`](https://explorer.solana.com/tx/3xpfrYgdHyGoBkZHWBBN5jGo6LgcWwJhbPmj7pFTNnRXseRb6HBMWSLsQmM9wwnWKt2dei6Yaid6AhYJawyRHwGD?cluster=devnet) | Fiado PDA created, Active Debt: $0.93 USDC |
+| **`repay_fiado`** | **Bilateral** (Store confirms + Neighbor) | [`2QJs5Uqa81zU...`](https://explorer.solana.com/tx/2QJs5Uqa81zUJEjQLP3t8ArYML65Vr3yCG97qVVYi4L19B5Jnkuob5ioGcGyGEJsyaeX8E6c3rHsgRAM8wZKmEd6?cluster=devnet) | Debt: $0.00, Score: +5 (70 pts), Limit: +$5 ($55 USDC) |
+| **Customer Profile PDA** | - | [`xoQGyQRAVmK5...`](https://explorer.solana.com/address/xoQGyQRAVmK5tWRoMF1UaFr5E53p2qMLTMVAY9dCDeK?cluster=devnet) | **Score: 70/100 · Limit: $55.00 · Repaid: $0.93** |
+
+* **Program ID**: [`3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc`](https://explorer.solana.com/address/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet)
 * **Solscan Devnet**: [https://solscan.io/account/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet](https://solscan.io/account/3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc?cluster=devnet)
-* **Deployment Tx**: [`5nx39Tk5k9jCjee1tRr3yW7jMSyLXRxMwZVmDYUCZuTKPzRpgMyHdPAdhzGqaPqb2vuYVhHy61WAB9vc7xLeNCdc`](https://explorer.solana.com/tx/5nx39Tk5k9jCjee1tRr3yW7jMSyLXRxMwZVmDYUCZuTKPzRpgMyHdPAdhzGqaPqb2vuYVhHy61WAB9vc7xLeNCdc?cluster=devnet)
+
+### 🔍 How Any Third-Party Lender Reads Customer Credit History On-Chain
+Any microfinance institution, bank, or fintech can inspect a neighbor's credit track record directly via Solana RPC or Anchor without relying on Tefi's private servers:
+
+```typescript
+import { Connection, PublicKey } from '@solana/web3.js';
+import { Program, AnchorProvider } from '@coral-xyz/anchor';
+import idl from './idl.json';
+
+const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+const [customerPda] = PublicKey.findProgramAddressSync(
+  [Buffer.from('customer'), customerWalletPublicKey.toBuffer()],
+  new PublicKey('3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc')
+);
+
+// Fetch verifiable on-chain credit parameters directly from the PDA
+const profile = await program.account.customerProfile.fetch(customerPda);
+console.log('Verified Credit Score:', profile.creditScore); // e.g. 70 / 100
+console.log('Approved Credit Limit (USDC):', profile.creditLimitUsdc.toNumber() / 1_000_000);
+console.log('Historical Repaid Total (USDC):', profile.totalRepaidUsdc.toNumber() / 1_000_000);
+```
+
+---
+
+## 📊 Field Validation in Mar del Plata
+* **12 Corner Store Interviews conducted** across working-class neighborhoods in Mar del Plata, Argentina.
+* **4 Stores actively committed** to join the 30-day pilot trial.
+* **Key Learning**: Average grocery credit ticket is $2.00 - $4.00 USD (bread, milk, deli items) settled on weekly wage days. Over 90% of stores use physical paper notebooks with zero inflation hedge and zero credit portability for neighbors.
 
 ---
 

@@ -150,16 +150,17 @@ describe("tefi_program", () => {
     }
   });
 
-  it("5. Repay Fiado On-Chain (Updates Score +5, Raises Credit Limit, Adds Loyalty Points)", async () => {
+  it("5. Repay Fiado On-Chain Co-Signed by Store and Customer (Updates Score +5, Raises Credit Limit, Adds Loyalty Points)", async () => {
     await program.methods
       .repayFiado()
       .accounts({
+        merchant: merchantKeypair.publicKey,
         customer: customerKeypair.publicKey,
         customerProfile: customerProfilePda,
         fiadoRecord: fiadoRecordPda,
         systemProgram: SystemProgram.programId,
       })
-      .signers([customerKeypair])
+      .signers([merchantKeypair, customerKeypair])
       .rpc();
 
     // @ts-ignore
@@ -174,7 +175,58 @@ describe("tefi_program", () => {
     assert.equal(customerAccount.loyaltyPoints, 240); // 12 USDC * 20 pts
   });
 
-  it("6. Claim Insurance Rejection Before 30-Day Grace Period", async () => {
+  it("6. Reject Repay Fiado if Merchant Signature is Missing (Anti-Fraud / Anti-Self-Repayment)", async () => {
+    const amountUsdc = new anchor.BN(4_000_000);
+    const dueTimestamp = new anchor.BN(Math.floor(Date.now() / 1000) + 7 * 86400);
+    const nonceBuffer = Buffer.alloc(8);
+    nonceBuffer.writeBigUInt64LE(BigInt(1));
+
+    const [testFiadoPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("fiado"),
+        merchantKeypair.publicKey.toBuffer(),
+        customerKeypair.publicKey.toBuffer(),
+        nonceBuffer,
+      ],
+      program.programId
+    );
+
+    await program.methods
+      .issueFiado(amountUsdc, dueTimestamp, "test_receipt_hash_2")
+      .accounts({
+        merchant: merchantKeypair.publicKey,
+        customer: customerKeypair.publicKey,
+        merchantProfile: merchantProfilePda,
+        customerProfile: customerProfilePda,
+        fiadoRecord: testFiadoPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([merchantKeypair, customerKeypair])
+      .rpc();
+
+    try {
+      // Intentar repagar SIN la firma del comercio
+      await program.methods
+        .repayFiado()
+        .accounts({
+          merchant: merchantKeypair.publicKey,
+          customer: customerKeypair.publicKey,
+          customerProfile: customerProfilePda,
+          fiadoRecord: testFiadoPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([customerKeypair]) // Falta merchantKeypair
+        .rpc();
+
+      assert.fail("Should have failed because merchant did not sign");
+    } catch (err: any) {
+      expect(err.message).to.satisfy((msg: string) =>
+        msg.includes("unknown signer") || msg.includes("Signature verification failed")
+      );
+    }
+  });
+
+  it("7. Claim Insurance Rejection Before 30-Day Grace Period", async () => {
     try {
       await program.methods
         .claimInsurance()

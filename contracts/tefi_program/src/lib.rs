@@ -96,24 +96,28 @@ pub mod tefi_program {
         Ok(())
     }
 
-    /// 4. Pagar el fiado (Repayment): Aumenta reputación, suma puntos y sube límite
+    /// 4. Pagar el fiado (Repayment): Aumenta reputación y sube límite SOLO si se paga a término.
+    /// Exige confirmación co-firmada del comercio (merchant) que recibió el pago.
     pub fn repay_fiado(ctx: Context<RepayFiado>) -> Result<()> {
         let fiado = &mut ctx.accounts.fiado_record;
         let customer = &mut ctx.accounts.customer_profile;
 
         require!(fiado.status == 1, TefiError::FiadoNotActive);
 
+        let clock = Clock::get()?;
+        let is_on_time = clock.unix_timestamp <= fiado.due_timestamp;
+
         fiado.status = 2; // 2 = PAID
 
-        // Reducir deuda
+        // Reducir deuda activa y acumular total repagado
         customer.active_debt_usdc = customer.active_debt_usdc.saturating_sub(fiado.amount_usdc);
         customer.total_repaid_usdc = customer.total_repaid_usdc.saturating_add(fiado.amount_usdc);
 
-        // Aumentar Score de Reputación On-Chain (+5) hasta 100
-        customer.credit_score = std::cmp::min(100, customer.credit_score + 5);
-
-        // Expandir límite de crédito por buen cumplimiento (+$5 USDC = 5_000_000 micro-usdc)
-        customer.credit_limit_usdc = customer.credit_limit_usdc.saturating_add(5_000_000);
+        // Aumentar Score (+5) y límite (+$5 USDC) SOLO si se pagó a término antes del vencimiento
+        if is_on_time {
+            customer.credit_score = std::cmp::min(100, customer.credit_score + 5);
+            customer.credit_limit_usdc = customer.credit_limit_usdc.saturating_add(5_000_000);
+        }
 
         // Puntos de lealtad (20 pts por cada USDC)
         let points = (fiado.amount_usdc / 1_000_000).saturating_mul(20) as u32;
@@ -229,10 +233,17 @@ pub struct IssueFiado<'info> {
 #[derive(Accounts)]
 pub struct RepayFiado<'info> {
     #[account(mut)]
+    pub merchant: Signer<'info>, // <-- Firma del almacenero que confirma la recepción del pago
+    #[account(mut)]
     pub customer: Signer<'info>,
     #[account(mut, seeds = [b"customer", customer.key().as_ref()], bump = customer_profile.bump)]
     pub customer_profile: Account<'info, CustomerProfile>,
-    #[account(mut, seeds = [b"fiado", fiado_record.merchant.as_ref(), customer.key().as_ref(), &fiado_record.nonce.to_le_bytes()], bump = fiado_record.bump)]
+    #[account(
+        mut, 
+        seeds = [b"fiado", merchant.key().as_ref(), customer.key().as_ref(), &fiado_record.nonce.to_le_bytes()], 
+        bump = fiado_record.bump,
+        constraint = fiado_record.merchant == merchant.key() @ TefiError::UnauthorizedMerchant
+    )]
     pub fiado_record: Account<'info, FiadoRecord>,
     pub system_program: Program<'info, System>,
 }
@@ -334,4 +345,6 @@ pub enum TefiError {
     FiadoNotActive,
     #[msg("El plazo de gracia obligatorio (30 días de mora) aún no ha vencido.")]
     GracePeriodNotExpired,
+    #[msg("El comercio firmante no coincide con el almacén que otorgó el fiado.")]
+    UnauthorizedMerchant,
 }

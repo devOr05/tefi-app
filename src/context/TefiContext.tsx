@@ -667,10 +667,10 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
-    // Ejecutar instrucción real repay_fiado del programa Anchor en Solana Devnet
+    // Ejecutar instrucción real repay_fiado co-firmada del programa Anchor en Solana Devnet
     executeOnChainRepayFiado(
+      merchantKeypair,
       customerKeypair,
-      merchantKeypair.publicKey,
       target.nonce ?? 0
     ).then(res => {
       if (res && res.signature) {
@@ -888,8 +888,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `fountain-${Date.now()}`,
       title: language === 'en' ? '💧 Deposit to Abundance Fountain' : '💧 Aporte a la Fuente de la Abundancia',
       message: language === 'en'
-        ? `+$${amountArs.toLocaleString('en-US')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) contributed via ${methodLabels[paymentMethod]}. +2 Credit Score pts & earning 7.4% APY on Solana.`
-        : `+$${amountArs.toLocaleString('es-AR')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) vertidos vía ${methodLabels[paymentMethod]}. +2 pts de Score y rindiendo 7.4% APY en Solana.`,
+        ? `+$${amountArs.toLocaleString('en-US')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) contributed via ${methodLabels[paymentMethod]}. Concept simulated in prototype (Roadmap post-hackathon).`
+        : `+$${amountArs.toLocaleString('es-AR')} ARS (${usdcAdded} USDC ≈ ${solAdded} SOL) vertidos vía ${methodLabels[paymentMethod]}. Concepto simulado en prototipo (Roadmap post-hackathon).`,
       amountArs,
       amountUsdc: usdcAdded,
       method: paymentMethod,
