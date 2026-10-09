@@ -405,12 +405,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshBalance = useCallback(async () => {
     try {
       const bal = await getDevnetBalance(activeKeypair.publicKey);
-      if (bal > 0) {
-        setSolanaBalance(bal);
-      } else {
-        // Si la blockchain reporta 0 pero hay saldo local acreditado para la demo, preservarlo
-        setSolanaBalance(prev => (prev > 0 ? prev : bal));
-      }
+      setSolanaBalance(bal);
     } catch (e) {
       console.warn('Error al consultar balance Devnet:', e);
     }
@@ -489,17 +484,42 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setFiados(prev => [newFiado, ...prev]);
 
-    // Transmitir evento real on-chain a Solana Devnet si la wallet tiene fondos
-    broadcastSolanaFiadoEvent(merchantKeypair, {
-      type: 'NEW_FIADO',
-      fiadoId: newFiado.id,
-      amountUsdc: data.amountUsdc
-    }).then(realSig => {
-      if (realSig) {
+    // Ejecutar instrucción real issue_fiado del programa Anchor en Solana Devnet
+    executeOnChainIssueFiado(
+      merchantKeypair,
+      customerKeypair,
+      newFiado.amountUsdc,
+      new Date(newFiado.dueDate).getTime(),
+      newFiado.itemsDescription
+    ).then(res => {
+      if (res && res.signature) {
         setFiados(curr =>
-          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
+          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: res.signature, nonce: res.nonce } : f))
         );
+        fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
+          if (onChainProfile) {
+            setCustomer(prev => ({
+              ...prev,
+              creditScore: onChainProfile.creditScore,
+              currentDebt: onChainProfile.activeDebtUsdc,
+              maxCreditLimit: onChainProfile.creditLimitUsdc
+            }));
+          }
+        });
       }
+    }).catch(err => {
+      console.warn('[Anchor issueFiado in createFiado] Fallback a broadcastSolanaFiadoEvent:', err);
+      broadcastSolanaFiadoEvent(merchantKeypair, {
+        type: 'NEW_FIADO',
+        fiadoId: newFiado.id,
+        amountUsdc: data.amountUsdc
+      }).then(realSig => {
+        if (realSig) {
+          setFiados(curr =>
+            curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
+          );
+        }
+      });
     });
 
     setCustomer(prev => ({
