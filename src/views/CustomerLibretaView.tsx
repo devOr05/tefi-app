@@ -28,8 +28,8 @@ export const CustomerLibretaView: React.FC = () => {
     }
   }, [pendingFiadoFromUrl, clearPendingFiadoFromUrl]);
 
-  const handlePay = (fiadoId: string) => {
-    const res = repayFiado(fiadoId);
+  const handlePay = async (fiadoId: string) => {
+    const res = await repayFiado(fiadoId);
     if (res.success) {
       setJustPaidId(fiadoId);
       setTimeout(() => setJustPaidId(null), 3000);

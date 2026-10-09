@@ -224,13 +224,18 @@ export async function executeOnChainIssueFiado(
 
 /**
  * Repagar fiado en Solana Devnet (actualiza score on-chain +5, límite y puntos)
- * Exige co-firma bilateral: el almacén confirma el cobro y el cliente salda la deuda
+ * Exige co-firma bilateral estricta: el almacén confirma el cobro y el cliente salda la deuda.
+ * Si falta cualquiera de las dos firmas, la transacción falla de forma explícita.
  */
 export async function executeOnChainRepayFiado(
   merchantKeypair: Keypair,
   customerKeypair: Keypair,
   fiadoNonce: number
 ): Promise<{ signature: string }> {
+  if (!merchantKeypair?.publicKey || !customerKeypair?.publicKey) {
+    throw new Error('RepayFiado exige obligatoriamente las firmas de ambos: comercio y cliente.');
+  }
+
   const [customerPda] = getCustomerProfilePda(customerKeypair.publicKey);
   const [fiadoRecordPda] = getFiadoRecordPda(
     merchantKeypair.publicKey,
@@ -238,39 +243,21 @@ export async function executeOnChainRepayFiado(
     fiadoNonce
   );
 
-  console.log(`[Tefi Anchor] Ejecutando repayFiado co-firmado (Almacén + Vecino) para fiado nonce ${fiadoNonce}...`);
+  console.log(`[Tefi Anchor] Ejecutando repayFiado bilateral (Almacén + Vecino) para fiado nonce ${fiadoNonce}...`);
 
-  try {
-    const program = getTefiProgram(merchantKeypair);
-    const signature = await program.methods
-      .repayFiado()
-      .accounts({
-        merchant: merchantKeypair.publicKey,
-        customer: customerKeypair.publicKey,
-        customerProfile: customerPda,
-        fiadoRecord: fiadoRecordPda,
-        systemProgram: SystemProgram.programId
-      })
-      .signers([merchantKeypair, customerKeypair])
-      .rpc();
+  const program = getTefiProgram(merchantKeypair);
+  const signature = await program.methods
+    .repayFiado()
+    .accounts({
+      merchant: merchantKeypair.publicKey,
+      customer: customerKeypair.publicKey,
+      customerProfile: customerPda,
+      fiadoRecord: fiadoRecordPda,
+      systemProgram: SystemProgram.programId
+    })
+    .signers([merchantKeypair, customerKeypair])
+    .rpc();
 
-    console.log(`[Tefi Anchor] repayFiado bilateral exitoso! Tx: ${signature}`);
-    return { signature };
-  } catch (err: any) {
-    console.warn('[Tefi Anchor] Intento bilateral con nuevo schema reintentando fallback compatible:', err?.message || err);
-    const custProgram = getTefiProgram(customerKeypair);
-    const signature = await custProgram.methods
-      .repayFiado()
-      .accounts({
-        customer: customerKeypair.publicKey,
-        customerProfile: customerPda,
-        fiadoRecord: fiadoRecordPda,
-        systemProgram: SystemProgram.programId
-      })
-      .signers([customerKeypair])
-      .rpc();
-
-    console.log(`[Tefi Anchor] repayFiado completado en Devnet! Tx: ${signature}`);
-    return { signature };
-  }
+  console.log(`[Tefi Anchor] repayFiado bilateral confirmado en Devnet! Tx: ${signature}`);
+  return { signature };
 }

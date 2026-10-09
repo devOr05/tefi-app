@@ -62,11 +62,29 @@ console.log(`  ✓ CustomerProfile PDA derived: ${custPda.toBase58()} (bump: ${c
 console.log(`  ✓ FiadoRecord PDA derived: ${fiadoPda.toBase58()} (bump: ${fiadoBump})`);
 
 // 5. Validar Código Fuente Rust
-console.log('[5/5] Checking Rust source code constraints in contracts/tefi_program/src/lib.rs...');
+console.log('[5/7] Checking Rust source code constraints in contracts/tefi_program/src/lib.rs...');
 const libRs = fs.readFileSync('contracts/tefi_program/src/lib.rs', 'utf8');
 assert(libRs.includes('pub merchant: Signer<\'info>'), 'lib.rs must declare merchant Signer in RepayFiado');
 assert(libRs.includes('clock.unix_timestamp <= fiado.due_timestamp'), 'lib.rs must verify on-time settlement');
 assert(libRs.includes('UnauthorizedMerchant'), 'lib.rs must define UnauthorizedMerchant error');
 console.log('  ✓ lib.rs verified: bilateral repayment, due_timestamp check, and error codes present');
 
-console.log('\n🎉 ALL 5 TEST SUITES PASSED! Contract schema, PDA derivations, and bilateral security verified.\n');
+// 6. Validar Endurecimiento del Cliente (Cero Fallbacks Unilaterales)
+console.log('[6/7] Verifying Client Security: Zero unilateral fallbacks in anchorClient.ts...');
+const clientTs = fs.readFileSync('src/solana/anchorClient.ts', 'utf8');
+const repayFunctionCode = clientTs.substring(clientTs.indexOf('export async function executeOnChainRepayFiado'));
+assert(!repayFunctionCode.includes('signers([customerKeypair])'), 'anchorClient.ts must NEVER contain a single-signer customerKeypair fallback in repayFiado');
+assert(repayFunctionCode.includes('signers([merchantKeypair, customerKeypair])'), 'anchorClient.ts must strictly require both merchant and customer keypairs');
+console.log('  ✓ anchorClient.ts verified: zero unilateral fallback paths, strict bilateral signers enforced');
+
+// 7. Validar Ciclo de Vida en TefiContext (Sin Fallback a Memo ni Optimismo Falso)
+console.log('[7/7] Verifying Lifecycle & Non-Optimistic Repayment in TefiContext.tsx...');
+const contextTs = fs.readFileSync('src/context/TefiContext.tsx', 'utf8');
+// Asegurar que repayFiado es asíncrono y no hace fallback a broadcastSolanaFiadoEvent
+const repayFiadoSection = contextTs.substring(contextTs.indexOf('const repayFiado = async'), contextTs.indexOf('// 3. Comercio reclama seguro'));
+assert(!repayFiadoSection.includes('broadcastSolanaFiadoEvent'), 'repayFiado in TefiContext must NEVER fall back to SPL Memo broadcast');
+assert(repayFiadoSection.includes('await executeOnChainRepayFiado'), 'repayFiado in TefiContext must await real Anchor execution');
+assert(repayFiadoSection.includes('fetchOnChainCustomerProfile'), 'repayFiado must reconcile financial state directly with on-chain PDA');
+console.log('  ✓ TefiContext.tsx verified: strict async lifecycle, no Memo fallback, verified on-chain reconciliation');
+
+console.log('\n🎉 ALL 7 TEST SUITES PASSED! Contract schema, PDA derivations, zero fallbacks, and bilateral security verified.\n');

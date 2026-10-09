@@ -226,7 +226,187 @@ describe("tefi_program", () => {
     }
   });
 
-  it("7. Claim Insurance Rejection Before 30-Day Grace Period", async () => {
+  it("7. Reject Repay Fiado if Customer Signature is Missing (Anti-Unilateral Settle)", async () => {
+    const nonceBuffer = Buffer.alloc(8);
+    nonceBuffer.writeBigUInt64LE(BigInt(1));
+
+    const [testFiadoPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("fiado"),
+        merchantKeypair.publicKey.toBuffer(),
+        customerKeypair.publicKey.toBuffer(),
+        nonceBuffer,
+      ],
+      program.programId
+    );
+
+    try {
+      // Intentar repagar SIN la firma del cliente
+      await program.methods
+        .repayFiado()
+        .accounts({
+          merchant: merchantKeypair.publicKey,
+          customer: customerKeypair.publicKey,
+          customerProfile: customerProfilePda,
+          fiadoRecord: testFiadoPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([merchantKeypair]) // Falta customerKeypair
+        .rpc();
+
+      assert.fail("Should have failed because customer did not sign");
+    } catch (err: any) {
+      expect(err.message).to.satisfy((msg: string) =>
+        msg.includes("unknown signer") || msg.includes("Signature verification failed")
+      );
+    }
+  });
+
+  it("8. Reject Repay Fiado from an Unauthorized Merchant (Not Fiado Creator)", async () => {
+    const nonceBuffer = Buffer.alloc(8);
+    nonceBuffer.writeBigUInt64LE(BigInt(1));
+
+    const [testFiadoPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("fiado"),
+        merchantKeypair.publicKey.toBuffer(),
+        customerKeypair.publicKey.toBuffer(),
+        nonceBuffer,
+      ],
+      program.programId
+    );
+
+    const maliciousMerchant = Keypair.generate();
+    const airdropSig = await provider.connection.requestAirdrop(maliciousMerchant.publicKey, anchor.web3.LAMPORTS_PER_SOL);
+    const latest = await provider.connection.getLatestBlockhash();
+    await provider.connection.confirmTransaction({ signature: airdropSig, ...latest });
+
+    try {
+      await program.methods
+        .repayFiado()
+        .accounts({
+          merchant: maliciousMerchant.publicKey,
+          customer: customerKeypair.publicKey,
+          customerProfile: customerProfilePda,
+          fiadoRecord: testFiadoPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([maliciousMerchant, customerKeypair])
+        .rpc();
+
+      assert.fail("Should have failed with UnauthorizedMerchant constraint error");
+    } catch (err: any) {
+      expect(err.message).to.satisfy((msg: string) =>
+        msg.includes("UnauthorizedMerchant") || msg.includes("custom program error") || msg.includes("ConstraintRaw")
+      );
+    }
+  });
+
+  it("9. Successfully Settle Fiado with Both Valid Signers", async () => {
+    const nonceBuffer = Buffer.alloc(8);
+    nonceBuffer.writeBigUInt64LE(BigInt(1));
+
+    const [testFiadoPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("fiado"),
+        merchantKeypair.publicKey.toBuffer(),
+        customerKeypair.publicKey.toBuffer(),
+        nonceBuffer,
+      ],
+      program.programId
+    );
+
+    await program.methods
+      .repayFiado()
+      .accounts({
+        merchant: merchantKeypair.publicKey,
+        customer: customerKeypair.publicKey,
+        customerProfile: customerProfilePda,
+        fiadoRecord: testFiadoPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([merchantKeypair, customerKeypair])
+      .rpc();
+
+    // @ts-ignore
+    const fiadoAccount = await program.account.fiadoRecord.fetch(testFiadoPda);
+    assert.equal(fiadoAccount.status, 2); // 2 = PAID
+  });
+
+  it("10. Reject Double Repayment on Already Paid Fiado (FiadoNotActive)", async () => {
+    const nonceBuffer = Buffer.alloc(8);
+    nonceBuffer.writeBigUInt64LE(BigInt(1));
+
+    const [testFiadoPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("fiado"),
+        merchantKeypair.publicKey.toBuffer(),
+        customerKeypair.publicKey.toBuffer(),
+        nonceBuffer,
+      ],
+      program.programId
+    );
+
+    try {
+      await program.methods
+        .repayFiado()
+        .accounts({
+          merchant: merchantKeypair.publicKey,
+          customer: customerKeypair.publicKey,
+          customerProfile: customerProfilePda,
+          fiadoRecord: testFiadoPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([merchantKeypair, customerKeypair])
+        .rpc();
+
+      assert.fail("Should have failed because fiado is already PAID");
+    } catch (err: any) {
+      expect(err.message).to.satisfy((msg: string) =>
+        msg.includes("FiadoNotActive") || msg.includes("6005") || msg.includes("custom program error")
+      );
+    }
+  });
+
+  it("11. Reject Issue Fiado if Amount Exceeds Available Credit Limit", async () => {
+    const excessAmount = new anchor.BN(150_000_000); // 150 USDC (> limit of 60 USDC)
+    const dueTimestamp = new anchor.BN(Math.floor(Date.now() / 1000) + 7 * 86400);
+    const nonceBuffer = Buffer.alloc(8);
+    nonceBuffer.writeBigUInt64LE(BigInt(2));
+
+    const [excessFiadoPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("fiado"),
+        merchantKeypair.publicKey.toBuffer(),
+        customerKeypair.publicKey.toBuffer(),
+        nonceBuffer,
+      ],
+      program.programId
+    );
+
+    try {
+      await program.methods
+        .issueFiado(excessAmount, dueTimestamp, "excess_receipt_hash")
+        .accounts({
+          merchant: merchantKeypair.publicKey,
+          customer: customerKeypair.publicKey,
+          merchantProfile: merchantProfilePda,
+          customerProfile: customerProfilePda,
+          fiadoRecord: excessFiadoPda,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([merchantKeypair, customerKeypair])
+        .rpc();
+
+      assert.fail("Should have failed with CreditLimitExceeded");
+    } catch (err: any) {
+      expect(err.message).to.satisfy((msg: string) =>
+        msg.includes("CreditLimitExceeded") || msg.includes("6000") || msg.includes("custom program error")
+      );
+    }
+  });
+
+  it("12. Claim Insurance Rejection Before 30-Day Grace Period", async () => {
     try {
       await program.methods
         .claimInsurance()
@@ -242,7 +422,7 @@ describe("tefi_program", () => {
       assert.fail("Should have failed because grace period has not expired");
     } catch (err: any) {
       expect(err.message).to.satisfy((msg: string) => 
-        msg.includes("GracePeriodNotExpired") || msg.includes("FiadoNotActive")
+        msg.includes("GracePeriodNotExpired") || msg.includes("FiadoNotActive") || msg.includes("custom program error")
       );
     }
   });

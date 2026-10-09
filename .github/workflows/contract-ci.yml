@@ -1,0 +1,50 @@
+name: Anchor Contract Compilation & Localnet Tests
+
+on:
+  push:
+    branches: [ main, 'test/**', 'fix/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-contract:
+    name: Build & Test Anchor Program
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Setup Anchor, Solana & Node.js
+        uses: metadaoproject/setup-anchor@v3
+        with:
+          anchor-version: '0.29.0'
+          solana-cli-version: '1.18.26'
+          node-version: '20'
+
+      - name: Generate Dummy Solana Wallet for Localnet
+        run: |
+          mkdir -p ~/.config/solana
+          solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json --silent
+          solana config set --url localhost --keypair ~/.config/solana/id.json
+
+      - name: Install Project Dependencies & Test Runners
+        run: |
+          npm ci
+          npm install --no-save mocha@^10.2.0 @types/mocha@^10.0.6 chai@^4.3.7 @types/chai@^4.3.5 ts-mocha@^10.0.0
+
+      - name: Build Anchor SBF Program Binary
+        run: |
+          cd contracts/tefi_program
+          anchor keys sync
+          anchor build
+
+      - name: Run Dynamic Anchor Tests Against Local Validator
+        run: |
+          cd contracts/tefi_program
+          anchor test --skip-build
