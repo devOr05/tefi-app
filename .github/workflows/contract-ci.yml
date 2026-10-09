@@ -29,6 +29,8 @@ jobs:
 
       - name: Generate Dummy Solana Wallet for Localnet
         run: |
+          echo "/home/runner/solana-release/bin" >> $GITHUB_PATH
+          export PATH="/home/runner/solana-release/bin:$PATH"
           mkdir -p ~/.config/solana
           solana-keygen new --no-bip39-passphrase --force -s -o ~/.config/solana/id.json
           solana config set --url http://127.0.0.1:8899 -k ~/.config/solana/id.json
