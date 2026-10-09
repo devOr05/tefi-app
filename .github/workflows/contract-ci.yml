@@ -30,8 +30,8 @@ jobs:
       - name: Generate Dummy Solana Wallet for Localnet
         run: |
           mkdir -p ~/.config/solana
-          solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json --silent
-          solana config set --url localhost --keypair ~/.config/solana/id.json
+          solana-keygen new --no-bip39-passphrase --force -s -o ~/.config/solana/id.json
+          solana config set --url http://127.0.0.1:8899 -k ~/.config/solana/id.json
 
       - name: Install Project Dependencies & Test Runners
         run: |
