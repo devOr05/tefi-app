@@ -20,7 +20,7 @@ export async function launch() {
   const channel = process.env.TEFI_BROWSER_CHANNEL || 'chrome';
   pointCameraAtNothing(CAMERA_FEED);
   return chromium.launch({
-    ...(channel === 'chromium' ? {} : { channel }),
+    channel,
     headless: true,
     // The camera of the phones is a video file this run rewrites, so the app scans through its real camera code
     args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${CAMERA_FEED}`]
