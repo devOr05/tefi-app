@@ -62,6 +62,8 @@ export const CosignQrModal: React.FC<CosignQrModalProps> = ({ request, onClose }
         setCurrent(res.request);
         setError(null);
       } else {
+        // Sin red no se puede volver a firmar: se reintenta en unos segundos en lugar de insistir cada segundo
+        setCurrent(prev => ({ ...prev, expiresAt: Date.now() + 5000 }));
         setError(res.error);
       }
     }, 1000);
