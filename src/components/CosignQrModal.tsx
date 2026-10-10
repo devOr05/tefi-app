@@ -4,6 +4,7 @@ import { useTefi } from '../context/TefiContext';
 import { QrImage } from './QrImage';
 import { QrCode, X, ShieldCheck, ExternalLink, Copy, Check, Share2, Loader2, CheckCircle2, AlertTriangle, Smartphone } from 'lucide-react';
 import { getSolanaExplorerUrl } from '../solana/connection';
+import { cosignQrText } from '../solana/cosign';
 
 interface CosignQrModalProps {
   request: PendingCosign;
@@ -168,7 +169,7 @@ export const CosignQrModal: React.FC<CosignQrModalProps> = ({ request, onClose }
 
             {/* QR con la transacción parcialmente firmada */}
             <div className="my-3 p-3 bg-white border-2 border-emerald-500/80 rounded-2xl shadow-inner">
-              <QrImage value={current.url} alt={tr('Tefi co-sign QR', 'QR de co-firma Tefi')} />
+              <QrImage value={cosignQrText(current.url)} alt={tr('Tefi co-sign QR', 'QR de co-firma Tefi')} />
 
               <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg w-full">
                 <Loader2 className="w-3 h-3 animate-spin" />

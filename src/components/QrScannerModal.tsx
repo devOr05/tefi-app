@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 import { useTefi } from '../context/TefiContext';
+import { NativeQrDetector, centerSquare, createNativeQrDetector, decodeQrPixels } from '../services/qrDecoder';
 import { X, Camera, AlertCircle, Upload, RefreshCw, ClipboardPaste } from 'lucide-react';
 
 interface QrScannerModalProps {
@@ -12,15 +12,52 @@ interface QrScannerModalProps {
   onScan: (text: string) => Promise<string | null>;
 }
 
+const SCAN_INTERVAL_MS = 150;
+// Un QR denso que jsQR no lee al tamaño de la cámara muchas veces sale agrandado: se alterna un cuadro y otro
+const ENLARGED_FRAME_SCALE = 1.5;
+// Lado máximo al que se lleva una foto subida antes de buscarle el QR
+const MAX_PHOTO_SIDE = 2000;
+
+// Lee el QR del cuadro actual de la cámara, a la resolución de la cámara y no a la del visor
+async function readFrame(
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  detector: NativeQrDetector | null,
+  enlarge: boolean
+): Promise<string | null> {
+  if (detector) {
+    try {
+      const found = await detector.detect(video);
+      if (found[0]?.rawValue) return found[0].rawValue;
+    } catch (e) {
+      // Si el detector del sistema falla en este cuadro se sigue con jsQR
+    }
+  }
+
+  const { sx, sy, side, target } = centerSquare(video.videoWidth, video.videoHeight);
+  if (!side) return null;
+  const size = Math.round(target * (enlarge ? ENLARGED_FRAME_SCALE : 1));
+  if (canvas.width !== size) {
+    canvas.width = size;
+    canvas.height = size;
+  }
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return null;
+  context.drawImage(video, sx, sy, side, side, 0, 0, size, size);
+  return decodeQrPixels(context.getImageData(0, 0, size, size).data, size, size);
+}
+
 export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose, title, subtitle, onScan }) => {
   const { tr } = useTefi();
   const [scanError, setScanError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pastedText, setPastedText] = useState('');
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  // El callback de la cámara se registra una sola vez: el estado en curso se lee de un ref
+  // La lectura de la cámara corre en un ciclo propio: el estado en curso y el destino del texto se leen de refs
   const processingRef = useRef(false);
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
 
   const handleScannedText = async (text: string) => {
     if (processingRef.current) return;
@@ -32,102 +69,112 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose,
       navigator.vibrate(100);
     }
 
-    const error = await onScan(text);
+    const error = await onScanRef.current(text);
     if (error) {
       setScanError(error);
       setTimeout(() => {
         processingRef.current = false;
         setIsProcessing(false);
       }, 2500);
-    } else {
-      await stopScanner();
     }
-  };
-
-  const startScanner = async () => {
-    setScanError(null);
-    try {
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode('tefi-qr-reader', {
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          },
-          verbose: false
-        });
-      }
-
-      // Escanear área amplia (88% del visor) para que nunca corte esquinas en pantallas
-      const qrboxCalc = (viewfinderWidth: number, viewfinderHeight: number) => {
-        const edge = Math.min(viewfinderWidth, viewfinderHeight);
-        const size = Math.floor(edge * 0.88);
-        return { width: size, height: size };
-      };
-
-      await scannerRef.current.start(
-        { facingMode: 'environment' },
-        {
-          fps: 15,
-          qrbox: qrboxCalc,
-          // El QR de co-firma lleva una transacción entera (denso): se pide video en HD para poder leerlo
-          videoConstraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-        },
-        (decodedText) => {
-          handleScannedText(decodedText);
-        },
-        () => {
-          // Errores de frame ignorados
-        }
-      );
-    } catch (err: any) {
-      console.warn('No se pudo iniciar la cámara:', err);
-      setScanError(
-        tr(
-          'Could not access the camera. Check the browser permissions, upload a photo of the QR or paste the link.',
-          'No se pudo acceder a la cámara. Revisá los permisos del navegador, subí una foto del QR o pegá el link.'
-        )
-      );
-    }
-  };
-
-  const stopScanner = async () => {
-    try {
-      if (scannerRef.current && scannerRef.current.isScanning) {
-        await scannerRef.current.stop();
-        await scannerRef.current.clear();
-      }
-    } catch (e) {
-      console.warn('Error al detener scanner:', e);
-    }
+    // Si fue aceptado, quien abrió el escáner lo cierra y la cámara se apaga al desmontarse
   };
 
   useEffect(() => {
-    if (isOpen) {
-      processingRef.current = false;
-      setIsProcessing(false);
-      setPastedText('');
-      // Dar un tick para que el elemento del DOM exista
-      const timer = setTimeout(() => {
-        startScanner();
-      }, 250);
-      return () => {
-        clearTimeout(timer);
-        stopScanner();
+    if (!isOpen) return;
+    processingRef.current = false;
+    setIsProcessing(false);
+    setScanError(null);
+    setPastedText('');
+
+    let isClosed = false;
+    let stream: MediaStream | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const canvas = document.createElement('canvas');
+
+    const start = async () => {
+      try {
+        // El QR de co-firma es denso: se pide la mayor resolución que dé la cámara trasera
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+        });
+      } catch (err) {
+        console.warn('No se pudo iniciar la cámara:', err);
+        if (!isClosed) {
+          setScanError(
+            tr(
+              'Could not access the camera. Check the browser permissions, upload a photo of the QR or paste the link.',
+              'No se pudo acceder a la cámara. Revisá los permisos del navegador, subí una foto del QR o pegá el link.'
+            )
+          );
+        }
+        return;
+      }
+
+      const video = videoRef.current;
+      if (isClosed || !video) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      // Enfoque continuo donde el navegador lo permite (Chrome en Android)
+      stream
+        .getVideoTracks()[0]
+        ?.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] })
+        .catch(() => {});
+
+      const detector = await createNativeQrDetector();
+      let frames = 0;
+      const scan = async () => {
+        if (isClosed) return;
+        if (!processingRef.current && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          const text = await readFrame(video, canvas, detector, frames++ % 2 === 1).catch(() => null);
+          if (text && !isClosed) await handleScannedText(text);
+        }
+        if (!isClosed) timer = setTimeout(scan, SCAN_INTERVAL_MS);
       };
-    }
+      scan();
+    };
+    start();
+
+    return () => {
+      isClosed = true;
+      clearTimeout(timer);
+      stream?.getTracks().forEach(track => track.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+      // Al reabrir el escáner no tiene que verse el aviso de la lectura anterior
+      setScanError(null);
+      setIsProcessing(false);
+    };
   }, [isOpen]);
 
-  // Manejar subida de imagen de QR (archivo)
+  // Foto del QR (captura de pantalla o foto recibida por mensaje)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
+    let text: string | null = null;
     try {
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode('tefi-qr-reader');
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        text = decodeQrPixels(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
       }
-      const decodedResult = await scannerRef.current.scanFile(file, true);
-      handleScannedText(decodedResult);
     } catch (err) {
+      console.warn('No se pudo leer la imagen subida:', err);
+    }
+
+    if (text) {
+      handleScannedText(text);
+    } else {
       setScanError(tr('No QR code was found in the uploaded image.', 'No se encontró un código QR en la imagen subida.'));
     }
   };
@@ -157,16 +204,12 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose,
         <h3 className="text-base font-extrabold text-gray-900 dark:text-white">{title}</h3>
         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>
 
-        {/* Viewport de Cámara */}
-        <div className="my-3.5 relative rounded-2xl overflow-hidden bg-gray-950 aspect-square border-2 border-emerald-500/80 shadow-inner flex items-center justify-center">
-          <div id="tefi-qr-reader" className="w-full h-full" />
+        {/* Visor de la cámara: muestra el cuadrado central del video, que es lo que se decodifica */}
+        <div className="my-3.5 relative rounded-2xl overflow-hidden bg-gray-950 aspect-square border-2 border-emerald-500/80 shadow-inner">
+          <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
 
           {/* Guía visual de escaneo */}
-          <div className="absolute inset-8 pointer-events-none border-2 border-dashed border-emerald-400/70 rounded-2xl animate-pulse flex items-center justify-center">
-            <span className="text-[10px] text-emerald-300 font-bold bg-black/60 px-2 py-0.5 rounded-full">
-              {tr('Center QR code', 'Centrar código QR')}
-            </span>
-          </div>
+          <div className="absolute inset-5 pointer-events-none border-2 border-dashed border-emerald-400/70 rounded-2xl animate-pulse" />
 
           {isProcessing && !scanError && (
             <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white z-10 p-4">
@@ -176,6 +219,12 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose,
             </div>
           )}
         </div>
+
+        {!scanError && (
+          <p className="-mt-1.5 mb-3 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+            {tr('Bring the phone closer until the QR fills the frame', 'Acercá el teléfono hasta que el QR llene el recuadro')}
+          </p>
+        )}
 
         {scanError && (
           <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-center gap-2 text-left">

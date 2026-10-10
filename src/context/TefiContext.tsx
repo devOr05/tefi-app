@@ -32,6 +32,7 @@ import {
   computeReceiptHash,
   encodeCosignUrl,
   encodeNeighborUrl,
+  hasCosignRequest,
   inspectCosignTransaction,
   parseCosignUrl,
   parseNeighborUrl,
@@ -203,7 +204,7 @@ const deviceRoleOf = (role: UserRole): DeviceRole => (role === 'MERCHANT' ? 'mer
 // de una versión anterior que guardaba las dos claves) tiene que elegirlo.
 function detectInitialRole(): UserRole | null {
   try {
-    if (new URLSearchParams(window.location.search).has('cosign')) return 'CUSTOMER';
+    if (hasCosignRequest(new URLSearchParams(window.location.search))) return 'CUSTOMER';
     const stored = localStorage.getItem(STORAGE.role);
     if (stored === 'MERCHANT' || stored === 'CUSTOMER') return stored;
   } catch (e) {
@@ -569,13 +570,14 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.has('cosign')) {
+      const isCosign = hasCosignRequest(params);
+      if (isCosign) {
         setPendingCosignUrl(window.location.href);
       } else if (params.has('neighbor') && chosenRole === 'MERCHANT') {
         const identity = parseNeighborUrl(window.location.href);
         if (identity) addNeighborContact(identity.address, identity.name);
       }
-      if (params.has('cosign') || params.has('neighbor')) {
+      if (isCosign || params.has('neighbor')) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     } catch (e) {
@@ -764,7 +766,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return {
       ...draft,
       nonce: built.nonce,
-      url: encodeCosignUrl(baseUrl, { tx: built.tx, storeName: ownNames.merchant, ticket }),
+      url: encodeCosignUrl(baseUrl, { tx: built.tx, storeName: ownNames.merchant, ticket, nonce: built.nonce }),
       attempts: [...previousAttempts, { signature: built.signature, fiadoAddress }],
       expiresAt: Date.now() + COSIGN_QR_TTL_MS,
       includesProfileSetup: built.includesProfileSetup
@@ -913,7 +915,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!customerKeypair) return { success: false, error: tr('Switch to neighbor mode first.', 'Pasá a modo vecino primero.') };
 
     try {
-      const envelope = parseCosignUrl(scannedText);
+      const envelope = parseCosignUrl(scannedText, customerKeypair.publicKey);
       if (!envelope) {
         return { success: false, error: tr('That QR is not a Tefi fiado or repayment.', 'Ese QR no es un fiado ni un repago de Tefi.') };
       }
