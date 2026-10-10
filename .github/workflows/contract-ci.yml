@@ -58,9 +58,10 @@ jobs:
           cd contracts/tefi_program
           cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml || true
           cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml
-          mkdir -p target/deploy target/idl
-          cp target/sbf-solana-solana/release/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || true
-          ls -la target/deploy/
+          mkdir -p target/idl
+          # target/deploy/tefi_program.so is the stripped binary cargo build-sbf produces: the one to test and deploy.
+          # (target/sbf-solana-solana/release/ holds the unstripped build, which costs more rent on-chain.)
+          ls -la target/deploy/ target/sbf-solana-solana/release/tefi_program.so
           cp ../../src/solana/idl.json target/idl/tefi_program.json
 
       - name: Upload SBF Program Binary
