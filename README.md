@@ -28,7 +28,7 @@ In Argentina and throughout Latin America, corner grocery stores (*almacenes de 
 
 **Tefi** is a mobile-first Progressive Web App (PWA) that replaces the paper notebook with a ledger on **Solana** where every fiado and every repayment is a transaction signed by **both** the store and the neighbor, each from their own phone.
 
-* 📱 **One phone, one role, one key**: On first use a phone is set up either as the **Store** (*Almacén*) or as a **Neighbor** (*Vecino*) and creates only that role's signing key.
+* 📱 **One phone, one role, one key**: On first use a phone is set up either as the **Store** (*Almacén*) or as a **Neighbor** (*Vecino*), gets the name its owner types and creates only that role's signing key.
 * 🧾 **Co-signed credit issuance**: The merchant enters the amount in ARS (converted to USDC with the `dolarapi.com` exchange rate), takes a photo of the receipt and **signs first**. The partially signed transaction is shown as a QR code. The neighbor scans it with their own phone, reviews what the transaction says, adds the second signature and submits it.
 * 🤝 **Co-signed repayment**: When the neighbor pays (cash or transfer, as today), the store confirms it by signing `repay_fiado`; the neighbor co-signs the same way. Neither party can record or settle a debt alone.
 * ⛽ **The neighbor needs no SOL**: The store is the fee payer of every transaction and pays the rent of the accounts, including the neighbor's profile in their first fiado.
@@ -43,7 +43,7 @@ Tefi records the debt and its repayment; the money itself keeps moving off-chain
 ```
  STORE PHONE (holds only the store key)            NEIGHBOR PHONE (holds only the neighbor key)
  ──────────────────────────────────────            ────────────────────────────────────────────
-                                                    0. Shows "My Tefi QR": public key only
+                                                    0. Shows "My Tefi QR": public key and name only
  1. Scans it once: neighbor saved in the store's list
  2. Builds issue_fiado, feePayer = store
  3. tx.partialSign(storeKey)
@@ -69,7 +69,7 @@ Tefi records the debt and its repayment; the money itself keeps moving off-chain
 
 | Layer | Technology | Status & Purpose |
 | :--- | :--- | :--- |
-| **Blockchain L1** | **Solana Devnet** (`api.devnet.solana.com`) | Low fees and fast confirmation make co-signing a US$2–4 purchase at the counter viable. |
+| **Blockchain L1** | **Solana Devnet** (`api.devnet.solana.com`, configurable) | Low fees and fast confirmation make co-signing a US$2–4 purchase at the counter viable. |
 | **Smart Contract** | **Anchor Framework (Rust) v0.29.0** | PDAs for stores, neighbors and fiados. 14 integration tests against `solana-test-validator` in CI. |
 | **Web3 Client SDK** | **`@solana/web3.js` 1.x & `@coral-xyz/anchor` 0.29** | Instruction building from the IDL, partial signing, transaction (de)serialization and account decoding. |
 | **Co-signature transport** | **`qrcode` & `html5-qrcode`** | The partially signed transaction travels from the store phone to the neighbor phone as a QR code or link. |
@@ -132,7 +132,35 @@ The Anchor program ([`contracts/tefi_program/programs/tefi_program/src/lib.rs`](
 
 ### 🔗 Live Solana Devnet Transactions
 
-> **Deployment pending.** The program id above is new: the 06/10 deployment (`3bs3SLqe…`) does not include the bilateral `repay_fiado` and cannot be upgraded. The co-signed `issue_fiado` and `repay_fiado` transactions of the new deployment are listed here as soon as it is live.
+The program is deployed on devnet under its own id. Open any link below and check the **Signers** of the transaction on Solana Explorer.
+
+| What | Where | What to look at |
+| :--- | :--- | :--- |
+| **Program** | [`9UmX9z1C…EGnJQ`](https://explorer.solana.com/address/9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ?cluster=devnet) | Executable, owned by the upgradeable BPF loader. |
+| **Deployment** (10 Oct 2026) | [`5AJEhGf3…XjuiR`](https://explorer.solana.com/tx/5AJEhGf3mYkMxPz1NZkGMY6s8Snei6kwRWU1Ynw7zwXK4APffcgwbd2J1QTTupQ8kPqSu1fWvZ8K8F3KHGeXjuiR?cluster=devnet) | The deployed bytes are the `tefi_program-sbf` artifact built by CI (282,728 bytes, SHA-256 `d34303c5…6ca2e7`). |
+| **Co-signed `issue_fiado`** (first fiado of a neighbor) | [`3Vz3F87x…PbHqr`](https://explorer.solana.com/tx/3Vz3F87xWHKK2eFcGwek4dszKkBQy9doYqbkZq8tSAffurYXn5m6SZnP5tF2aYc3BcBpeVMUhusFCwBZSXyPbHqr?cluster=devnet) | 2 signatures: store `A623wu64…` (fee payer) and neighbor `8DqYj6ds…`. Instructions `InitializeCustomer` + `IssueFiado`. |
+| **Co-signed `repay_fiado`** | [`2qMhMNXX…mQVC3`](https://explorer.solana.com/tx/2qMhMNXXGHhg8WgNZifS3x9zKPcFGXFJviVBaDtQYNqEma97YKjVJEsWXMMcycjEMeLNhUfPernvGJzBXyKmQVC3?cluster=devnet) | The same 2 signers. The neighbor never held SOL. |
+| **Second store, same neighbor** | [`3wTwH8L3…ak5h3`](https://explorer.solana.com/tx/3wTwH8L3JPKGoDSask92qV5hy56XgBQR1jsGcyykAPd491nZwhqacy3nvxahmf1iH7v2wz8yV9W49eaLbTeak5h3?cluster=devnet) | `issue_fiado` signed by another store (`9RYiNwmG…`) and the same neighbor, with no profile setup: the history is portable. |
+| **Two counters at the same time** | [`4L6QB4fL…8RC4b`](https://explorer.solana.com/tx/4L6QB4fL2CbzpcNZA1n6cLqihbfyTHbqoRyymtWrPt5cSMejeDdtogdhHATB1n6RPxVAZ1yZVtja2LSEr1y8RC4b?cluster=devnet) · [`BzkPayy7…47ZrG`](https://explorer.solana.com/tx/BzkPayy772DM9i7XJ2vNmxv5iewmX3uLSd949SUm8doe4tdUPhzPJbN2QvZfLfYdkWg6zCzUYecoF9oDqs47ZrG?cluster=devnet) | A fiado for a second neighbor at the first store while the second store collected its fiado, in parallel. |
+| **Neighbor credit profile (PDA)** | [`ARakMKkk…F5ib3`](https://explorer.solana.com/address/ARakMKkkXsPrBat4VA2iQDUCXSqTVVfVHZUEax8F5ib3?cluster=devnet) | After two on-time repayments at two different stores: score 75, limit 60 USDC, debt 0. |
+| **Settled fiado (PDA)** | [`9eLj8FX2…BkYwf`](https://explorer.solana.com/address/9eLj8FX2N916KDJSpviVTRXq8DC3oxpnDimWaigBkYwf?cluster=devnet) | Status `Paid`; `receipt_hash` is a SHA-256, not the purchase. |
+
+**How these transactions were produced.** By the end-to-end run in [`e2e/two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs) on 10 Oct 2026: four isolated browser profiles (two stores, two neighbors) driving the built PWA, each holding only its own key. The only data passed between them is the text of the QR code on the other screen, and after each step the script reads the chain directly to check who signed. They are browser profiles on one computer, not physical phones: the camera scan between two real phones is not part of that run.
+
+Reading that neighbor's history as a lender would (`npm run read:history -- 8DqYj6dsTX21KisFnGTSpvSfnsHS49xc2YhCV7yJja5z`):
+
+```
+Credit score:   75 / 100
+Credit limit:   60.00 USDC
+Active debt:    0.00 USDC
+Repaid to date: 2.44 USDC
+
+Fiados co-signed with stores: 2
+  PAID          0.94 USDC  due 2026-10-25  store A623wu64wCNeiVYDpJ6tb2mFdZx5oKMCVwNH9GhZiU1j  account 9eLj8FX2N916KDJSpviVTRXq8DC3oxpnDimWaigBkYwf
+  PAID          1.50 USDC  due 2026-10-25  store 9RYiNwmGSxtufuEP6PiddMpCuC3NKNFDZuDTe8ELaTPe  account FcKmBcm7WP5dSAQ5bC7rjLPju3B8vvg3ocHCtthXGqdp
+```
+
+The 06/10 deployment (`3bs3SLqe…`) is superseded: it does not include the bilateral `repay_fiado` and cannot be upgraded.
 
 ### 🔍 How Any Third-Party Lender Reads a Neighbor's History On-Chain
 
@@ -191,10 +219,19 @@ The same read is available as a script: `npm run read:history -- <neighbor publi
 
 | Command | What it runs | Tests |
 | :--- | :--- | :---: |
-| `npm test` | Vitest suites that import the real modules: the co-signature protocol ([`cosign.test.ts`](src/solana/cosign.test.ts)), instruction building and account decoding ([`program.test.ts`](src/solana/program.test.ts)), the debt ledger ([`financialLedger.test.ts`](src/services/financialLedger.test.ts)), the passbook view ([`libreta.test.ts`](src/services/libreta.test.ts)) and Spanish/English completeness ([`translations.test.ts`](src/i18n/translations.test.ts)). | 50 |
+| `npm test` | Vitest suites that import the real modules: the co-signature protocol ([`cosign.test.ts`](src/solana/cosign.test.ts)), instruction building and account decoding ([`program.test.ts`](src/solana/program.test.ts)), RPC error classification ([`anchorClient.test.ts`](src/solana/anchorClient.test.ts)), request pacing under the RPC rate limit ([`rpcRetry.test.ts`](src/solana/rpcRetry.test.ts)), the debt ledger ([`financialLedger.test.ts`](src/services/financialLedger.test.ts)), the passbook view ([`libreta.test.ts`](src/services/libreta.test.ts)) and Spanish/English completeness ([`translations.test.ts`](src/i18n/translations.test.ts)). | 66 |
 | `anchor test` (CI) | Mocha tests against the compiled program on `solana-test-validator`: both signatures required, credit limit, double repayment, unauthorized store, grace period, hashed receipts and a two-device partial-signing round trip with a 0 SOL neighbor ([`tefi_program.ts`](contracts/tefi_program/tests/tefi_program.ts)). | 14 |
+| `npm run e2e:devnet` | The built PWA against **Solana Devnet** with four isolated browser profiles (two stores, two neighbors) that exchange only the QR contents: fiado, repayment, a second store reading the portable score, two counters at the same time, plus the controls (QR for another neighbor, tampered receipt, QR used twice). Every step is verified on-chain from outside the app ([`two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs)). | 44 checks |
 
-Both run in GitHub Actions: [`.github/workflows/anchor.yml`](.github/workflows/anchor.yml) (PWA build + `npm test`) and [`.github/workflows/contract-ci.yml`](.github/workflows/contract-ci.yml) (SBF build + Anchor tests).
+The first two run in GitHub Actions: [`.github/workflows/anchor.yml`](.github/workflows/anchor.yml) (PWA build + `npm test`) and [`.github/workflows/contract-ci.yml`](.github/workflows/contract-ci.yml) (SBF build + Anchor tests). The end-to-end run needs a devnet wallet and is run by hand:
+
+```bash
+npm run build && npx vite preview --port 4173 &   # serve the built PWA
+npm install --prefix e2e                           # Playwright driver + QR decoder; drives your installed Chrome
+npm run e2e:devnet -- <keypair.json holding ~0.1 devnet SOL>
+```
+
+It funds two throwaway store wallets from that keypair (0.03 SOL each) and writes screenshots and a `report.json` with every transaction to `e2e/shots/`. Set `TEFI_BROWSER_CHANNEL=msedge` to drive Edge instead of Chrome.
 
 ---
 
@@ -234,8 +271,8 @@ npm test
 ```
 
 ### Try the flow
-1. **Store phone**: open the app, choose *I'm the store* and request devnet SOL (the *+1 SOL* button, or [faucet.solana.com](https://faucet.solana.com/) with the store address).
-2. **Neighbor phone**: open the app, choose *I'm a neighbor* and tap *My Tefi QR*.
+1. **Store phone**: open the app, choose *I'm the store*, type the name of the store and request devnet SOL (the *+1 SOL* button, or [faucet.solana.com](https://faucet.solana.com/) with the store address).
+2. **Neighbor phone**: open the app, choose *I'm a neighbor*, type your name and tap *My Tefi QR*.
 3. **Store phone**: *Neighbors → Add* and scan the neighbor's QR. Then *Credit*: amount, items, photo, *Sign & Show QR to the Neighbor*.
 4. **Neighbor phone**: *Scan QR*, review and *Sign & accept fiado*. Both phones link to the transaction on Solana Explorer.
 5. **Repayment**: on the store phone tap *Register payment* on the fiado and let the neighbor scan the new QR.
@@ -247,8 +284,17 @@ With a single device, use the *Store / Neighbor* switch in the header: the app l
 npm run build
 ```
 
+### RPC endpoint
+The app talks to the public devnet node, which accepts roughly 40 requests per 10 seconds per IP address (measured on 10 Oct 2026). Every phone behind the same Wi-Fi shares that budget, and rejected requests count against it too. When the node answers `429`, the app repeats the request and spaces out all the requests of that phone until the node accepts them again ([`src/solana/rpcRetry.ts`](src/solana/rpcRetry.ts)), so a busy network shows up as a few seconds of waiting.
+
+For an event with many phones on one network, point the build at your own devnet endpoint:
+
+```bash
+VITE_SOLANA_DEVNET_RPC_URL=https://<your devnet rpc> npm run build
+```
+
 ### Deploying the program
-The program id is declared in `lib.rs`, `Anchor.toml` and `src/solana/program.ts` (CI checks that they match). The SBF binary is built by the *Anchor Contract Compilation & Localnet Tests* workflow and published as the `tefi_program-sbf` artifact.
+The program id is declared in `lib.rs`, `Anchor.toml`, `src/solana/idl.json` and `src/solana/program.ts` (CI and `npm test` check that they match). The SBF binary is built by the *Anchor Contract Compilation & Localnet Tests* workflow and published as the `tefi_program-sbf` artifact.
 
 ```bash
 solana program deploy tefi_program.so --program-id <program keypair or id> --keypair <upgrade authority keypair> --url devnet
