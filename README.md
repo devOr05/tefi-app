@@ -9,7 +9,7 @@
 [![Live Demo](https://img.shields.io/badge/Live%20App-tef--iapp.vercel.app-blue)](https://tef-iapp.vercel.app/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-* 🌐 **Live Demo Web PWA**: [https://tef-iapp.vercel.app](https://tef-iapp.vercel.app/)
+* 🌐 **Live Demo Web PWA**: [https://tef-iapp.vercel.app](https://tef-iapp.vercel.app/) · en español: [tef-iapp.vercel.app/es/](https://tef-iapp.vercel.app/es/)
 * 📦 **Solana Devnet Program**: [`9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ`](https://explorer.solana.com/address/9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ?cluster=devnet)
 * 📝 **What changed and when**: [CHANGELOG.md](CHANGELOG.md)
 
@@ -221,11 +221,12 @@ The same read is available as a script: `npm run read:history -- <neighbor publi
 
 | Command | What it runs | Tests |
 | :--- | :--- | :---: |
-| `npm test` | Vitest suites that import the real modules: the co-signature protocol ([`cosign.test.ts`](src/solana/cosign.test.ts)), instruction building and account decoding ([`program.test.ts`](src/solana/program.test.ts)), RPC error classification ([`anchorClient.test.ts`](src/solana/anchorClient.test.ts)), request pacing under the RPC rate limit ([`rpcRetry.test.ts`](src/solana/rpcRetry.test.ts)), QR decoding at camera resolution ([`qrDecoder.test.ts`](src/services/qrDecoder.test.ts)), the debt ledger ([`financialLedger.test.ts`](src/services/financialLedger.test.ts)), the passbook view ([`libreta.test.ts`](src/services/libreta.test.ts)) and Spanish/English completeness ([`translations.test.ts`](src/i18n/translations.test.ts)). | 77 |
+| `npm test` | Vitest suites that import the real modules: the co-signature protocol ([`cosign.test.ts`](src/solana/cosign.test.ts)), instruction building and account decoding ([`program.test.ts`](src/solana/program.test.ts)), RPC error classification ([`anchorClient.test.ts`](src/solana/anchorClient.test.ts)), request pacing under the RPC rate limit ([`rpcRetry.test.ts`](src/solana/rpcRetry.test.ts)), QR decoding at camera resolution ([`qrDecoder.test.ts`](src/services/qrDecoder.test.ts)), the debt ledger ([`financialLedger.test.ts`](src/services/financialLedger.test.ts)), the passbook view ([`libreta.test.ts`](src/services/libreta.test.ts)), Spanish/English completeness ([`translations.test.ts`](src/i18n/translations.test.ts)), the version label ([`version.test.ts`](src/version.test.ts)) and what the site publishes for search engines and AI assistants ([`site.test.ts`](src/site/site.test.ts)). | 107 |
 | `anchor test` (CI) | Mocha tests against the compiled program on `solana-test-validator`: both signatures required, credit limit, double repayment, unauthorized store, grace period, hashed receipts and a two-device partial-signing round trip with a 0 SOL neighbor ([`tefi_program.ts`](contracts/tefi_program/tests/tefi_program.ts)). | 14 |
-| `npm run e2e:devnet` | The built PWA against **Solana Devnet** with four isolated browser profiles (two stores, two neighbors) that exchange only QR codes, scanned through a simulated camera or opened as links: fiado, repayment, a second store reading the portable score, two counters at the same time, plus the controls (QR for another neighbor, tampered receipt, QR used twice). Every step is verified on-chain from outside the app ([`two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs)). | 45 checks |
+| `npm run e2e:devnet` | The built PWA against **Solana Devnet** with four isolated browser profiles (two stores, two neighbors) that exchange only QR codes, scanned through a simulated camera or opened as links: fiado, repayment, a second store reading the portable score, two counters at the same time, plus the controls (QR for another neighbor, tampered receipt, QR used twice). Every step is verified on-chain from outside the app ([`two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs)). | 46 checks |
+| `npm run check:site` | The published site read the way a search engine or an AI assistant reads it, without running JavaScript: both language pages (title, description, canonical, `hreflang`, link preview, structured data, readable text) and `robots.txt`, `sitemap.xml`, `llms.txt`, `version.json` ([`check-site.mjs`](scripts/check-site.mjs)). | 34 checks |
 
-All three run in GitHub Actions on every pull request and on every push to `main`: [`.github/workflows/anchor.yml`](.github/workflows/anchor.yml) (PWA build + `npm test`) and [`.github/workflows/contract-ci.yml`](.github/workflows/contract-ci.yml) (SBF build, Anchor tests and then the end-to-end run, with the PWA pointed at the same local validator). To run the end-to-end test against devnet yourself:
+All four run in GitHub Actions on every pull request and on every push to `main`: [`.github/workflows/anchor.yml`](.github/workflows/anchor.yml) (PWA build, `npm test` and the site check against the built PWA) and [`.github/workflows/contract-ci.yml`](.github/workflows/contract-ci.yml) (SBF build, Anchor tests and then the end-to-end run, with the PWA pointed at the same local validator). To run the end-to-end test against devnet yourself:
 
 ```bash
 npm run build && npx vite preview --port 4173 &   # serve the built PWA
@@ -234,6 +235,15 @@ npm run e2e:devnet -- <keypair.json holding ~0.1 devnet SOL>
 ```
 
 It funds two throwaway store wallets from that keypair (0.03 SOL each) and writes screenshots and a `report.json` with every transaction to `e2e/shots/`. Set `TEFI_BROWSER_CHANNEL=msedge` to drive Edge instead of Chrome.
+
+---
+
+## 🔎 Version on Every Screen, Link Previews & Crawlers
+
+* **Which version is this phone running?** Every screen shows a line like `Version 2.1.0 · 687581d · 2026-10-10 13:28`: the `version` of `package.json`, the commit the app was built from (the line links to that commit on GitHub) and the date of that commit in the phone's own time. The same data is published at [`/version.json`](https://tef-iapp.vercel.app/version.json). Two phones run the same build only if they show the same line; a phone showing an older one has to reopen the app ([`src/version.ts`](src/version.ts)).
+* **Spanish at its own address.** [`/es/`](https://tef-iapp.vercel.app/es/) opens the app in Spanish for a first-time visitor and has its link preview in Spanish; the root address is the English one. A language chosen with the flags wins over the address.
+* **Link previews.** Sharing either address on WhatsApp, X, LinkedIn or Slack shows a title, a description and a 1200x630 image in that language (Open Graph and Twitter tags). The images are drawn by [`scripts/make-og-images.mjs`](scripts/make-og-images.mjs).
+* **What a crawler gets without running JavaScript.** Most AI assistants and several search engines do not run it, and a React app is an empty page to them. Each language page carries a description, canonical and `hreflang` links, schema.org `WebApplication` data and, inside `<noscript>`, the text of what Tefi is, how it works and where the code and the on-chain program are. The site also publishes [`robots.txt`](https://tef-iapp.vercel.app/robots.txt), [`sitemap.xml`](https://tef-iapp.vercel.app/sitemap.xml) and [`llms.txt`](https://tef-iapp.vercel.app/llms.txt). All of it is generated at build time from [`src/site/`](src/site/); nothing is hand-written into `dist`.
 
 ---
 
@@ -285,6 +295,9 @@ With a single device, use the *Store / Neighbor* switch in the header: the app l
 ```bash
 npm run build
 ```
+
+### Public address
+The pages declare the address they are published at (canonical link, sitemap, link previews). It defaults to `https://tef-iapp.vercel.app`; to publish under another domain, build with `VITE_SITE_URL=https://<your domain>`.
 
 ### RPC endpoint
 The app talks to the public devnet node, which accepts roughly 40 requests per 10 seconds per IP address (measured on 10 Oct 2026). Every phone behind the same Wi-Fi shares that budget, and rejected requests count against it too. When the node answers `429`, the app repeats the request and spaces out all the requests of that phone until the node accepts them again ([`src/solana/rpcRetry.ts`](src/solana/rpcRetry.ts)), so a busy network shows up as a few seconds of waiting.
