@@ -64,12 +64,12 @@ jobs:
       - name: Run Dynamic Anchor Tests Against Local Validator
         run: |
           cd contracts/tefi_program
+          mkdir -p .anchor/test-ledger
           # Launch local validator with canonical Program ID and compiled SBF binary
           solana-test-validator \
             --ledger .anchor/test-ledger \
             --bpf-program 3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc target/deploy/tefi_program.so \
-            --reset \
-            --quiet &
+            --reset > .anchor/test-ledger/validator.log 2>&1 &
           VALIDATOR_PID=$!
 
           # Wait for validator RPC to be responsive
