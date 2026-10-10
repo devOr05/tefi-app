@@ -45,21 +45,30 @@ jobs:
           npm ci
           cd contracts/tefi_program && npm install
 
+      - name: Resolve Program ID from Anchor.toml
+        run: |
+          PROGRAM_ID=$(grep -m1 '^tefi_program = ' contracts/tefi_program/Anchor.toml | cut -d'"' -f2)
+          grep -q "declare_id!(\"$PROGRAM_ID\")" contracts/tefi_program/programs/tefi_program/src/lib.rs
+          grep -q "\"address\": \"$PROGRAM_ID\"" src/solana/idl.json
+          echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
+          echo "Program ID is consistent across Anchor.toml, lib.rs and idl.json: $PROGRAM_ID"
+
       - name: Build Anchor SBF Program Binary
         run: |
           cd contracts/tefi_program
           cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml || true
           cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml
           mkdir -p target/deploy target/idl
-          cp target/sbf-solana-solana/release/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || cp target/deploy/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || true
+          cp target/sbf-solana-solana/release/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || true
           ls -la target/deploy/
-          node -e '
-            const fs = require("fs");
-            const idl = JSON.parse(fs.readFileSync("../../src/solana/idl.json", "utf8"));
-            idl.metadata = { address: "3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc" };
-            fs.writeFileSync("target/idl/tefi_program.json", JSON.stringify(idl, null, 2));
-            console.log("IDL ready at target/idl/tefi_program.json with program address");
-          '
+          cp ../../src/solana/idl.json target/idl/tefi_program.json
+
+      - name: Upload SBF Program Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: tefi_program-sbf
+          path: contracts/tefi_program/target/deploy/tefi_program.so
+          if-no-files-found: error
 
       - name: Run Dynamic Anchor Tests Against Local Validator
         run: |
@@ -68,7 +77,7 @@ jobs:
           # Launch local validator with canonical Program ID and compiled SBF binary
           solana-test-validator \
             --ledger .anchor/test-ledger \
-            --bpf-program 3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc target/deploy/tefi_program.so \
+            --bpf-program $PROGRAM_ID target/deploy/tefi_program.so \
             --reset > .anchor/test-ledger/validator.log 2>&1 &
           VALIDATOR_PID=$!
 
@@ -83,7 +92,7 @@ jobs:
           done
 
           # Verify the program is loaded at the canonical address
-          solana program dump 3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc /tmp/tefi_verified.so --url http://127.0.0.1:8899
+          solana program dump $PROGRAM_ID /tmp/tefi_verified.so --url http://127.0.0.1:8899
           ls -lh /tmp/tefi_verified.so
 
           # Export provider variables

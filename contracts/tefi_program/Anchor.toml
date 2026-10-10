@@ -5,10 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-tefi_program = "3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc"
+tefi_program = "9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ"
 
 [programs.devnet]
-tefi_program = "3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc"
+tefi_program = "9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ"
 
 [registry]
 url = "https://api.apr.dev"
@@ -21,7 +21,7 @@ wallet = "~/.config/solana/id.json"
 startup_wait = 15000
 
 [[test.genesis]]
-address = "3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc"
+address = "9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ"
 program = "target/deploy/tefi_program.so"
 
 [scripts]

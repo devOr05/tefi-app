@@ -17,7 +17,8 @@
     {
       "name": "initializeCustomer",
       "accounts": [
-        { "name": "customer", "isMut": true, "isSigner": true },
+        { "name": "payer", "isMut": true, "isSigner": true },
+        { "name": "customer", "isMut": false, "isSigner": true },
         { "name": "customerProfile", "isMut": true, "isSigner": false },
         { "name": "systemProgram", "isMut": false, "isSigner": false }
       ],
@@ -27,7 +28,7 @@
       "name": "issueFiado",
       "accounts": [
         { "name": "merchant", "isMut": true, "isSigner": true },
-        { "name": "customer", "isMut": true, "isSigner": true },
+        { "name": "customer", "isMut": false, "isSigner": true },
         { "name": "merchantProfile", "isMut": true, "isSigner": false },
         { "name": "customerProfile", "isMut": true, "isSigner": false },
         { "name": "fiadoRecord", "isMut": true, "isSigner": false },
@@ -43,7 +44,7 @@
       "name": "repayFiado",
       "accounts": [
         { "name": "merchant", "isMut": true, "isSigner": true },
-        { "name": "customer", "isMut": true, "isSigner": true },
+        { "name": "customer", "isMut": false, "isSigner": true },
         { "name": "customerProfile", "isMut": true, "isSigner": false },
         { "name": "fiadoRecord", "isMut": true, "isSigner": false },
         { "name": "systemProgram", "isMut": false, "isSigner": false }
@@ -74,7 +75,8 @@
           { "name": "totalDefaultedUsdc", "type": "u64" },
           { "name": "defaultRateBps", "type": "u16" },
           { "name": "insuranceFeeBps", "type": "u16" },
-          { "name": "fiadoNonce", "type": "u64" }
+          { "name": "fiadoNonce", "type": "u64" },
+          { "name": "bump", "type": "u8" }
         ]
       }
     },
@@ -88,7 +90,8 @@
           { "name": "creditLimitUsdc", "type": "u64" },
           { "name": "activeDebtUsdc", "type": "u64" },
           { "name": "totalRepaidUsdc", "type": "u64" },
-          { "name": "loyaltyPoints", "type": "u32" }
+          { "name": "loyaltyPoints", "type": "u32" },
+          { "name": "bump", "type": "u8" }
         ]
       }
     },
@@ -103,9 +106,24 @@
           { "name": "dueTimestamp", "type": "i64" },
           { "name": "receiptHash", "type": "string" },
           { "name": "nonce", "type": "u64" },
-          { "name": "status", "type": "u8" }
+          { "name": "status", "type": "u8" },
+          { "name": "bump", "type": "u8" }
         ]
       }
     }
-  ]
+  ],
+  "errors": [
+    { "code": 6000, "name": "CreditLimitExceeded", "msg": "El monto solicitado supera el límite de crédito disponible." },
+    { "code": 6001, "name": "InvalidAmount", "msg": "El monto del fiado debe ser mayor a cero." },
+    { "code": 6002, "name": "InvalidDueDate", "msg": "La fecha de vencimiento debe ser posterior a la fecha actual." },
+    { "code": 6003, "name": "ReceiptHashTooLong", "msg": "El hash del comprobante excede el tamaño máximo permitido." },
+    { "code": 6004, "name": "StringTooLong", "msg": "El texto ingresado excede el tamaño máximo permitido." },
+    { "code": 6005, "name": "FiadoNotActive", "msg": "Este fiado ya no se encuentra activo." },
+    { "code": 6006, "name": "GracePeriodNotExpired", "msg": "El plazo de gracia obligatorio (30 días de mora) aún no ha vencido." },
+    { "code": 6007, "name": "UnauthorizedMerchant", "msg": "El comercio firmante no coincide con el almacén que otorgó el fiado." },
+    { "code": 6008, "name": "InvalidReceiptHash", "msg": "El comprobante debe ser un hash SHA-256 en hexadecimal (64 caracteres), no texto legible." }
+  ],
+  "metadata": {
+    "address": "9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ"
+  }
 }
