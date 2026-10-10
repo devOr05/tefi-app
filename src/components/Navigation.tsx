@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTefi } from '../context/TefiContext';
-import { GoldFiarCoin } from './GoldFiarCoin';
+import { Users } from 'lucide-react';
 
 // 1. Icono Almacén con los colores de Solana (Toldo verde esmeralda, puerta violeta, paredes y vitrina blancas/celeste)
 export const SolanaStoreIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
@@ -96,7 +96,7 @@ export const GrowingGoldCoinsIcon: React.FC<{ className?: string }> = ({ classNa
   </svg>
 );
 
-// 4. Icono Medalla con Moneda Dorada y Cintas Azul/Violeta (Fidelidad)
+// 4. Icono Medalla con Moneda Dorada y Cintas Azul/Violeta (Historial de pagos)
 export const SolanaLoyaltyMedalIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -122,24 +122,7 @@ export const SolanaLoyaltyMedalIcon: React.FC<{ className?: string }> = ({ class
   </svg>
 );
 
-// 5. Icono Escudo en Violeta Solana (Seguro & Riesgo)
-export const SolanaShieldIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="shieldVioletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#A855F7" />
-        <stop offset="50%" stopColor="#8B5CF6" />
-        <stop offset="100%" stopColor="#6D28D9" />
-      </linearGradient>
-    </defs>
-    {/* Escudo violeta Solana */}
-    <path d="M12 2.5 L19.5 5.8 C19.5 12.5 16.5 18.5 12 21.5 C7.5 18.5 4.5 12.5 4.5 5.8 L12 2.5 Z" fill="url(#shieldVioletGrad)" stroke="#C084FC" strokeWidth="1.2" />
-    {/* Check interno blanco */}
-    <path d="M8.5 11.5 L11 14 L15.5 9.5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-// 6. Icono Fiar circular en degradé dorado (normalizado con los demás íconos de la barra)
+// 5. Icono Fiar circular en degradé dorado (normalizado con los demás íconos de la barra)
 export const SolanaFiarIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5 sm:w-5.5 sm:h-5.5" }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -205,20 +188,20 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
               <span className="text-[10px] font-bold text-center mt-0.5 leading-none truncate max-w-full">{t('navFiar')}</span>
             </button>
 
-            {/* Columna 3: Seguro */}
+            {/* Columna 3: Vecinos */}
             <button
-              onClick={() => onTabChange('insurance')}
-              aria-label={t('navInsurance')}
+              onClick={() => onTabChange('neighbors')}
+              aria-label={t('navNeighbors')}
               className={`w-full h-full flex flex-col items-center justify-center py-1 transition-all active:scale-95 cursor-pointer ${
-                currentTab === 'insurance'
+                currentTab === 'neighbors'
                   ? 'text-purple-700 dark:text-purple-400 font-bold'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <div className="h-6 flex items-center justify-center">
-                <SolanaShieldIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                <Users className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-purple-600 dark:text-purple-400" />
               </div>
-              <span className="text-[10px] font-bold text-center mt-0.5 leading-none truncate max-w-full">{t('navInsurance')}</span>
+              <span className="text-[10px] font-bold text-center mt-0.5 leading-none truncate max-w-full">{t('navNeighbors')}</span>
             </button>
           </>
         ) : (
@@ -255,12 +238,12 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
               <span className="text-[10px] font-bold text-center mt-0.5 leading-none truncate max-w-full">{t('navScore')}</span>
             </button>
 
-            {/* Columna 3: Fidelidad */}
+            {/* Columna 3: Historial de pagos */}
             <button
-              onClick={() => onTabChange('loyalty')}
-              aria-label={t('navLoyalty')}
+              onClick={() => onTabChange('history')}
+              aria-label={t('navHistory')}
               className={`w-full h-full flex flex-col items-center justify-center py-1 transition-all active:scale-95 cursor-pointer ${
-                currentTab === 'loyalty'
+                currentTab === 'history'
                   ? 'text-blue-700 dark:text-blue-400 font-bold'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
@@ -268,7 +251,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange 
               <div className="h-6 flex items-center justify-center">
                 <SolanaLoyaltyMedalIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
               </div>
-              <span className="text-[10px] font-bold text-center mt-0.5 leading-none truncate max-w-full">{t('navLoyalty')}</span>
+              <span className="text-[10px] font-bold text-center mt-0.5 leading-none truncate max-w-full">{t('navHistory')}</span>
             </button>
           </>
         )}

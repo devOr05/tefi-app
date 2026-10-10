@@ -4,30 +4,17 @@ export type LoyaltyTier = 'Bronce' | 'Plata' | 'Oro' | 'Diamante';
 
 export type FiadoStatus = 'ACTIVE' | 'PAID' | 'DEFAULTED' | 'INSURANCE_CLAIMED';
 
-export type PaymentMethod = 'MERCADO_PAGO' | 'CUENTA_DNI' | 'CASH' | 'SOLANA_USDC' | 'ABUNDANCE_FOUNTAIN';
-
 export interface CustomerProfile {
   id: string;
   name: string;
   walletAddress: string;
+  hasOnChainProfile: boolean; // false hasta que el primer fiado crea su CustomerProfile PDA
   creditScore: number; // 0 a 100
   maxCreditLimit: number; // Límite en USDC (ej: $50)
   currentDebt: number; // Deuda activa en USDC
   totalRepaid: number; // Total devuelto históricamente
   loyaltyPoints: number; // Puntos Tefi acumulados
   tier: LoyaltyTier;
-  avatarUrl?: string;
-  solanaBalanceSol?: number;
-  isDidVerified?: boolean;
-  didUri?: string;
-  biometricHash?: string;
-  cuentaDniAlias?: string;
-  cuentaDniLinked?: boolean;
-  mercadoPagoAlias?: string;
-  mercadoPagoLinked?: boolean;
-  abundanceSavingsSol?: number;
-  abundanceSavingsUsdc?: number;
-  abundanceYieldEarnedUsdc?: number;
 }
 
 export interface MerchantProfile {
@@ -35,22 +22,17 @@ export interface MerchantProfile {
   name: string;
   category: string;
   walletAddress: string;
+  hasOnChainProfile: boolean; // false hasta que el almacén crea su MerchantProfile PDA con el primer fiado
   totalSalesUsdc: number;
-  totalDefaultedUsdc: number;
-  defaultRate: number; // % de incobrabilidad
-  baseInsuranceFee: number; // % base (ej: 2.5%)
-  currentInsuranceFee: number; // % ajustado por riesgo (aumenta si tiene muchos incobrables)
-  isInsured: boolean;
-  activeClaimsCount: number;
-  fiadoNonce?: number;
-  solanaBalanceSol?: number;
 }
 
+// Un fiado de la libreta. Monto, vencimiento y estado se leen de la cuenta FiadoRecord on-chain;
+// el detalle de la compra y la foto existen solo en los teléfonos que participaron.
 export interface FiadoRecord {
-  id: string;
-  merchantId: string;
+  id: string; // dirección de la cuenta FiadoRecord (PDA)
+  merchantId: string; // clave pública del almacén
   merchantName: string;
-  customerId: string;
+  customerId: string; // clave pública del vecino
   customerName: string;
   amountUsdc: number;
   amountArs: number;
@@ -60,50 +42,41 @@ export interface FiadoRecord {
   dueDate: string;
   status: FiadoStatus;
   nonce?: number;
+  receiptHash?: string;
   txSignature?: string;
+  repayTxSignature?: string;
   repaidAt?: string;
-  paymentMethod?: PaymentMethod;
-  isDemo?: boolean;
-  settlementStatus?: 'pending' | 'confirmed' | 'failed' | 'unknown';
 }
 
-export interface InsurancePoolState {
-  totalBalanceUsdc: number;
-  totalClaimsPaidUsdc: number;
-  totalActivePolicies: number;
-  solanaVaultAddress: string;
+// Vecino agendado en el teléfono del almacén: solo su clave pública y el nombre que le puso el almacenero
+export interface NeighborContact {
+  address: string;
+  name: string;
+  addedAt: string;
 }
 
-export interface WebhookNotification {
+// Pedido de co-firma que el almacén muestra en el QR hasta que el vecino lo firma y lo envía
+export interface PendingCosign {
+  kind: 'issue' | 'repay';
+  url: string;
+  // Un intento por cada QR generado: se regenera con un blockhash nuevo antes de que venza
+  attempts: { signature: string; fiadoAddress: string }[];
+  expiresAt: number;
+  nonce: number;
+  neighbor: NeighborContact;
+  amountUsdc: number;
+  amountArs: number;
+  itemsDescription: string;
+  photoReceiptUrl: string;
+  photoSha256: string;
+  receiptHash: string;
+  dueDate: string;
+  includesProfileSetup: boolean;
+}
+
+export interface AppNotification {
   id: string;
   title: string;
   message: string;
-  amountArs: number;
-  amountUsdc: number;
-  method: PaymentMethod;
-  customerName: string;
   timestamp: string;
 }
-
-export interface FiadoQrPayload {
-  protocol: 'tefi';
-  version: '1.0';
-  action: 'FIADO_REQUEST';
-  data: {
-    id: string;
-    merchantId: string;
-    merchantName: string;
-    merchantAddress?: string;
-    customerId?: string;
-    customerName?: string;
-    amountArs: number;
-    amountUsdc: number;
-    itemsDescription: string;
-    photoReceiptUrl: string;
-    createdAt: string;
-    dueDate: string;
-    nonce?: number;
-    txSignature?: string;
-  };
-}
-

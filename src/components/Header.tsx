@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
+import { UserRole } from '../types/tefi';
 import { Store, User, RefreshCw, Zap, ExternalLink, Check, Copy, Sun, Moon, Type } from 'lucide-react';
-import { getSolanaAccountUrl } from '../solana/connection';
+import { getSolanaAccountUrl, hasRoleKeypair } from '../solana/connection';
 
 export const Header: React.FC = () => {
   const {
@@ -9,7 +10,7 @@ export const Header: React.FC = () => {
     setRole,
     merchant,
     customer,
-    resetDemoData,
+    resetDevice,
     exchangeRate,
     solanaBalance,
     requestAirdrop,
@@ -20,7 +21,8 @@ export const Header: React.FC = () => {
     toggleTheme,
     a11yLargeText,
     toggleA11yLargeText,
-    t
+    t,
+    tr
   } = useTefi();
 
   const [copied, setCopied] = useState(false);
@@ -33,14 +35,40 @@ export const Header: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Usar el otro rol en este mismo teléfono crea también su clave acá: deja de ser una co-firma entre dos dispositivos
+  const handleRoleSwitch = (next: UserRole) => {
+    if (next === role) return;
+    const alreadyOnDevice = hasRoleKeypair(next === 'MERCHANT' ? 'merchant' : 'customer');
+    if (
+      !alreadyOnDevice &&
+      !confirm(
+        tr(
+          'This phone only holds the key of its current role. Using the other role here too puts both keys on one device (single-device demo). Continue?',
+          'Este teléfono solo tiene la clave de su rol actual. Usar acá también el otro rol deja las dos claves en un mismo dispositivo (demo en un solo dispositivo). ¿Continuar?'
+        )
+      )
+    ) {
+      return;
+    }
+    setRole(next);
+  };
+
   const handleAirdropClick = async () => {
     const res = await requestAirdrop();
-    if (res?.note) {
-      setAirdropFeedback(res.note);
-      setTimeout(() => setAirdropFeedback(null), 5000);
-    } else if (res?.success) {
-      setAirdropFeedback(language === 'en' ? '✓ +1 SOL credited on Devnet!' : '✓ ¡+1 SOL acreditado en Devnet!');
-      setTimeout(() => setAirdropFeedback(null), 3500);
+    setAirdropFeedback(res.success ? tr('✓ +1 SOL credited on Devnet!', '✓ ¡+1 SOL acreditado en Devnet!') : res.error || null);
+    setTimeout(() => setAirdropFeedback(null), 5000);
+  };
+
+  const handleReset = () => {
+    if (
+      confirm(
+        tr(
+          'Reset this device? It gets a brand-new identity (new keys, empty passbook). What is already on-chain stays on-chain under the old keys.',
+          '¿Reiniciar este dispositivo? Queda con una identidad nueva (claves nuevas, libreta vacía). Lo que ya está on-chain sigue on-chain bajo las claves anteriores.'
+        )
+      )
+    ) {
+      resetDevice();
     }
   };
 
@@ -67,7 +95,7 @@ export const Header: React.FC = () => {
         {/* Role Switcher Pill */}
         <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-0.5 rounded-full text-xs font-semibold shrink-0">
           <button
-            onClick={() => setRole('MERCHANT')}
+            onClick={() => handleRoleSwitch('MERCHANT')}
             aria-label={t('store')}
             className={`flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full transition-all duration-200 cursor-pointer ${
               role === 'MERCHANT'
@@ -79,7 +107,7 @@ export const Header: React.FC = () => {
             <span className="text-[10px] sm:text-[11px]">{t('store')}</span>
           </button>
           <button
-            onClick={() => setRole('CUSTOMER')}
+            onClick={() => handleRoleSwitch('CUSTOMER')}
             aria-label={t('neighbor')}
             className={`flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full transition-all duration-200 cursor-pointer ${
               role === 'CUSTOMER'
@@ -130,7 +158,7 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Fila Secundaria: Identidad Web3, Balance SOL, Airdrop y Reset Demo */}
+      {/* Fila Secundaria: clave pública de este dispositivo, saldo de SOL, airdrop y reset */}
       <div className="max-w-md mx-auto mt-1.5 pt-1 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[9.5px] sm:text-[11px] gap-1">
         {/* Wallet Address & Copy */}
         <div className="flex items-center gap-1 font-mono text-gray-600 dark:text-gray-300 shrink min-w-0">
@@ -156,25 +184,31 @@ export const Header: React.FC = () => {
           </a>
         </div>
 
-        {/* SOL Balance, Airdrop y Reset Demo */}
+        {/* Saldo de SOL: solo el almacén lo necesita, porque paga comisiones y rent */}
         <div className="flex items-center gap-1 shrink-0">
-          <span className="font-bold text-gray-800 dark:text-gray-200 text-[9.5px] sm:text-[10px]">{solanaBalance.toFixed(2)} SOL</span>
-          {role === 'CUSTOMER' && (
-            <button
-              onClick={handleAirdropClick}
-              disabled={isAirdropLoading}
-              aria-label={t('airdropTitle')}
-              className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-50 dark:from-purple-950/60 via-amber-50/50 dark:via-amber-950/40 to-purple-50 dark:to-purple-950/60 text-purple-900 dark:text-purple-200 font-bold text-[9px] sm:text-[10px] hover:from-purple-100 hover:to-amber-100 disabled:opacity-50 transition-all border border-purple-200/90 dark:border-purple-800 shadow-2xs cursor-pointer"
-              title={t('airdropTitle')}
-            >
-              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[7.5px] sm:text-[8px] font-black leading-none shadow-2xs">+</span>
-              <span>{isAirdropLoading ? '...' : '1 SOL'}</span>
-            </button>
+          {role === 'MERCHANT' ? (
+            <>
+              <span className="font-bold text-gray-800 dark:text-gray-200 text-[9.5px] sm:text-[10px]">{solanaBalance.toFixed(3)} SOL</span>
+              <button
+                onClick={handleAirdropClick}
+                disabled={isAirdropLoading}
+                aria-label={t('airdropTitle')}
+                className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-50 dark:from-purple-950/60 via-amber-50/50 dark:via-amber-950/40 to-purple-50 dark:to-purple-950/60 text-purple-900 dark:text-purple-200 font-bold text-[9px] sm:text-[10px] hover:from-purple-100 hover:to-amber-100 disabled:opacity-50 transition-all border border-purple-200/90 dark:border-purple-800 shadow-2xs cursor-pointer"
+                title={t('airdropTitle')}
+              >
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[7.5px] sm:text-[8px] font-black leading-none shadow-2xs">+</span>
+                <span>{isAirdropLoading ? '...' : '1 SOL'}</span>
+              </button>
+            </>
+          ) : (
+            <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-[9px] sm:text-[10px]">
+              {tr('No SOL needed · the store pays the fees', 'Sin SOL · las comisiones las paga el almacén')}
+            </span>
           )}
 
-          {/* Reset Demo Button */}
+          {/* Reset del dispositivo */}
           <button
-            onClick={resetDemoData}
+            onClick={handleReset}
             aria-label={t('resetDemo')}
             title={t('resetDemo')}
             className="p-0.5 sm:p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md transition-colors cursor-pointer"
@@ -197,7 +231,7 @@ export const Header: React.FC = () => {
         </div>
       )}
 
-      {/* Oráculo de Precio en Tiempo Real */}
+      {/* Cotización ARS/USDC consultada a dolarapi.com */}
       <div className="max-w-md mx-auto mt-1 flex items-center justify-between text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 bg-emerald-50/60 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg border border-emerald-100/60 dark:border-emerald-900/40 overflow-hidden">
         <div className="flex items-center gap-1.5 truncate">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${exchangeRate.isLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`}></span>

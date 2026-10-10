@@ -136,7 +136,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, initial
     <div className="w-full">
       <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
         <span>📸 {t('cameraPhotoTicket')}</span>
-        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">{t('immutableOnChain')}</span>
+        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">{t('photoStaysOnPhone')}</span>
       </label>
 
       {/* Input nativo de cámara para celulares */}

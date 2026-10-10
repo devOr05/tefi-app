@@ -1,278 +1,199 @@
+// Cliente del programa Anchor de Tefi sobre Solana Devnet: lecturas de estado y armado/envío de transacciones.
 import { Buffer } from 'buffer';
-import { AnchorProvider, Program, BN, Idl } from '@coral-xyz/anchor';
-import { PublicKey, Keypair, SystemProgram, Transaction, VersionedTransaction } from '@solana/web3.js';
-import idl from './idl.json';
-import { solanaConnection, TEFI_PROGRAM_ID } from './connection';
-
-// Implementación de billetera en memoria para AnchorProvider
-export class KeypairWallet {
-  constructor(readonly payer: Keypair) {}
-
-  async signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
-    if (tx instanceof Transaction) {
-      tx.partialSign(this.payer);
-    } else if (tx instanceof VersionedTransaction) {
-      tx.sign([this.payer]);
-    }
-    return tx;
-  }
-
-  async signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> {
-    return Promise.all(txs.map((t) => this.signTransaction(t)));
-  }
-
-  get publicKey(): PublicKey {
-    return this.payer.publicKey;
-  }
-}
-
-// Obtener cliente de programa Anchor vinculado a un keypair pagador
-export function getTefiProgram(payer: Keypair): Program {
-  const wallet = new KeypairWallet(payer);
-  const provider = new AnchorProvider(solanaConnection, wallet as any, {
-    commitment: 'confirmed',
-    preflightCommitment: 'confirmed'
-  });
-  return new Program(idl as Idl, TEFI_PROGRAM_ID, provider);
-}
-
-// -------------------------------------------------------------
-// DERIVACIÓN DE PDAs
-// -------------------------------------------------------------
-
-export function getMerchantProfilePda(merchantPubkey: PublicKey): [PublicKey, number] {
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from('merchant'), merchantPubkey.toBuffer()],
-    TEFI_PROGRAM_ID
-  );
-}
-
-export function getCustomerProfilePda(customerPubkey: PublicKey): [PublicKey, number] {
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from('customer'), customerPubkey.toBuffer()],
-    TEFI_PROGRAM_ID
-  );
-}
-
-export function getFiadoRecordPda(
-  merchantPubkey: PublicKey,
-  customerPubkey: PublicKey,
-  nonce: number | bigint
-): [PublicKey, number] {
-  const nonceBuffer = Buffer.alloc(8);
-  nonceBuffer.writeBigUInt64LE(BigInt(nonce));
-  return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('fiado'),
-      merchantPubkey.toBuffer(),
-      customerPubkey.toBuffer(),
-      nonceBuffer
-    ],
-    TEFI_PROGRAM_ID
-  );
-}
+import { utils } from '@coral-xyz/anchor';
+import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
+import { solanaConnection } from './connection';
+import { buildStoreSignedTransaction } from './cosign';
+import {
+  FIADO_CUSTOMER_OFFSET,
+  FIADO_MERCHANT_OFFSET,
+  OnChainCustomerProfile,
+  OnChainFiado,
+  OnChainMerchantProfile,
+  TEFI_PROGRAM_ID,
+  decodeCustomerProfile,
+  decodeFiadoRecord,
+  decodeMerchantProfile,
+  fiadoRecordDiscriminator,
+  getCustomerProfilePda,
+  getMerchantProfilePda,
+  initializeCustomerIx,
+  initializeMerchantIx,
+  issueFiadoIx,
+  programErrorMessage,
+  repayFiadoIx
+} from './program';
 
 // -------------------------------------------------------------
 // CONSULTAS ON-CHAIN (READ STATE)
 // -------------------------------------------------------------
+// Devuelven null si la cuenta todavía no existe; los errores de red se propagan al que llama.
 
-export interface OnChainCustomerProfile {
-  creditScore: number;
-  creditLimitUsdc: number;
-  activeDebtUsdc: number;
-  totalRepaidUsdc: number;
-  loyaltyPoints: number;
+export async function fetchOnChainCustomerProfile(customer: PublicKey): Promise<OnChainCustomerProfile | null> {
+  const info = await solanaConnection.getAccountInfo(getCustomerProfilePda(customer));
+  return info ? decodeCustomerProfile(info.data) : null;
 }
 
-export async function fetchOnChainCustomerProfile(
-  customerPubkey: PublicKey,
-  callerKeypair?: Keypair
-): Promise<OnChainCustomerProfile | null> {
-  try {
-    const dummyKp = callerKeypair || Keypair.generate();
-    const program = getTefiProgram(dummyKp);
-    const [pda] = getCustomerProfilePda(customerPubkey);
-    
-    const acc = (await program.account.customerProfile.fetch(pda)) as any;
-    if (!acc) return null;
-
-    return {
-      creditScore: Number(acc.creditScore),
-      creditLimitUsdc: acc.creditLimitUsdc.toNumber() / 1_000_000,
-      activeDebtUsdc: acc.activeDebtUsdc.toNumber() / 1_000_000,
-      totalRepaidUsdc: acc.totalRepaidUsdc.toNumber() / 1_000_000,
-      loyaltyPoints: Number(acc.loyaltyPoints)
-    };
-  } catch (err) {
-    return null;
-  }
+export async function fetchOnChainMerchantProfile(merchant: PublicKey): Promise<OnChainMerchantProfile | null> {
+  const info = await solanaConnection.getAccountInfo(getMerchantProfilePda(merchant));
+  return info ? decodeMerchantProfile(info.data) : null;
 }
 
-export async function fetchOnChainMerchantProfile(
-  merchantPubkey: PublicKey,
-  callerKeypair?: Keypair
-) {
-  try {
-    const dummyKp = callerKeypair || Keypair.generate();
-    const program = getTefiProgram(dummyKp);
-    const [pda] = getMerchantProfilePda(merchantPubkey);
+export async function fetchOnChainFiado(fiadoRecord: PublicKey): Promise<OnChainFiado | null> {
+  const info = await solanaConnection.getAccountInfo(fiadoRecord);
+  return info ? decodeFiadoRecord(fiadoRecord, info.data) : null;
+}
 
-    const acc = await program.account.merchantProfile.fetch(pda);
-    return acc;
-  } catch (err) {
-    return null;
-  }
+/** Todos los fiados de un almacén o de un vecino, leídos directo de las cuentas del programa. */
+export async function fetchOnChainFiados(party: { merchant: PublicKey } | { customer: PublicKey }): Promise<OnChainFiado[]> {
+  const partyFilter =
+    'merchant' in party
+      ? { memcmp: { offset: FIADO_MERCHANT_OFFSET, bytes: party.merchant.toBase58() } }
+      : { memcmp: { offset: FIADO_CUSTOMER_OFFSET, bytes: party.customer.toBase58() } };
+
+  const accounts = await solanaConnection.getProgramAccounts(TEFI_PROGRAM_ID, {
+    commitment: 'confirmed',
+    filters: [{ memcmp: { offset: 0, bytes: utils.bytes.bs58.encode(fiadoRecordDiscriminator()) } }, partyFilter]
+  });
+  return accounts.map(({ pubkey, account }) => decodeFiadoRecord(pubkey, account.data));
 }
 
 // -------------------------------------------------------------
-// INSTRUCCIONES ON-CHAIN (WRITE STATE)
+// TELÉFONO DEL ALMACÉN (WRITE STATE)
 // -------------------------------------------------------------
 
-/**
- * Asegura que el comercio y el cliente estén inicializados en Devnet antes de emitir fiados
- */
-export async function ensureProfilesInitialized(
-  merchantKeypair: Keypair,
-  customerKeypair: Keypair,
-  businessName = 'Almacén Don Tito',
-  category = 'Almacén de Barrio'
-): Promise<void> {
-  const program = getTefiProgram(merchantKeypair);
+const truncateUtf8 = (text: string, maxBytes: number): string => {
+  let result = text;
+  while (new TextEncoder().encode(result).length > maxBytes) result = result.slice(0, -1);
+  return result;
+};
 
-  // 1. Verificar Merchant
-  const [merchantPda] = getMerchantProfilePda(merchantKeypair.publicKey);
-  const merchantInfo = await solanaConnection.getAccountInfo(merchantPda);
-  if (!merchantInfo) {
-    console.log('[Tefi Anchor] Inicializando MerchantProfile on-chain...');
-    await program.methods
-      .initializeMerchant(businessName, category)
-      .accounts({
-        merchant: merchantKeypair.publicKey,
-        merchantProfile: merchantPda,
-        systemProgram: SystemProgram.programId
-      })
-      .signers([merchantKeypair])
-      .rpc();
-    console.log('[Tefi Anchor] MerchantProfile inicializado con éxito');
-  }
+/** Crea el MerchantProfile del almacén la primera vez (firma y paga solo el almacén). */
+export async function ensureMerchantInitialized(merchant: Keypair, businessName: string, category: string): Promise<void> {
+  const existing = await solanaConnection.getAccountInfo(getMerchantProfilePda(merchant.publicKey));
+  if (existing) return;
 
-  // 2. Verificar Customer
-  const [customerPda] = getCustomerProfilePda(customerKeypair.publicKey);
-  const customerInfo = await solanaConnection.getAccountInfo(customerPda);
-  if (!customerInfo) {
-    console.log('[Tefi Anchor] Inicializando CustomerProfile on-chain...');
-    const custProgram = getTefiProgram(customerKeypair);
-    await custProgram.methods
-      .initializeCustomer()
-      .accounts({
-        customer: customerKeypair.publicKey,
-        customerProfile: customerPda,
-        systemProgram: SystemProgram.programId
-      })
-      .signers([customerKeypair])
-      .rpc();
-    console.log('[Tefi Anchor] CustomerProfile inicializado con éxito');
-  }
+  const tx = new Transaction().add(
+    initializeMerchantIx(merchant.publicKey, truncateUtf8(businessName, 50), truncateUtf8(category, 30))
+  );
+  await sendAndConfirmTransaction(solanaConnection, tx, [merchant], { commitment: 'confirmed' });
+}
+
+export interface StoreSignedRequest {
+  tx: Transaction;
+  signature: string;
+  fiadoRecord: PublicKey;
+  nonce: number;
+  includesProfileSetup: boolean;
 }
 
 /**
- * Emitir fiado con firma bilateral en Solana Devnet (merchant + customer)
+ * Arma issue_fiado con el almacén como fee payer y lo firma parcialmente con la clave del almacén.
+ * Si el vecino todavía no tiene perfil on-chain, la misma transacción lo da de alta (rent a cargo del almacén).
  */
-export async function executeOnChainIssueFiado(
-  merchantKeypair: Keypair,
-  customerKeypair: Keypair,
-  amountUsdc: number,
-  dueTimestampMs: number,
-  receiptHash: string
-): Promise<{ signature: string; fiadoRecordPda: PublicKey; nonce: number }> {
-  await ensureProfilesInitialized(merchantKeypair, customerKeypair);
+export async function buildIssueFiadoRequest(params: {
+  merchant: Keypair;
+  customer: PublicKey;
+  amountMicroUsdc: bigint;
+  dueTimestamp: number;
+  receiptHash: string;
+}): Promise<StoreSignedRequest> {
+  const { merchant, customer, amountMicroUsdc, dueTimestamp, receiptHash } = params;
 
-  const program = getTefiProgram(merchantKeypair);
-  const [merchantPda] = getMerchantProfilePda(merchantKeypair.publicKey);
-  const [customerPda] = getCustomerProfilePda(customerKeypair.publicKey);
+  const [merchantProfile, customerInfo, latest] = await Promise.all([
+    fetchOnChainMerchantProfile(merchant.publicKey),
+    solanaConnection.getAccountInfo(getCustomerProfilePda(customer)),
+    solanaConnection.getLatestBlockhash('confirmed')
+  ]);
+  if (!merchantProfile) throw new Error('El perfil del almacén todavía no existe on-chain.');
 
-  const merchantAccount = (await program.account.merchantProfile.fetch(merchantPda)) as any;
-  const nonce = merchantAccount.fiadoNonce.toNumber();
+  const nonce = merchantProfile.fiadoNonce;
+  const issue = issueFiadoIx({ merchant: merchant.publicKey, customer, nonce, amountMicroUsdc, dueTimestamp, receiptHash });
+  const includesProfileSetup = !customerInfo;
+  const instructions = includesProfileSetup ? [initializeCustomerIx(merchant.publicKey, customer), issue] : [issue];
 
-  const [fiadoRecordPda] = getFiadoRecordPda(
-    merchantKeypair.publicKey,
-    customerKeypair.publicKey,
-    nonce
-  );
-
-  const amountMicroUsdc = new BN(Math.round(amountUsdc * 1_000_000));
-  const dueTimestampSec = new BN(Math.floor(dueTimestampMs / 1000));
-  const safeHash = (receiptHash || 'receipt_hash_tefi').slice(0, 64);
-
-  console.log(`[Tefi Anchor] Ejecutando issueFiado: ${amountUsdc} USDC, nonce: ${nonce}...`);
-  const signature = await program.methods
-    .issueFiado(amountMicroUsdc, dueTimestampSec, safeHash)
-    .accounts({
-      merchant: merchantKeypair.publicKey,
-      customer: customerKeypair.publicKey,
-      merchantProfile: merchantPda,
-      customerProfile: customerPda,
-      fiadoRecord: fiadoRecordPda,
-      systemProgram: SystemProgram.programId
-    })
-    .signers([merchantKeypair, customerKeypair])
-    .rpc();
-
-  console.log(`[Tefi Anchor] issueFiado exitoso! Tx: ${signature}`);
-  return { signature, fiadoRecordPda, nonce };
+  const { tx, signature } = buildStoreSignedTransaction({ merchant, instructions, ...latest });
+  return { tx, signature, fiadoRecord: issue.keys[4].pubkey, nonce, includesProfileSetup };
 }
 
-/**
- * Repagar fiado en Solana Devnet (actualiza score on-chain +5, límite y puntos)
- * Exige co-firma bilateral estricta: el almacén confirma el cobro y el cliente salda la deuda.
- * Si falta cualquiera de las dos firmas, la transacción falla de forma explícita.
- */
-export async function executeOnChainRepayFiado(
-  merchantKeypair: Keypair,
-  customerKeypair: Keypair,
-  fiadoNonce: number
-): Promise<{ signature: string }> {
-  if (!merchantKeypair?.publicKey || !customerKeypair?.publicKey) {
-    throw new Error('RepayFiado exige obligatoriamente las firmas de ambos: comercio y cliente.');
+/** Arma repay_fiado: el almacén confirma que cobró y paga la comisión; falta la firma del vecino. */
+export async function buildRepayFiadoRequest(params: {
+  merchant: Keypair;
+  customer: PublicKey;
+  nonce: number;
+}): Promise<StoreSignedRequest> {
+  const { merchant, customer, nonce } = params;
+  const latest = await solanaConnection.getLatestBlockhash('confirmed');
+  const repay = repayFiadoIx({ merchant: merchant.publicKey, customer, nonce });
+  const { tx, signature } = buildStoreSignedTransaction({ merchant, instructions: [repay], ...latest });
+  return { tx, signature, fiadoRecord: repay.keys[3].pubkey, nonce, includesProfileSetup: false };
+}
+
+/** Estado de los QR emitidos: devuelve la transacción que ya entró a la cadena, si alguna entró. */
+export async function findLandedSignature(signatures: string[]): Promise<{ signature: string; failed: boolean } | null> {
+  if (signatures.length === 0) return null;
+  const { value } = await solanaConnection.getSignatureStatuses(signatures);
+  for (let i = 0; i < value.length; i++) {
+    const status = value[i];
+    if (status && (status.confirmationStatus === 'confirmed' || status.confirmationStatus === 'finalized')) {
+      return { signature: signatures[i], failed: !!status.err };
+    }
+  }
+  return null;
+}
+
+// -------------------------------------------------------------
+// TELÉFONO DEL VECINO (WRITE STATE)
+// -------------------------------------------------------------
+
+const CONFIRMATION_TIMEOUT_MS = 60_000;
+const CONFIRMATION_POLL_MS = 1_500;
+
+/** Envía la transacción con las dos firmas y espera su confirmación on-chain. */
+export async function submitCosignedTransaction(rawTransaction: Buffer): Promise<string> {
+  const signature = await solanaConnection.sendRawTransaction(rawTransaction, { preflightCommitment: 'confirmed' });
+
+  const deadline = Date.now() + CONFIRMATION_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const landed = await findLandedSignature([signature]).catch(() => null);
+    if (landed) {
+      if (landed.failed) throw new Error(`La transacción ${signature} fue rechazada por el programa.`);
+      return signature;
+    }
+    await new Promise(resolve => setTimeout(resolve, CONFIRMATION_POLL_MS));
+  }
+  throw new Error('Blockhash not found: la transacción no se confirmó a tiempo.');
+}
+
+// -------------------------------------------------------------
+// ERRORES
+// -------------------------------------------------------------
+
+export type ChainErrorCode = 'EXPIRED' | 'STALE' | 'INSUFFICIENT_SOL' | 'PROGRAM' | 'NETWORK' | 'UNKNOWN';
+
+export interface ChainError {
+  code: ChainErrorCode;
+  detail: string;
+  programCode?: number; // código de error del programa Tefi (6000+) cuando code === 'PROGRAM'
+}
+
+/** Traduce un error de RPC / simulación a una causa que la interfaz pueda explicar. */
+export function classifyChainError(err: unknown): ChainError {
+  const detail = err instanceof Error ? err.message : String(err);
+
+  if (/Blockhash not found|block height exceeded|BlockhashNotFound/i.test(detail)) return { code: 'EXPIRED', detail };
+  if (/insufficient (lamports|funds)|no record of a prior credit/i.test(detail)) return { code: 'INSUFFICIENT_SOL', detail };
+
+  const custom = detail.match(/custom program error: (0x[0-9a-f]+)/i);
+  if (custom) {
+    const code = parseInt(custom[1], 16);
+    const message = programErrorMessage(code);
+    if (message) return { code: 'PROGRAM', detail: message, programCode: code };
+    // 0x0 (cuenta ya creada) o restricciones de Anchor: el pedido quedó viejo respecto del estado on-chain
+    return { code: 'STALE', detail };
   }
 
-  const [customerPda] = getCustomerProfilePda(customerKeypair.publicKey);
-  const [fiadoRecordPda] = getFiadoRecordPda(
-    merchantKeypair.publicKey,
-    customerKeypair.publicKey,
-    fiadoNonce
-  );
-
-  // Verificación estricta previa: constatar que la cuenta PDA existe on-chain antes de invocar la instrucción
-  const fiadoAccountInfo = await solanaConnection.getAccountInfo(fiadoRecordPda);
-  if (!fiadoAccountInfo) {
-    throw new Error(
-      `No se encontró la cuenta on-chain FiadoRecord PDA (${fiadoRecordPda.toBase58()}) para nonce ${fiadoNonce} en Solana Devnet.`
-    );
-  }
-
-  const customerAccountInfo = await solanaConnection.getAccountInfo(customerPda);
-  if (!customerAccountInfo) {
-    throw new Error(
-      `No se encontró la cuenta on-chain CustomerProfile PDA (${customerPda.toBase58()}) en Solana Devnet.`
-    );
-  }
-
-  console.log(`[Tefi Anchor] Ejecutando repayFiado bilateral (Almacén + Vecino) para fiado nonce ${fiadoNonce}...`);
-
-  const program = getTefiProgram(merchantKeypair);
-  const signature = await program.methods
-    .repayFiado()
-    .accounts({
-      merchant: merchantKeypair.publicKey,
-      customer: customerKeypair.publicKey,
-      customerProfile: customerPda,
-      fiadoRecord: fiadoRecordPda,
-      systemProgram: SystemProgram.programId
-    })
-    .signers([merchantKeypair, customerKeypair])
-    .rpc();
-
-  console.log(`[Tefi Anchor] repayFiado bilateral confirmado en Devnet! Tx: ${signature}`);
-  return { signature };
+  if (/already in use|already been processed/i.test(detail)) return { code: 'STALE', detail };
+  if (/failed to fetch|networkerror|429|timed? ?out/i.test(detail)) return { code: 'NETWORK', detail };
+  return { code: 'UNKNOWN', detail };
 }
