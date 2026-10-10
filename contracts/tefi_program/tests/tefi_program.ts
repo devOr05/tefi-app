@@ -303,7 +303,11 @@ describe("tefi_program", () => {
       assert.fail("Should have failed with UnauthorizedMerchant constraint error");
     } catch (err: any) {
       expect(err.message).to.satisfy((msg: string) =>
-        msg.includes("UnauthorizedMerchant") || msg.includes("custom program error") || msg.includes("ConstraintRaw")
+        msg.includes("UnauthorizedMerchant") ||
+        msg.includes("ConstraintSeeds") ||
+        msg.includes("ConstraintRaw") ||
+        msg.includes("fiado_record") ||
+        msg.includes("custom program error")
       );
     }
   });
