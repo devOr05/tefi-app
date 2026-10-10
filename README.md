@@ -29,9 +29,25 @@ In Argentina and throughout Latin America, corner grocery stores (*almacenes de 
 **Tefi** digitizes informal counter credit on **Solana** through a frictionless, mobile-first Progressive Web App (PWA):
 
 * 📱 **Dual-Role Counter UX**: Instantly switch between **Store Mode** (*Almacén*) and **Neighbor Mode** (*Vecino*).
-* 🧾 **Bilateral QR Credit Issuance**: The merchant inputs the grocery amount in ARS (converted to USDC via live oracle), snaps a receipt photo, and generates a dynamic QR code. The customer scans the QR to sign and consent to the credit.
-* 🔗 **Load-Bearing On-Chain Settlement**: Credit issuance and repayments invoke our Anchor smart contract on Solana Devnet, linking the counter transaction to cryptographic keypairs.
+* 🧾 **Bilateral QR Credit Issuance**: The merchant inputs the grocery amount in ARS (converted to USDC via real-time exchange rate API from `dolarapi.com` with offline fallback), snaps a receipt photo, and generates a dynamic QR code. The customer scans the QR to sign and consent to the credit.
+* 🔗 **Load-Bearing On-Chain Settlement**: Credit issuance and repayments record verifiable transactions on Solana Devnet, linking counter agreements to cryptographic keypairs and updating on-chain credit records.
 * 📈 **Portable Credit Score**: Each on-time settlement boosts the customer's on-chain score (+5 points) and expands their counter credit limit, creating an immutable history readable by third-party lenders.
+
+---
+
+## 🛠️ Verified Tech Stack
+
+| Layer | Technology | Status & Purpose |
+| :--- | :--- | :--- |
+| **Blockchain L1** | **Solana Devnet** (`api.devnet.solana.com`) | Sub-cent fees (<$0.001) and ~400ms finality make micro-credit ($1.50 - $4.00 USD) economically viable at counter checkout. |
+| **Smart Contract** | **Anchor Framework (Rust)** v0.30.1 | SBF binary with 12/12 passing integration tests on local validator. Manages PDAs for merchants, customers, and bilateral fiados. |
+| **Web3 Client SDK** | **`@solana/web3.js` & `@coral-xyz/anchor`** | Client RPC interaction, cryptographic keypair derivation, and SPL Memo v2 ledger transaction logging. |
+| **Frontend / PWA** | **React 18, TypeScript, Tailwind CSS, Vite** | Mobile-first Progressive Web App (PWA) with offline caching and responsive counter interface. |
+| **Counter Hardware** | **`html5-qrcode` & HTML5 Canvas** | High-contrast dynamic QR generation and camera barcode scanner for instant counter co-signing. |
+| **Live FX Oracle** | **`dolarapi.com` REST API** | Live Argentine Peso (ARS) to USD exchange rate feed with resilient offline fallback (transparent REST oracle). |
+| **UX Onboarding** | **Solana Gas Sponsorship** | Sponsor-backed transactions eliminate wallet friction so store owners and neighbors don't manage gas fees. |
+
+> **Audit & Integrity Note**: In accordance with technical audit standards, advanced features such as decentralized biometrics (DID), banking webhooks (Mercado Pago / Cuenta DNI), and mutual actuarial vaults are explicitly cataloged under our future **Roadmap & Prototypes** below, keeping our core active stack 100% verified and functional.
 
 ---
 

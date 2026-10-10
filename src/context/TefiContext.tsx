@@ -4,7 +4,6 @@ import {
   getOrCreateRoleKeypair,
   getDevnetBalance,
   requestDevnetAirdrop,
-  broadcastSolanaFiadoEvent,
   transferDevnetSol
 } from '../solana/connection';
 import {
@@ -12,6 +11,12 @@ import {
   executeOnChainRepayFiado,
   fetchOnChainCustomerProfile
 } from '../solana/anchorClient';
+import {
+  calculateTotalActiveDebt,
+  calculateTotalRepaid,
+  sanitizeAndValidateFiados,
+  reconcileCustomerWithFiados
+} from '../services/financialLedger';
 import { fetchLiveUsdcRate, ExchangeRateData } from '../services/oracle';
 import { Language, translations } from '../i18n/translations';
 
@@ -39,8 +44,8 @@ interface TefiContextType {
   isAirdropLoading: boolean;
   webhookNotification: WebhookNotification | null;
   dismissWebhookNotification: () => void;
-  createFiado: (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => { success: boolean; error?: string; fiado?: FiadoRecord };
-  acceptScannedFiado: (payload: FiadoQrPayload) => { success: boolean; error?: string; fiado?: FiadoRecord };
+  createFiado: (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => Promise<{ success: boolean; error?: string; fiado?: FiadoRecord }>;
+  acceptScannedFiado: (payload: FiadoQrPayload) => Promise<{ success: boolean; error?: string; fiado?: FiadoRecord }>;
   pendingFiadoFromUrl: FiadoQrPayload | null;
   clearPendingFiadoFromUrl: () => void;
   repayFiado: (fiadoId: string, paymentMethod?: PaymentMethod) => Promise<{ success: boolean; signature?: string; error?: string }>;
@@ -111,7 +116,9 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     createdAt: '2026-09-24T14:30:00Z',
     dueDate: '2026-10-09T14:30:00Z',
     status: 'ACTIVE',
-    nonce: 1
+    nonce: 1,
+    isDemo: true,
+    settlementStatus: 'confirmed'
   },
   {
     id: 'f-102',
@@ -126,7 +133,9 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     createdAt: '2026-09-26T18:15:00Z',
     dueDate: '2026-10-11T18:15:00Z',
     status: 'ACTIVE',
-    nonce: 2
+    nonce: 2,
+    isDemo: true,
+    settlementStatus: 'confirmed'
   },
   {
     id: 'f-100',
@@ -142,7 +151,9 @@ const INITIAL_FIADOS: FiadoRecord[] = [
     dueDate: '2026-09-25T12:00:00Z',
     status: 'PAID',
     nonce: 0,
-    repaidAt: '2026-09-23T11:20:00Z'
+    repaidAt: '2026-09-23T11:20:00Z',
+    isDemo: true,
+    settlementStatus: 'confirmed'
   }
 ];
 
@@ -157,31 +168,62 @@ const TefiContext = createContext<TefiContextType | undefined>(undefined);
 
 export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>('MERCHANT');
-  const [customer, setCustomer] = useState<CustomerProfile>(() => {
-    const saved = localStorage.getItem('tefi_customer');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Garantizar que la dirección de wallet sea la del Keypair real
-      parsed.walletAddress = customerKeypair.publicKey.toBase58();
-      if (parsed.isDidVerified === undefined) {
-        parsed.isDidVerified = true;
-        parsed.didUri = `did:sol:devnet:${customerKeypair.publicKey.toBase58()}`;
-        parsed.biometricHash = 'bio_7a8f9b2c3d4e5f60';
+
+  // 1. Inicializar fiados primero con saneamiento canónico
+  const [fiados, setFiados] = useState<FiadoRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('tefi_fiados');
+      if (saved) {
+        const raw = JSON.parse(saved);
+        const { fiados: cleanFiados } = sanitizeAndValidateFiados(raw);
+        return cleanFiados;
       }
-      if (parsed.cuentaDniLinked === undefined) {
-        parsed.cuentaDniAlias = 'matias.gonzalez.bapro';
-        parsed.cuentaDniLinked = true;
-        parsed.mercadoPagoAlias = 'matias.mp.tefi';
-        parsed.mercadoPagoLinked = true;
-      }
-      if (parsed.abundanceSavingsUsdc === undefined) {
-        parsed.abundanceSavingsSol = 0.145;
-        parsed.abundanceSavingsUsdc = 22.50;
-        parsed.abundanceYieldEarnedUsdc = 1.85;
-      }
-      return parsed;
+    } catch (e) {
+      console.warn('Error al cargar tefi_fiados de localStorage:', e);
     }
-    return INITIAL_CUSTOMER;
+    return INITIAL_FIADOS;
+  });
+
+  // 2. Inicializar cliente con reconciliación matemática estricta contra fiados activos
+  const [customer, setCustomer] = useState<CustomerProfile>(() => {
+    let base = INITIAL_CUSTOMER;
+    try {
+      const saved = localStorage.getItem('tefi_customer');
+      if (saved) {
+        base = { ...base, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.warn('Error al cargar tefi_customer de localStorage:', e);
+    }
+    base.walletAddress = customerKeypair.publicKey.toBase58();
+    if (base.isDidVerified === undefined) {
+      base.isDidVerified = true;
+      base.didUri = `did:sol:devnet:${customerKeypair.publicKey.toBase58()}`;
+      base.biometricHash = 'bio_7a8f9b2c3d4e5f60';
+    }
+    if (base.cuentaDniLinked === undefined) {
+      base.cuentaDniAlias = 'matias.gonzalez.bapro';
+      base.cuentaDniLinked = true;
+      base.mercadoPagoAlias = 'matias.mp.tefi';
+      base.mercadoPagoLinked = true;
+    }
+    if (base.abundanceSavingsUsdc === undefined) {
+      base.abundanceSavingsSol = 0.145;
+      base.abundanceSavingsUsdc = 22.50;
+      base.abundanceYieldEarnedUsdc = 1.85;
+    }
+
+    // Reconciliación matemática canónica contra la lista de fiados
+    let currentFiados = INITIAL_FIADOS;
+    try {
+      const savedF = localStorage.getItem('tefi_fiados');
+      if (savedF) {
+        currentFiados = sanitizeAndValidateFiados(JSON.parse(savedF)).fiados;
+      }
+    } catch (_) {}
+
+    const { reconciledCustomer } = reconcileCustomerWithFiados(base, currentFiados);
+    return reconciledCustomer;
   });
 
   const [merchant, setMerchant] = useState<MerchantProfile>(() => {
@@ -192,11 +234,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return parsed;
     }
     return INITIAL_MERCHANT;
-  });
-
-  const [fiados, setFiados] = useState<FiadoRecord[]>(() => {
-    const saved = localStorage.getItem('tefi_fiados');
-    return saved ? JSON.parse(saved) : INITIAL_FIADOS;
   });
 
   const [insurancePool, setInsurancePool] = useState<InsurancePoolState>(() => {
@@ -468,6 +505,16 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     localStorage.setItem('tefi_fiados', JSON.stringify(fiados));
+    // Sincronización matemática canónica: customer.currentDebt es SIEMPRE la suma exacta de los fiados activos
+    const activeDebt = calculateTotalActiveDebt(fiados);
+    setCustomer(prev => {
+      if (Math.abs(prev.currentDebt - activeDebt) > 0.001) {
+        const updated = { ...prev, currentDebt: activeDebt };
+        localStorage.setItem('tefi_customer', JSON.stringify(updated));
+        return updated;
+      }
+      return prev;
+    });
   }, [fiados]);
 
   useEffect(() => {
@@ -481,13 +528,19 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'Bronce';
   }
 
-  // 1. Crear nuevo Fiado (con firma bilateral simulada y nonce anti-colisión)
-  const createFiado = (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }) => {
-    const newTotalDebt = customer.currentDebt + data.amountUsdc;
+  // 1. Crear nuevo Fiado (Emisión estricta con firma de Solana Devnet, sin optimismo ni fallbacks)
+  const createFiado = async (data: { amountArs: number; amountUsdc: number; itemsDescription: string; photoReceiptUrl: string }): Promise<{ success: boolean; error?: string; fiado?: FiadoRecord }> => {
+    const amtUsdc = Number(data?.amountUsdc);
+    if (!Number.isFinite(amtUsdc) || amtUsdc <= 0) {
+      return { success: false, error: 'Monto de fiado inválido. Debe ser un valor numérico mayor a cero.' };
+    }
+
+    const currentActiveDebt = calculateTotalActiveDebt(fiados);
+    const newTotalDebt = +(currentActiveDebt + amtUsdc).toFixed(2);
     if (newTotalDebt > customer.maxCreditLimit) {
       return {
         success: false,
-        error: `Límite superado. Disponible: ${(customer.maxCreditLimit - customer.currentDebt).toFixed(1)} USDC. Solicitado: ${data.amountUsdc.toFixed(1)} USDC.`
+        error: `Límite superado. Disponible: ${(customer.maxCreditLimit - currentActiveDebt).toFixed(1)} USDC. Solicitado: ${amtUsdc.toFixed(1)} USDC.`
       };
     }
 
@@ -499,89 +552,88 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       merchantName: merchant.name,
       customerId: customer.id,
       customerName: customer.name,
-      amountUsdc: data.amountUsdc,
+      amountUsdc: +amtUsdc.toFixed(2),
       amountArs: data.amountArs,
       itemsDescription: data.itemsDescription || 'Compra general de almacén',
       photoReceiptUrl: data.photoReceiptUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
       createdAt: new Date().toISOString(),
       dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'ACTIVE',
-      nonce: currentNonce
+      nonce: currentNonce,
+      isDemo: false,
+      settlementStatus: 'pending'
     };
 
-    setFiados(prev => [newFiado, ...prev]);
+    try {
+      // Ejecutar instrucción real issue_fiado del programa Anchor en Solana Devnet
+      const res = await executeOnChainIssueFiado(
+        merchantKeypair,
+        customerKeypair,
+        newFiado.amountUsdc,
+        new Date(newFiado.dueDate).getTime(),
+        newFiado.itemsDescription
+      );
 
-    // Ejecutar instrucción real issue_fiado del programa Anchor en Solana Devnet
-    executeOnChainIssueFiado(
-      merchantKeypair,
-      customerKeypair,
-      newFiado.amountUsdc,
-      new Date(newFiado.dueDate).getTime(),
-      newFiado.itemsDescription
-    ).then(res => {
-      if (res && res.signature) {
-        setFiados(curr =>
-          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: res.signature, nonce: res.nonce } : f))
-        );
-        fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
-          if (onChainProfile) {
-            setCustomer(prev => ({
-              ...prev,
-              creditScore: onChainProfile.creditScore,
-              currentDebt: onChainProfile.activeDebtUsdc,
-              maxCreditLimit: onChainProfile.creditLimitUsdc
-            }));
-          }
-        });
+      if (!res || !res.signature) {
+        throw new Error('La transacción no devolvió una firma válida de Solana Devnet');
       }
-    }).catch(err => {
-      console.warn('[Anchor issueFiado in createFiado] Fallback a broadcastSolanaFiadoEvent:', err);
-      broadcastSolanaFiadoEvent(merchantKeypair, {
-        type: 'NEW_FIADO',
-        fiadoId: newFiado.id,
-        amountUsdc: data.amountUsdc
-      }).then(realSig => {
-        if (realSig) {
-          setFiados(curr =>
-            curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
-          );
+
+      const confirmedFiado: FiadoRecord = {
+        ...newFiado,
+        txSignature: res.signature,
+        nonce: res.nonce,
+        settlementStatus: 'confirmed'
+      };
+
+      // Asentar en libreta ÚNICAMENTE tras confirmación on-chain verificada
+      setFiados(prev => [confirmedFiado, ...prev.filter(f => f.id !== confirmedFiado.id)]);
+
+      setMerchant(prev => ({
+        ...prev,
+        totalSalesUsdc: +(prev.totalSalesUsdc + amtUsdc).toFixed(2),
+        fiadoNonce: (res.nonce ?? currentNonce) + 1
+      }));
+
+      fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
+        if (onChainProfile) {
+          setCustomer(prev => ({
+            ...prev,
+            creditScore: onChainProfile.creditScore,
+            maxCreditLimit: onChainProfile.creditLimitUsdc
+          }));
         }
-      });
-    });
+      }).catch(() => {});
 
-    setCustomer(prev => ({
-      ...prev,
-      currentDebt: +(prev.currentDebt + data.amountUsdc).toFixed(2)
-    }));
-
-    setMerchant(prev => ({
-      ...prev,
-      totalSalesUsdc: +(prev.totalSalesUsdc + data.amountUsdc).toFixed(2),
-      fiadoNonce: currentNonce + 1
-    }));
-
-    return { success: true, fiado: newFiado };
+      return { success: true, fiado: confirmedFiado };
+    } catch (err: any) {
+      console.error('[Anchor issueFiado Error in createFiado]:', err);
+      // NUNCA recurrir a SPL Memo ni asentar deuda fantasma
+      const errorMsg = err?.message || 'Error en la emisión on-chain en Solana Devnet';
+      return { success: false, error: errorMsg };
+    }
   };
 
-  // 1b. Cliente acepta un Fiado escaneado via QR P2P (Lectura óptica directa entre celulares)
-  const acceptScannedFiado = (payload: FiadoQrPayload) => {
-    const data = payload.data;
-    if (!data || !data.amountUsdc || data.amountUsdc <= 0) {
+  // 1b. Cliente acepta un Fiado escaneado via QR P2P (Confirmación bilateral en Solana Devnet)
+  const acceptScannedFiado = async (payload: FiadoQrPayload): Promise<{ success: boolean; error?: string; fiado?: FiadoRecord }> => {
+    const data = payload?.data;
+    const amtUsdc = Number(data?.amountUsdc);
+    if (!data || !Number.isFinite(amtUsdc) || amtUsdc <= 0) {
       return { success: false, error: 'Datos del fiado corruptos o incompletos.' };
     }
 
-    const availableLimit = customer.maxCreditLimit - customer.currentDebt;
-    if (data.amountUsdc > availableLimit) {
+    const currentActiveDebt = calculateTotalActiveDebt(fiados);
+    const availableLimit = customer.maxCreditLimit - currentActiveDebt;
+    if (amtUsdc > availableLimit) {
       return {
         success: false,
-        error: `Supera tu límite disponible (${availableLimit.toFixed(1)} USDC). Solicitado: ${data.amountUsdc.toFixed(1)} USDC.`
+        error: `Supera tu límite disponible (${availableLimit.toFixed(1)} USDC). Solicitado: ${amtUsdc.toFixed(1)} USDC.`
       };
     }
 
     // Evitar duplicar si ya fue aceptado
-    const alreadyExists = fiados.some(f => f.id === data.id && f.status === 'ACTIVE');
+    const alreadyExists = fiados.some(f => f.id === data.id);
     if (alreadyExists) {
-      return { success: false, error: 'Este fiado ya se encuentra registrado y activo en tu libreta.' };
+      return { success: false, error: 'Este fiado ya se encuentra registrado en tu libreta.' };
     }
 
     const newFiado: FiadoRecord = {
@@ -590,7 +642,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       merchantName: data.merchantName || 'Almacén Don Tito',
       customerId: customer.id,
       customerName: customer.name,
-      amountUsdc: data.amountUsdc,
+      amountUsdc: +amtUsdc.toFixed(2),
       amountArs: data.amountArs,
       itemsDescription: data.itemsDescription || 'Compra de almacén',
       photoReceiptUrl: data.photoReceiptUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
@@ -598,58 +650,53 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dueDate: data.dueDate || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'ACTIVE',
       nonce: data.nonce ?? 0,
-      txSignature: data.txSignature
+      isDemo: false,
+      settlementStatus: 'pending'
     };
 
-    setFiados(prev => [newFiado, ...prev.filter(f => f.id !== newFiado.id)]);
+    try {
+      // Ejecutar instrucción real issue_fiado del programa Anchor en Solana Devnet
+      const res = await executeOnChainIssueFiado(
+        merchantKeypair,
+        customerKeypair,
+        newFiado.amountUsdc,
+        new Date(newFiado.dueDate).getTime(),
+        newFiado.itemsDescription
+      );
 
-    setCustomer(prev => ({
-      ...prev,
-      currentDebt: +(prev.currentDebt + newFiado.amountUsdc).toFixed(2)
-    }));
-
-    // Ejecutar instrucción real issue_fiado del programa Anchor en Solana Devnet
-    executeOnChainIssueFiado(
-      merchantKeypair,
-      customerKeypair,
-      newFiado.amountUsdc,
-      new Date(newFiado.dueDate).getTime(),
-      newFiado.itemsDescription
-    ).then(res => {
-      if (res && res.signature) {
-        setFiados(curr =>
-          curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: res.signature, nonce: res.nonce } : f))
-        );
-        fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
-          if (onChainProfile) {
-            setCustomer(prev => ({
-              ...prev,
-              creditScore: onChainProfile.creditScore,
-              currentDebt: onChainProfile.activeDebtUsdc,
-              maxCreditLimit: onChainProfile.creditLimitUsdc
-            }));
-          }
-        });
+      if (!res || !res.signature) {
+        throw new Error('La transacción no devolvió una firma válida de Solana Devnet');
       }
-    }).catch(err => {
-      console.warn('[Anchor issueFiado] Fallback a broadcastSolanaFiadoEvent:', err);
-      broadcastSolanaFiadoEvent(customerKeypair, {
-        type: 'NEW_FIADO',
-        fiadoId: newFiado.id,
-        amountUsdc: newFiado.amountUsdc
-      }, merchantKeypair).then(realSig => {
-        if (realSig) {
-          setFiados(curr =>
-            curr.map(f => (f.id === newFiado.id ? { ...f, txSignature: realSig } : f))
-          );
-        }
-      });
-    });
 
-    return { success: true, fiado: newFiado };
+      const confirmedFiado: FiadoRecord = {
+        ...newFiado,
+        txSignature: res.signature,
+        nonce: res.nonce,
+        settlementStatus: 'confirmed'
+      };
+
+      setFiados(prev => [confirmedFiado, ...prev.filter(f => f.id !== confirmedFiado.id)]);
+
+      fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
+        if (onChainProfile) {
+          setCustomer(prev => ({
+            ...prev,
+            creditScore: onChainProfile.creditScore,
+            maxCreditLimit: onChainProfile.creditLimitUsdc
+          }));
+        }
+      }).catch(() => {});
+
+      return { success: true, fiado: confirmedFiado };
+    } catch (err: any) {
+      console.error('[Anchor issueFiado Error in acceptScannedFiado]:', err);
+      // NUNCA recurrir a SPL Memo ni asentar deuda fantasma
+      const errorMsg = err?.message || 'Error al asentar el fiado bilateral en Solana Devnet';
+      return { success: false, error: errorMsg };
+    }
   };
 
-  // 2. Cliente paga su deuda (Repayment bilateral estricto)
+  // 2. Cliente paga su deuda (Repayment bilateral estricto o liquidación demo aislada)
   const repayFiado = async (
     fiadoId: string, 
     paymentMethod: PaymentMethod = 'SOLANA_USDC'
@@ -658,9 +705,58 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!target) return { success: false, error: 'Fiado no encontrado' };
     if (target.status !== 'ACTIVE') return { success: false, error: 'Este fiado ya se encuentra saldado' };
 
+    // Si es un fiado demo de prueba, liquidar exclusivamente en el entorno de demostración sin falsear blockchain
+    if (target.isDemo) {
+      setFiados(curr =>
+        curr.map(f =>
+          f.id === fiadoId
+            ? {
+                ...f,
+                status: 'PAID',
+                repaidAt: new Date().toISOString(),
+                paymentMethod,
+                settlementStatus: 'confirmed'
+              }
+            : f
+        )
+      );
+
+      setCustomer(prev => {
+        const newScore = Math.min(100, prev.creditScore + 5);
+        const pointsEarned = Math.round(target.amountUsdc * 20);
+        const newTier = calculateTier(newScore);
+        const newLimit = +(prev.maxCreditLimit + 5).toFixed(0);
+
+        return {
+          ...prev,
+          creditScore: newScore,
+          totalRepaid: +(prev.totalRepaid + target.amountUsdc).toFixed(2),
+          loyaltyPoints: prev.loyaltyPoints + pointsEarned,
+          tier: newTier,
+          maxCreditLimit: newLimit
+        };
+      });
+
+      const notif: WebhookNotification = {
+        id: `wh-${Date.now()}`,
+        title: language === 'en' ? 'Demo Payment Registered (Simulated)' : 'Pago Registrado (Modo Demo Simulado)',
+        message: language === 'en'
+          ? `Settled $${target.amountUsdc} USDC in local demo mode without on-chain interaction.`
+          : `Fiado de $${target.amountUsdc} USDC saldado en modo demostración local sin interacción con blockchain.`,
+        amountArs: target.amountArs,
+        amountUsdc: target.amountUsdc,
+        method: paymentMethod,
+        customerName: target.customerName,
+        timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+      setWebhookNotification(notif);
+      setTimeout(() => setWebhookNotification(prev => (prev?.id === notif.id ? null : prev)), 7000);
+
+      return { success: true };
+    }
+
+    // Si es un fiado real on-chain, exigir co-firma bilateral estricta en Devnet
     try {
-      // 1. Ejecutar instrucción real repay_fiado co-firmada del programa Anchor en Solana Devnet
-      // Exige co-firma bilateral estricta (almacén + cliente). Sin rutas alternativas ni atajos.
       const res = await executeOnChainRepayFiado(
         merchantKeypair,
         customerKeypair,
@@ -673,7 +769,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const txSignature = res.signature;
 
-      // 2. Solo tras confirmación on-chain exitosa, actualizar el registro local del fiado
       setFiados(curr =>
         curr.map(f =>
           f.id === fiadoId
@@ -682,45 +777,35 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 status: 'PAID',
                 txSignature,
                 repaidAt: new Date().toISOString(),
-                paymentMethod
+                paymentMethod,
+                settlementStatus: 'confirmed'
               }
             : f
         )
       );
 
-      // 3. Reconciliar el estado financiero directamente desde la cuenta PDA CustomerProfile en Devnet
       try {
         const onChainProfile = await fetchOnChainCustomerProfile(customerKeypair.publicKey);
         if (onChainProfile) {
-          setCustomer(prev => {
-            const newTier = calculateTier(onChainProfile.creditScore);
-            return {
-              ...prev,
-              creditScore: onChainProfile.creditScore,
-              currentDebt: onChainProfile.activeDebtUsdc,
-              maxCreditLimit: onChainProfile.creditLimitUsdc,
-              loyaltyPoints: onChainProfile.loyaltyPoints,
-              totalRepaid: onChainProfile.totalRepaidUsdc,
-              tier: newTier
-            };
-          });
+          setCustomer(prev => ({
+            ...prev,
+            creditScore: onChainProfile.creditScore,
+            maxCreditLimit: onChainProfile.creditLimitUsdc,
+            loyaltyPoints: onChainProfile.loyaltyPoints,
+            totalRepaid: onChainProfile.totalRepaidUsdc,
+            tier: calculateTier(onChainProfile.creditScore)
+          }));
         } else {
-          // Reconciliación local basada estrictamente en la deuda saldada
           setCustomer(prev => {
-            const newDebt = Math.max(0, +(prev.currentDebt - target.amountUsdc).toFixed(2));
             const newScore = Math.min(100, prev.creditScore + 5);
             const pointsEarned = Math.round(target.amountUsdc * 20);
-            const newTier = calculateTier(newScore);
-            const newLimit = +(prev.maxCreditLimit + 5).toFixed(0);
-
             return {
               ...prev,
-              currentDebt: newDebt,
               creditScore: newScore,
               totalRepaid: +(prev.totalRepaid + target.amountUsdc).toFixed(2),
               loyaltyPoints: prev.loyaltyPoints + pointsEarned,
-              tier: newTier,
-              maxCreditLimit: newLimit
+              tier: calculateTier(newScore),
+              maxCreditLimit: +(prev.maxCreditLimit + 5).toFixed(0)
             };
           });
         }
@@ -728,48 +813,20 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('[repayFiado] Error al reconciliar CustomerProfile on-chain:', profileErr);
       }
 
-      // 4. Notificación de liquidación confirmada
-      const methodLabels: Record<PaymentMethod, string> = language === 'en' ? {
-        MERCADO_PAGO: 'Mercado Pago (Transfer)',
-        CUENTA_DNI: 'Cuenta DNI (Transfer)',
-        CASH: 'Cash at Counter',
-        SOLANA_USDC: 'Solana USDC (On-Chain)',
-        ABUNDANCE_FOUNTAIN: 'Abundance Fountain (Collateral)'
-      } : {
-        MERCADO_PAGO: 'Mercado Pago (Transferencia)',
-        CUENTA_DNI: 'Cuenta DNI (Transferencia)',
-        CASH: 'Efectivo en Mostrador',
-        SOLANA_USDC: 'Solana USDC (On-Chain)',
-        ABUNDANCE_FOUNTAIN: 'Fuente de la Abundancia (Fondos Retenidos)'
-      };
-
-      const notifTitle = language === 'en'
-        ? (paymentMethod === 'ABUNDANCE_FOUNTAIN'
-          ? '💧 Credit Settled with Fountain'
-          : (paymentMethod === 'CASH' ? 'Cash Payment Registered' : 'On-Chain Repayment Settled ⚡'))
-        : (paymentMethod === 'ABUNDANCE_FOUNTAIN'
-          ? '💧 Fiado Saldado con la Fuente'
-          : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Repago Liquidado On-Chain ⚡'));
-
-      const notifMessage = language === 'en'
-        ? `Payment of $${target.amountArs.toLocaleString('en-US')} ARS (${target.amountUsdc} USDC) confirmed from ${target.customerName} via ${methodLabels[paymentMethod]}. Settlement recorded on Solana Devnet.`
-        : `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) confirmado de ${target.customerName} vía ${methodLabels[paymentMethod]}! Liquidación registrada en Solana Devnet.`;
-
       const notif: WebhookNotification = {
         id: `wh-${Date.now()}`,
-        title: notifTitle,
-        message: notifMessage,
+        title: language === 'en' ? 'On-Chain Repayment Settled ⚡' : 'Repago Liquidado On-Chain ⚡',
+        message: language === 'en'
+          ? `Payment of $${target.amountUsdc} USDC verified on Solana Devnet. Tx: ${txSignature.slice(0, 16)}...`
+          : `¡Pago de $${target.amountUsdc} USDC verificado en Solana Devnet! Tx: ${txSignature.slice(0, 16)}...`,
         amountArs: target.amountArs,
         amountUsdc: target.amountUsdc,
         method: paymentMethod,
         customerName: target.customerName,
         timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       };
-
       setWebhookNotification(notif);
-      setTimeout(() => {
-        setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
-      }, 7000);
+      setTimeout(() => setWebhookNotification(prev => (prev?.id === notif.id ? null : prev)), 7000);
 
       return { success: true, signature: txSignature };
     } catch (err: any) {
@@ -833,7 +890,11 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('tefi_merchant');
     localStorage.removeItem('tefi_fiados');
     localStorage.removeItem('tefi_pool');
-    setCustomer(INITIAL_CUSTOMER);
+    const cleanCustomer: CustomerProfile = {
+      ...INITIAL_CUSTOMER,
+      currentDebt: calculateTotalActiveDebt(INITIAL_FIADOS)
+    };
+    setCustomer(cleanCustomer);
     setMerchant(INITIAL_MERCHANT);
     setFiados(INITIAL_FIADOS);
     setInsurancePool(INITIAL_INSURANCE_POOL);
@@ -1013,7 +1074,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    // Marcar todos los fiados activos como pagados
+    // Marcar todos los fiados activos como pagados con Fuente de la Abundancia (prototipo de garantía)
     setFiados(prev =>
       prev.map(f =>
         f.status === 'ACTIVE'
@@ -1021,18 +1082,12 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...f,
               status: 'PAID',
               repaidAt: new Date().toISOString(),
-              paymentMethod: 'ABUNDANCE_FOUNTAIN'
+              paymentMethod: 'ABUNDANCE_FOUNTAIN',
+              settlementStatus: 'confirmed'
             }
           : f
       )
     );
-
-    // Transmitir a Solana con patrocinio del almacén
-    broadcastSolanaFiadoEvent(customerKeypair, {
-      type: 'REPAY',
-      fiadoId: 'ALL_ACTIVE_SETTLED',
-      amountUsdc: totalDebt
-    }, merchantKeypair);
 
     setCustomer(prev => {
       const newSavingsUsdc = Math.max(0, +(prev.abundanceSavingsUsdc! - totalDebt).toFixed(2));

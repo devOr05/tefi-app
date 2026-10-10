@@ -243,6 +243,21 @@ export async function executeOnChainRepayFiado(
     fiadoNonce
   );
 
+  // Verificación estricta previa: constatar que la cuenta PDA existe on-chain antes de invocar la instrucción
+  const fiadoAccountInfo = await solanaConnection.getAccountInfo(fiadoRecordPda);
+  if (!fiadoAccountInfo) {
+    throw new Error(
+      `No se encontró la cuenta on-chain FiadoRecord PDA (${fiadoRecordPda.toBase58()}) para nonce ${fiadoNonce} en Solana Devnet.`
+    );
+  }
+
+  const customerAccountInfo = await solanaConnection.getAccountInfo(customerPda);
+  if (!customerAccountInfo) {
+    throw new Error(
+      `No se encontró la cuenta on-chain CustomerProfile PDA (${customerPda.toBase58()}) en Solana Devnet.`
+    );
+  }
+
   console.log(`[Tefi Anchor] Ejecutando repayFiado bilateral (Almacén + Vecino) para fiado nonce ${fiadoNonce}...`);
 
   const program = getTefiProgram(merchantKeypair);

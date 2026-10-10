@@ -34,7 +34,7 @@ export const FiadoConfirmationModal: React.FC<FiadoConfirmationModalProps> = ({
       // Breve simulación de firma de clave privada Solana
       await new Promise(r => setTimeout(r, 600));
 
-      const res = acceptScannedFiado(payload);
+      const res = await acceptScannedFiado(payload);
       if (!res.success) {
         setError(res.error || (language === 'en' ? 'Could not record store credit.' : 'No se pudo registrar el fiado.'));
         setIsSigning(false);

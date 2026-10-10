@@ -144,10 +144,10 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
               <div className="pt-1.5 border-t border-gray-700/50 flex items-start gap-1.5 text-[10px] text-gray-400 leading-snug">
                 <Info className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                 <p>
-                  <strong>{language === 'en' ? 'Agreed minimum fee (1%):' : 'Comisión mínima pautada (1%):'}</strong>{' '}
+                  <strong>{language === 'en' ? 'Zero Commission (100% Free):' : 'Cero Comisión (100% Gratuito):'}</strong>{' '}
                   {language === 'en'
-                    ? 'Covers Solana network transaction costs and app maintenance. Already calculated in the final amount.'
-                    : 'Cubre el costo de transacción de la red Solana y el mantenimiento de la app. Ya se encuentra calculada en el monto final.'}
+                    ? 'Store credit settlement is 100% free for both the store and the customer. Gas sponsored on Solana.'
+                    : 'La liquidación de la libreta es 100% gratuita para el almacén y el vecino. Gas patrocinado en Solana.'}
                 </p>
               </div>
             </div>

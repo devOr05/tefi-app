@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node scripts/test-contracts.js"
+    "test": "node scripts/test-contracts.js && node scripts/test-financial-integrity.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",

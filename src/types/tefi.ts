@@ -63,6 +63,8 @@ export interface FiadoRecord {
   txSignature?: string;
   repaidAt?: string;
   paymentMethod?: PaymentMethod;
+  isDemo?: boolean;
+  settlementStatus?: 'pending' | 'confirmed' | 'failed' | 'unknown';
 }
 
 export interface InsurancePoolState {

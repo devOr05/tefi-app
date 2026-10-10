@@ -17,7 +17,9 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const calculatedUsdc = amountArs ? +(parseFloat(amountArs) / rate).toFixed(2) : 0;
   const availableLimit = Math.max(0, +(customer.maxCreditLimit - customer.currentDebt).toFixed(1));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -31,20 +33,25 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return;
     }
 
-    const res = createFiado({
-      amountArs: parseFloat(amountArs),
-      amountUsdc: calculatedUsdc,
-      itemsDescription: itemsDescription || (language === 'en' ? 'Store purchase' : 'Compra de almacén'),
-      photoReceiptUrl: photoUrl
-    });
+    setIsSubmitting(true);
+    try {
+      const res = await createFiado({
+        amountArs: parseFloat(amountArs),
+        amountUsdc: calculatedUsdc,
+        itemsDescription: itemsDescription || (language === 'en' ? 'Store purchase' : 'Compra de almacén'),
+        photoReceiptUrl: photoUrl
+      });
 
-    if (!res.success) {
-      setError(res.error || (language === 'en' ? 'Error creating store credit.' : 'Error al crear el fiado.'));
-      return;
-    }
+      if (!res.success) {
+        setError(res.error || (language === 'en' ? 'Error creating store credit.' : 'Error al crear el fiado.'));
+        return;
+      }
 
-    if (res.fiado) {
-      setCreatedFiado(res.fiado);
+      if (res.fiado) {
+        setCreatedFiado(res.fiado);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -138,10 +145,11 @@ export const NewFiadoView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
         <button
           type="submit"
-          className="w-full py-3.5 rounded-2xl gradient-tefi text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 active:scale-98 transition-transform flex items-center justify-center gap-2 cursor-pointer"
+          disabled={isSubmitting}
+          className={`w-full py-3.5 rounded-2xl gradient-tefi text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 active:scale-98 transition-transform flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-70 cursor-wait' : 'cursor-pointer'}`}
         >
           <QrCode className="w-4 h-4" />
-          <span>{language === 'en' ? 'Generate Credit & Show QR' : 'Generar Fiado y Mostrar QR'}</span>
+          <span>{isSubmitting ? (language === 'en' ? 'Issuing on Solana Devnet...' : 'Emitiendo en Solana Devnet...') : (language === 'en' ? 'Generate Credit & Show QR' : 'Generar Fiado y Mostrar QR')}</span>
         </button>
       </form>
 

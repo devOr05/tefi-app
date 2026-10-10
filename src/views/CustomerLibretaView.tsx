@@ -221,14 +221,29 @@ export const CustomerLibretaView: React.FC = () => {
                 </div>
 
                 <div className="shrink-0 text-right min-w-[100px]">
-                  <span className="text-sm font-extrabold text-gray-900 dark:text-white block">${(f.amountUsdc * 1.01).toFixed(2)} USDC</span>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-400 block">${Math.round(f.amountArs * 1.01).toLocaleString(language === 'en' ? 'en-US' : 'es-AR')} ARS</span>
-                  <span
-                    className="text-[9px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800 px-1.5 py-0.5 rounded-md inline-block mt-0.5 whitespace-nowrap shadow-2xs"
-                    title={language === 'en' ? 'Final amount including 1% Solana network & app fee' : 'Monto final con comisión de red Solana (1%) y mantenimiento de app'}
-                  >
-                    {t('finalFeeBadge')}
-                  </span>
+                  <span className="text-sm font-extrabold text-gray-900 dark:text-white block">${f.amountUsdc.toFixed(2)} USDC</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-400 block">${Math.round(f.amountArs).toLocaleString(language === 'en' ? 'en-US' : 'es-AR')} ARS</span>
+                  {f.isDemo ? (
+                    <span
+                      className="text-[9px] text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/60 border border-amber-200/70 dark:border-amber-800 px-1.5 py-0.5 rounded-md inline-block mt-0.5 whitespace-nowrap shadow-2xs"
+                      title={language === 'en' ? 'Demonstration seed record' : 'Registro de demostración semilla local'}
+                    >
+                      {language === 'en' ? 'Demo Seed' : 'Modo Demo'}
+                    </span>
+                  ) : f.txSignature ? (
+                    <a
+                      href={`https://explorer.solana.com/tx/${f.txSignature}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[9px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5 whitespace-nowrap hover:underline"
+                    >
+                      <span>Devnet On-Chain</span>
+                    </a>
+                  ) : (
+                    <span className="text-[9px] text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-md inline-block mt-0.5">
+                      {language === 'en' ? '100% Free' : '100% Gratuito'}
+                    </span>
+                  )}
                 </div>
               </div>
 
