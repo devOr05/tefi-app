@@ -1,11 +1,12 @@
 import React from 'react';
 import { useTefi } from '../context/TefiContext';
 import { hasRoleKeypair } from '../solana/connection';
+import { LanguageSwitch } from './LanguageSwitch';
 import { Store, User } from 'lucide-react';
 
 // Primer uso en un teléfono: se elige el rol y el dispositivo queda solo con la clave de ESE rol
 export const RoleChoice: React.FC = () => {
-  const { chooseDeviceRole, toggleLanguage, language, tr } = useTefi();
+  const { chooseDeviceRole, tr } = useTefi();
   // Versiones anteriores de la app guardaban las claves de los dos roles en cada teléfono
   const hasKeysFromOlderVersion = hasRoleKeypair('merchant') || hasRoleKeypair('customer');
 
@@ -72,12 +73,9 @@ export const RoleChoice: React.FC = () => {
               )}
         </p>
 
-        <button
-          onClick={toggleLanguage}
-          className="text-[11px] font-bold text-gray-500 dark:text-gray-400 underline cursor-pointer"
-        >
-          {language === 'en' ? 'Ver en español' : 'View in English'}
-        </button>
+        <div className="flex justify-center">
+          <LanguageSwitch />
+        </div>
       </div>
     </div>
   );

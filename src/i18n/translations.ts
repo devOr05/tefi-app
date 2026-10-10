@@ -1,4 +1,15 @@
+import { LoyaltyTier } from '../types/tefi';
+
 export type Language = 'es' | 'en';
+
+const TIER_NAMES_EN: Record<LoyaltyTier, string> = {
+  Bronce: 'Bronze',
+  Plata: 'Silver',
+  Oro: 'Gold',
+  Diamante: 'Diamond'
+};
+
+export const tierLabel = (tier: LoyaltyTier, language: Language): string => (language === 'en' ? TIER_NAMES_EN[tier] : tier);
 
 export const translations = {
   es: {
@@ -12,7 +23,6 @@ export const translations = {
     airdropTitle: 'Pedir 1 SOL de devnet (el almacén paga comisiones y rent)',
     resetDemo: 'Reiniciar este dispositivo (identidad nueva)',
     toggleTheme: 'Alternar tema claro / oscuro',
-    toggleLang: 'Cambiar idioma (Español / Inglés)',
     largeText: 'Texto grande',
     normalText: 'Texto normal',
 
@@ -91,7 +101,6 @@ export const translations = {
     airdropTitle: 'Request 1 devnet SOL (the store pays fees and rent)',
     resetDemo: 'Reset this device (new identity)',
     toggleTheme: 'Toggle light / dark theme',
-    toggleLang: 'Change language (Spanish / English)',
     largeText: 'Large text',
     normalText: 'Normal text',
 

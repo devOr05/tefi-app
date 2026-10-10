@@ -98,8 +98,11 @@ export async function getDevnetBalance(publicKey: PublicKey): Promise<number> {
   }
 }
 
+// Motivo por el que el faucet no entregó SOL; el texto para el usuario lo arma la interfaz según el idioma
+export type AirdropFailure = 'RATE_LIMITED' | 'TIMEOUT' | 'UNAVAILABLE';
+
 // Solicitar Airdrop de 1 SOL en Devnet (con control rápido de timeout y rate limits)
-export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ success: boolean; signature?: string; error?: string }> {
+export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ success: boolean; signature?: string; error?: AirdropFailure }> {
   try {
     const airdropPromise = (async () => {
       const sig = await solanaConnection.requestAirdrop(publicKey, 1 * LAMPORTS_PER_SOL);
@@ -121,13 +124,13 @@ export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ succ
   } catch (err: any) {
     console.warn('[Solana Devnet Faucet] Respuesta del faucet:', err?.message || err);
     const msg = err?.message || '';
-    let friendlyError = 'Límite de airdrop alcanzado o faucet de Devnet ocupado.';
+    let failure: AirdropFailure = 'UNAVAILABLE';
     if (msg.includes('429') || msg.includes('limit') || msg.includes('Internal error')) {
-      friendlyError = 'Límite diario del faucet de Solana alcanzado (máx. 1-2 SOL por día por IP).';
+      failure = 'RATE_LIMITED';
     } else if (msg.includes('TIMEOUT_DEVNET')) {
-      friendlyError = 'El nodo de Solana tardó en responder. Reintentá en unos momentos.';
+      failure = 'TIMEOUT';
     }
-    return { success: false, error: friendlyError };
+    return { success: false, error: failure };
   }
 }
 

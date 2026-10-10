@@ -145,12 +145,12 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange }) => {
-  const { role, t } = useTefi();
+  const { role, t, tr } = useTefi();
 
   return (
     <nav
       role="navigation"
-      aria-label="Navegación principal"
+      aria-label={tr('Main navigation', 'Navegación principal')}
       className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/70 dark:border-gray-800 h-13 sm:h-14 shadow-lg flex items-center justify-center"
     >
       <div className="w-full max-w-md px-2 grid grid-cols-3 items-center justify-items-stretch h-full">

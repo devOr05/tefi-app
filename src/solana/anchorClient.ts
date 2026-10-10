@@ -86,12 +86,12 @@ async function sendAndConfirm(rawTransaction: Buffer): Promise<string> {
   while (Date.now() < deadline) {
     const landed = await findLandedSignature([signature]).catch(() => null);
     if (landed) {
-      if (landed.failed) throw new Error(`La transacción ${signature} fue rechazada por el programa.`);
+      if (landed.failed) throw new TefiChainError('REJECTED', `Transaction ${signature} was rejected by the program`);
       return signature;
     }
     await new Promise(resolve => setTimeout(resolve, CONFIRMATION_POLL_MS));
   }
-  throw new Error('Blockhash not found: la transacción no se confirmó a tiempo.');
+  throw new TefiChainError('EXPIRED', `Transaction ${signature} was not confirmed before its blockhash expired`);
 }
 
 // -------------------------------------------------------------
@@ -143,7 +143,8 @@ export async function buildIssueFiadoRequest(params: {
     solanaConnection.getAccountInfo(getCustomerProfilePda(customer)),
     solanaConnection.getLatestBlockhash('confirmed')
   ]);
-  if (!merchantProfile) throw new Error('El perfil del almacén todavía no existe on-chain.');
+  // El alta del almacén se confirma antes de llegar acá: si todavía no se ve, el nodo consultado está atrasado
+  if (!merchantProfile) throw new TefiChainError('NETWORK', 'Store profile is not visible on-chain yet');
 
   const nonce = merchantProfile.fiadoNonce;
   const issue = issueFiadoIx({ merchant: merchant.publicKey, customer, nonce, amountMicroUsdc, dueTimestamp, receiptHash });
@@ -180,7 +181,7 @@ export async function submitCosignedTransaction(rawTransaction: Buffer): Promise
 // ERRORES
 // -------------------------------------------------------------
 
-export type ChainErrorCode = 'EXPIRED' | 'STALE' | 'INSUFFICIENT_SOL' | 'PROGRAM' | 'NETWORK' | 'UNKNOWN';
+export type ChainErrorCode = 'EXPIRED' | 'STALE' | 'INSUFFICIENT_SOL' | 'PROGRAM' | 'REJECTED' | 'NETWORK' | 'UNKNOWN';
 
 export interface ChainError {
   code: ChainErrorCode;
@@ -188,8 +189,20 @@ export interface ChainError {
   programCode?: number; // código de error del programa Tefi (6000+) cuando code === 'PROGRAM'
 }
 
+/** Error detectado por este cliente, ya clasificado. El texto para el usuario lo arma la interfaz según el idioma. */
+export class TefiChainError extends Error {
+  readonly code: ChainErrorCode;
+
+  constructor(code: ChainErrorCode, message: string) {
+    super(message);
+    this.name = 'TefiChainError';
+    this.code = code;
+  }
+}
+
 /** Traduce un error de RPC / simulación a una causa que la interfaz pueda explicar. */
 export function classifyChainError(err: unknown): ChainError {
+  if (err instanceof TefiChainError) return { code: err.code, detail: err.message };
   const detail = err instanceof Error ? err.message : String(err);
 
   if (/Blockhash not found|block height exceeded|BlockhashNotFound/i.test(detail)) return { code: 'EXPIRED', detail };

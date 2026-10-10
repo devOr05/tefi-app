@@ -2,6 +2,7 @@ import React from 'react';
 import { useTefi } from '../context/TefiContext';
 import { Award, Sparkles, CheckCircle2, ExternalLink } from 'lucide-react';
 import { getSolanaAccountUrl, getSolanaExplorerUrl } from '../solana/connection';
+import { tierLabel } from '../i18n/translations';
 
 // Historial de cumplimiento del vecino: fiados saldados y puntos, tal como figuran en sus cuentas on-chain
 export const RepaymentHistoryView: React.FC = () => {
@@ -21,7 +22,7 @@ export const RepaymentHistoryView: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <h3 className="text-xs font-bold text-gray-900 dark:text-white">{t('historyTitle')}</h3>
                 <span className="text-[10px] font-black bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-0.2 rounded-full">
-                  {t('loyaltyTier')} {customer.tier}
+                  {t('loyaltyTier')} {tierLabel(customer.tier, language)}
                 </span>
               </div>
               <p className="text-[10px] text-gray-400 dark:text-gray-400">{t('loyaltySubtitle')}</p>

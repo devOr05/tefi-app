@@ -121,7 +121,7 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
                       aria-label={t('viewTicketPhoto')}
                       className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 group cursor-pointer"
                     >
-                      <img src={f.photoReceiptUrl} alt="Ticket" className="w-full h-full object-cover" />
+                      <img src={f.photoReceiptUrl} alt={t('viewTicketPhoto')} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <ImageIcon className="w-3.5 h-3.5 text-white" />
                       </div>
@@ -216,7 +216,7 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
           onClick={() => setViewingPhoto(null)}
         >
           <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl p-2 border border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
-            <img src={viewingPhoto} alt="Comprobante ampliado" className="w-full rounded-2xl max-h-[70vh] object-contain" />
+            <img src={viewingPhoto} alt={tr('Enlarged receipt photo', 'Foto del comprobante ampliada')} className="w-full rounded-2xl max-h-[70vh] object-contain" />
             <button
               onClick={() => setViewingPhoto(null)}
               className="w-full mt-2 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold text-xs cursor-pointer touch-target-accessible"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
 import { UserRole } from '../types/tefi';
 import { Store, User, RefreshCw, Zap, ExternalLink, Check, Copy, Sun, Moon, Type } from 'lucide-react';
+import { LanguageSwitch } from './LanguageSwitch';
 import { getSolanaAccountUrl, hasRoleKeypair } from '../solana/connection';
 
 export const Header: React.FC = () => {
@@ -16,7 +17,6 @@ export const Header: React.FC = () => {
     requestAirdrop,
     isAirdropLoading,
     language,
-    toggleLanguage,
     theme,
     toggleTheme,
     a11yLargeText,
@@ -86,10 +86,10 @@ export const Header: React.FC = () => {
           <img
             src="/icon.svg"
             alt="Tefi Logo"
-            className="w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-contain shadow-xs border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 shrink-0"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-contain shadow-xs border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 shrink-0"
           />
           <div className="flex items-center gap-1">
-            <span className="font-black text-base sm:text-lg tracking-tight text-gray-900 dark:text-white leading-none">Tefi</span>
+            <span className="hidden min-[380px]:inline font-black text-base sm:text-lg tracking-tight text-gray-900 dark:text-white leading-none">Tefi</span>
             <span className="hidden sm:inline-flex text-[8.5px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 items-center gap-0.5 leading-tight">
               <Zap className="w-2.5 h-2.5 fill-purple-600 dark:fill-purple-400 text-purple-600 dark:text-purple-400 shrink-0" />
               Devnet
@@ -127,15 +127,8 @@ export const Header: React.FC = () => {
 
         {/* Quick Controls: Idioma, Modo Oscuro / Día, y Accesibilidad */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Switch Idioma ES / EN */}
-          <button
-            onClick={toggleLanguage}
-            aria-label={t('toggleLang')}
-            title={t('toggleLang')}
-            className="w-8 h-8 sm:w-8.5 sm:h-8.5 text-[11px] sm:text-xs font-black rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all cursor-pointer border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0 shadow-2xs"
-          >
-            {language === 'es' ? 'EN' : 'ES'}
-          </button>
+          {/* Idioma: bandera de Argentina (español) y de EE. UU. (inglés) */}
+          <LanguageSwitch />
 
           {/* Switch Modo Oscuro / Día */}
           <button

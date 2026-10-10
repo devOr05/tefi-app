@@ -178,7 +178,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, initial
         </div>
       ) : photoUrl ? (
         <div className="relative rounded-2xl overflow-hidden aspect-4/3 border border-emerald-200 dark:border-emerald-800 shadow-xs group bg-gray-50 dark:bg-gray-800">
-          <img src={photoUrl} alt="Comprobante" className="w-full h-full object-cover" />
+          <img src={photoUrl} alt={t('cameraPhotoTicket')} className="w-full h-full object-cover" />
           <div className="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
             <CheckCircle className="w-3 h-3" />
             {t('photoLoaded')}

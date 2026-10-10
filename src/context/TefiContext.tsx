@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
 import { CustomerProfile, MerchantProfile, FiadoRecord, UserRole, LoyaltyTier, AppNotification, NeighborContact, PendingCosign } from '../types/tefi';
 import {
+  AirdropFailure,
   DeviceRole,
   forgetRoleKeypair,
   getDevnetBalance,
@@ -46,7 +47,7 @@ import {
 } from '../solana/program';
 import { reconcileCustomerWithFiados } from '../services/financialLedger';
 import { FiadoLocalDetail, FiadoLocalDetails, buildLibreta } from '../services/libreta';
-import { fetchLiveUsdcRate, ExchangeRateData } from '../services/oracle';
+import { fetchLiveUsdcRate, ExchangeRateData, ExchangeRateQuote, FALLBACK_RATE } from '../services/oracle';
 import { Language, translations } from '../i18n/translations';
 
 // Pedido de co-firma tal como lo ve el vecino después de escanear el QR del almacén
@@ -74,7 +75,6 @@ interface TefiContextType {
   isSingleDeviceDemo: boolean;
   language: Language;
   setLanguage: (lang: Language) => void;
-  toggleLanguage: () => void;
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
@@ -147,6 +147,8 @@ const PROGRAM_ERRORS_EN: Record<number, string> = {
   6000: 'The amount exceeds the available credit limit.',
   6001: 'The fiado amount must be greater than zero.',
   6002: 'The due date must be in the future.',
+  6003: 'The receipt hash is longer than allowed.',
+  6004: 'The text is longer than allowed.',
   6005: 'This fiado is no longer active.',
   6006: 'The mandatory 30-day grace period has not expired yet.',
   6007: 'The signing store is not the one that issued this fiado.',
@@ -218,10 +220,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.documentElement.lang = lang;
   }, []);
 
-  const toggleLanguage = useCallback(() => {
-    setLanguage(language === 'es' ? 'en' : 'es');
-  }, [language, setLanguage]);
-
   const tr = useCallback((en: string, es: string) => (language === 'en' ? en : es), [language]);
 
   // Tema (Modo Oscuro / Modo Claro)
@@ -261,6 +259,10 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     updateStatusBarColor(theme);
     document.documentElement.lang = language;
+    document.title =
+      language === 'en'
+        ? 'Tefi.app - The corner store credit notebook, co-signed on Solana'
+        : 'Tefi.app - La libreta del fiado del almacén, co-firmada en Solana';
   }, [theme, language, updateStatusBarColor]);
 
   // Accesibilidad para personas con capacidades reducidas
@@ -378,12 +380,20 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [notification, setNotification] = useState<AppNotification | null>(null);
   const [pendingCosignUrl, setPendingCosignUrl] = useState<string | null>(null);
 
-  const [exchangeRate, setExchangeRate] = useState<ExchangeRateData>({
-    rate: 1615,
-    source: 'Cargando Oráculo...',
-    lastUpdated: '',
-    isLive: false
-  });
+  // null mientras se consulta la cotización por primera vez
+  const [rateQuote, setRateQuote] = useState<ExchangeRateQuote | null>(null);
+  const exchangeRate: ExchangeRateData = useMemo(
+    () =>
+      rateQuote
+        ? {
+            ...rateQuote,
+            source: rateQuote.isLive
+              ? tr('dolarapi.com (crypto dollar)', 'dolarapi.com (dólar cripto)')
+              : tr('Offline reference rate', 'Tasa de referencia sin conexión')
+          }
+        : { rate: FALLBACK_RATE, source: tr('Loading rate...', 'Cargando cotización...'), lastUpdated: '', isLive: false },
+    [rateQuote, tr]
+  );
 
   const activeAddressRef = useRef(activeAddress);
   activeAddressRef.current = activeAddress;
@@ -487,13 +497,11 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, [activeAddress, syncFromChain]);
 
-  // Consultar Oráculo en vivo
+  // Consultar la cotización al abrir y una vez por minuto
   useEffect(() => {
-    fetchLiveUsdcRate().then(data => {
-      setExchangeRate(data);
-    });
+    fetchLiveUsdcRate().then(setRateQuote);
     const interval = setInterval(() => {
-      fetchLiveUsdcRate().then(data => setExchangeRate(data));
+      fetchLiveUsdcRate().then(setRateQuote);
     }, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -597,7 +605,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSolanaBalance(await getDevnetBalance(activeKeypair.publicKey));
         return { success: true, signature: res.signature };
       }
-      return { success: false, error: res.error || 'Faucet de Devnet no disponible temporalmente.' };
+      const reasons: Record<AirdropFailure, string> = {
+        RATE_LIMITED: tr(
+          'The public devnet faucet reached its limit. Use faucet.solana.com with the store address.',
+          'El faucet público de devnet alcanzó su límite. Usá faucet.solana.com con la dirección del almacén.'
+        ),
+        TIMEOUT: tr('Solana Devnet took too long to respond. Try again in a moment.', 'Solana Devnet tardó en responder. Reintentá en unos momentos.'),
+        UNAVAILABLE: tr('The devnet faucet is temporarily unavailable.', 'El faucet de devnet no está disponible temporalmente.')
+      };
+      return { success: false, error: reasons[res.error ?? 'UNAVAILABLE'] };
     } finally {
       setIsAirdropLoading(false);
     }
@@ -633,8 +649,11 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'PROGRAM':
         // Los mensajes del programa están en español; en inglés se traduce por código de error
         return language === 'en' && programCode !== undefined ? PROGRAM_ERRORS_EN[programCode] ?? detail : detail;
+      case 'REJECTED':
+        return tr('The Tefi program rejected the transaction. Nothing was recorded.', 'El programa de Tefi rechazó la transacción. No se asentó nada.');
       default:
-        return detail || tr('On-chain error on Solana Devnet.', 'Error on-chain en Solana Devnet.');
+        // Error técnico sin clasificar: se muestra el detalle que devolvió la red, precedido de una explicación
+        return `${tr('Solana Devnet returned an error', 'Solana Devnet devolvió un error')}${detail ? `: ${detail}` : '.'}`;
     }
   }, [tr, language]);
 
@@ -812,7 +831,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     if (!landed) return { state: 'pending' };
     if (landed.failed) {
-      return { state: 'failed', error: tr('The program rejected the transaction.', 'El programa rechazó la transacción.') };
+      return { state: 'failed', error: tr('The Tefi program rejected the transaction. Nothing was recorded.', 'El programa de Tefi rechazó la transacción. No se asentó nada.') };
     }
 
     const signature = landed.signature;
@@ -986,7 +1005,6 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSingleDeviceDemo,
         language,
         setLanguage,
-        toggleLanguage,
         theme,
         setTheme,
         toggleTheme,

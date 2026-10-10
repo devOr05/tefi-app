@@ -4,6 +4,7 @@ import { useTefi } from '../context/TefiContext';
 import { TrendingUp, Fingerprint, CheckCircle2, ExternalLink, Sparkles } from 'lucide-react';
 import { getSolanaAccountUrl } from '../solana/connection';
 import { getCustomerProfilePda } from '../solana/program';
+import { tierLabel } from '../i18n/translations';
 
 export const CreditScoreCard: React.FC = () => {
   const { customer, language, tr } = useTefi();
@@ -58,7 +59,7 @@ export const CreditScoreCard: React.FC = () => {
           </span>
           <span className="text-xs font-extrabold text-amber-900 dark:text-amber-300 bg-gradient-to-r from-amber-100 dark:from-amber-950/80 via-amber-50 dark:via-amber-900/40 to-amber-100 dark:to-amber-950/80 border border-amber-300/80 dark:border-amber-700/60 px-2.5 py-0.5 rounded-full mt-0.5 flex items-center gap-1 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            {language === 'en' ? 'Tier' : 'Nivel'} {customer.tier}
+            {language === 'en' ? 'Tier' : 'Nivel'} {tierLabel(customer.tier, language)}
           </span>
         </div>
       </div>
