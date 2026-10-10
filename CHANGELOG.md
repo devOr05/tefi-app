@@ -34,7 +34,7 @@ Pull request [devOr05/tefi-app#1](https://github.com/devOr05/tefi-app/pull/1), w
 - **Co-sign QR** renews itself with a fresh blockhash before it expires, and the store phone follows the transaction by its own signature. Confirmation uses polling instead of WebSockets.
 - **A QR that was already used** is reported as such instead of as "out of date".
 - **`npm test`** runs Vitest. The previous scripts searched the source code for strings.
-- **CI** reads the program id from `Anchor.toml`, checks it against `lib.rs` and the IDL, and publishes the stripped SBF binary as an artifact.
+- **CI** reads the program id from `Anchor.toml`, checks it against `lib.rs` and the IDL, publishes the stripped SBF binary as an artifact and, after the Anchor tests, runs the two-phone end-to-end test against the same local validator.
 - **README** rewritten to match the code: Anchor 0.29.0, the two-phone flow, the store as fee payer, hashed receipts, real test counts, live transaction links and the business model stated as a hypothesis.
 
 ### Removed
