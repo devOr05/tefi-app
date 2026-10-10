@@ -13,18 +13,22 @@ interface QrScannerModalProps {
 }
 
 const SCAN_INTERVAL_MS = 150;
-// Un QR denso que jsQR no lee al tamaño de la cámara muchas veces sale agrandado: se alterna un cuadro y otro
+// Un QR denso que jsQR no lee al tamaño de la cámara muchas veces sale agrandado: se alterna un intento y otro
 const ENLARGED_FRAME_SCALE = 1.5;
+// Donde el teléfono tiene detector propio, jsQR queda de respaldo y corre uno de cada tres cuadros para no cargarlo
+const JSQR_BACKUP_EVERY = 3;
 // Lado máximo al que se lleva una foto subida antes de buscarle el QR
 const MAX_PHOTO_SIDE = 2000;
 
-// Lee el QR del cuadro actual de la cámara, a la resolución de la cámara y no a la del visor
+// Lee el QR del cuadro actual de la cámara, a la resolución de la cámara y no a la del visor.
+// `pass` es el número de cuadro: decide cuándo le toca a jsQR y si lee el cuadro agrandado.
 async function readFrame(
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
   detector: NativeQrDetector | null,
-  enlarge: boolean
+  pass: number
 ): Promise<string | null> {
+  let jsQrTurn = pass;
   if (detector) {
     try {
       const found = await detector.detect(video);
@@ -32,11 +36,13 @@ async function readFrame(
     } catch (e) {
       // Si el detector del sistema falla en este cuadro se sigue con jsQR
     }
+    if (pass % JSQR_BACKUP_EVERY !== JSQR_BACKUP_EVERY - 1) return null;
+    jsQrTurn = Math.floor(pass / JSQR_BACKUP_EVERY);
   }
 
   const { sx, sy, side, target } = centerSquare(video.videoWidth, video.videoHeight);
   if (!side) return null;
-  const size = Math.round(target * (enlarge ? ENLARGED_FRAME_SCALE : 1));
+  const size = Math.round(target * (jsQrTurn % 2 === 1 ? ENLARGED_FRAME_SCALE : 1));
   if (canvas.width !== size) {
     canvas.width = size;
     canvas.height = size;
@@ -130,7 +136,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose,
       const scan = async () => {
         if (isClosed) return;
         if (!processingRef.current && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-          const text = await readFrame(video, canvas, detector, frames++ % 2 === 1).catch(() => null);
+          const text = await readFrame(video, canvas, detector, frames++).catch(() => null);
           if (text && !isClosed) await handleScannedText(text);
         }
         if (!isClosed) timer = setTimeout(scan, SCAN_INTERVAL_MS);
