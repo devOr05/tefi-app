@@ -3,6 +3,7 @@ import { useTefi } from '../context/TefiContext';
 import { UserRole } from '../types/tefi';
 import { Store, User, RefreshCw, Zap, ExternalLink, Check, Copy, Sun, Moon, Type } from 'lucide-react';
 import { LanguageSwitch } from './LanguageSwitch';
+import { VersionTag } from './VersionTag';
 import { getSolanaAccountUrl, hasRoleKeypair } from '../solana/connection';
 
 export const Header: React.FC = () => {
@@ -239,6 +240,11 @@ export const Header: React.FC = () => {
           <span className="text-emerald-900 dark:text-emerald-200 font-bold truncate">1 USDC ≈ ${exchangeRate.rate.toLocaleString(language === 'en' ? 'en-US' : 'es-AR')} ARS</span>
         </div>
         <span className="text-gray-400 dark:text-gray-500 text-[8.5px] sm:text-[9.5px] shrink-0 pl-1">{exchangeRate.source}</span>
+      </div>
+
+      {/* Versión de la app que tiene abierta este dispositivo */}
+      <div className="max-w-md mx-auto mt-1 flex justify-end px-0.5">
+        <VersionTag />
       </div>
     </header>
   );

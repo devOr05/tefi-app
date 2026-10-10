@@ -27,3 +27,13 @@ jobs:
 
       - name: Run Unit Tests (vitest, imports the real modules)
         run: npm test
+
+      # The built PWA read without running JavaScript, the way a search engine or an AI assistant reads it
+      - name: Check Pages, Link Previews, robots.txt, sitemap.xml and llms.txt
+        run: |
+          npx vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/tefi-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4173/version.json > /dev/null && break
+            sleep 1
+          done
+          node scripts/check-site.mjs http://127.0.0.1:4173 https://tef-iapp.vercel.app

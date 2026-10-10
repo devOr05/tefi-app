@@ -1,8 +1,33 @@
 # Changelog
 
-Notable changes to Tefi.app. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project has no tagged releases yet, so entries are grouped by date. For anything older than the first entry, see the git history.
+Notable changes to Tefi.app. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Each entry is headed by the version number the app shows on every screen, which is the `version` of `package.json`. For anything older than the first entry, see the git history.
 
-## 2026-10-10 · Two-phone co-signing on a redeployed program
+## 2.1.0 · 2026-10-10 · The version on every screen, and a site that search engines and AI assistants can read
+
+Pull request [devOr05/tefi-app#2](https://github.com/devOr05/tefi-app/pull/2).
+
+### Added
+
+- **Version on every screen.** The header and the first-use screen show a line like `Version 2.1.0 · 687581d · 2026-10-10 13:28`: the version number, the commit the app was built from and the date of that commit in the phone's own time. It links to that commit on GitHub. Apart from the first word it reads the same in both languages, so two phones can be compared at a glance ([`src/version.ts`](src/version.ts)).
+- **`/version.json`** says which version is published, without opening the app.
+- **`/es/`: the app in Spanish at its own address.** A first-time visitor who opens `/es/` gets the app in Spanish; the root address stays in English. A language chosen with the flags wins over the address.
+- **Link previews.** Sharing the address shows a title, a description and a 1200x630 image, in English for `/` and in Spanish for `/es/` (Open Graph and Twitter tags, under 300 kB so WhatsApp shows the image).
+- **A page that can be read without JavaScript.** Each language page carries a description, canonical and `hreflang` links, schema.org `WebApplication` data and, inside `<noscript>`, the text of what Tefi is, how it works, six questions and answers, and the links to the code and to the program on Solana Explorer.
+- **`robots.txt`, `sitemap.xml` and `llms.txt`** (the description of the site for AI assistants, in the [llmstxt.org](https://llmstxt.org) format).
+- **`npm run check:site`** reads the published site the way a crawler without JavaScript does: 34 checks. It runs in CI against the built PWA. Before this version the live site passed 5 of them.
+- 30 unit tests (107 in total) for the version label and for everything the site publishes, and one more end-to-end check (46): both phones show the version of the app they run.
+
+### Changed
+
+- The pages, their metadata and the four files above are generated at build time from [`src/site/`](src/site/). The public address they declare defaults to `https://tef-iapp.vercel.app` and can be set with `VITE_SITE_URL`.
+- The link preview images are not stored by the service worker of the phones.
+
+### Known limitations
+
+- A search engine that does run JavaScript (Google) indexes the app screen, not the `<noscript>` text.
+- Co-sign links and QR codes always point to the root address, so the preview of a request sent by message is in English.
+
+## 2.0.0 · 2026-10-10 · Two-phone co-signing on a redeployed program
 
 Pull request [devOr05/tefi-app#1](https://github.com/devOr05/tefi-app/pull/1), written in response to the Superteam Argentina review of 10 Oct 2026.
 
