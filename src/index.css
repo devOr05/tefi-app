@@ -8,35 +8,41 @@
   scroll-behavior: smooth;
 }
 
-/* Scrollbar Personalizada con Estilo Tefi / Solana */
+/* Barras de desplazamiento con el verde de la app (el mismo degradado de los botones) */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 9999px;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #14F195 0%, #8B5CF6 100%);
+  background: linear-gradient(180deg, #00A650 0%, #008740 100%);
   border-radius: 9999px;
-  border: 1.5px solid transparent;
+  border: 2.5px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #00FFA3 0%, #9945FF 100%);
+  background: linear-gradient(180deg, #00C261 0%, #00A650 100%);
+  background-clip: padding-box;
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #8B5CF6 transparent;
+/* Chrome, Edge y Safari usan las reglas de arriba; si además reciben scrollbar-color las ignoran y
+   dibujan su barra chata. Por eso el estilo estándar queda solo para los navegadores sin esas reglas (Firefox). */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #00A650 transparent;
+  }
+}
+
+/* Con un cuadro abierto, la página de fondo no se desplaza ni muestra una segunda barra */
+html:has(.fixed.inset-0.overflow-y-auto) {
+  overflow: hidden;
 }
 
 /* Ocultar barra de desplazamiento en listas horizontales de mobile */

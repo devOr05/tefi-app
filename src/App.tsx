@@ -3,6 +3,7 @@ import { TefiProvider, useTefi } from './context/TefiContext';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { RoleChoice } from './components/RoleChoice';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { MerchantDashboard } from './views/MerchantDashboard';
 import { NewFiadoView } from './views/NewFiadoView';
 import { NeighborsView } from './views/NeighborsView';
@@ -16,22 +17,29 @@ const MERCHANT_TABS = ['dashboard', 'new-fiado', 'neighbors'];
 const CUSTOMER_TABS = ['libreta', 'credit', 'history'];
 
 const MainContent: React.FC = () => {
-  const { role, needsRoleChoice, needsOwnName, isSingleDeviceDemo, chooseDeviceRole, notification, dismissNotification, t, tr } = useTefi();
+  const { role, needsRoleChoice, needsOwnName, isSingleDeviceDemo, chooseDeviceRole, askConfirm, notification, dismissNotification, t, tr } = useTefi();
   const [currentTab, setCurrentTab] = useState<string>(role === 'MERCHANT' ? 'dashboard' : 'libreta');
 
   // Volver a un teléfono de un solo rol: se quita de este dispositivo la clave del otro rol
-  const handleKeepOnlyCurrentRole = () => {
-    const message =
-      role === 'MERCHANT'
+  const handleKeepOnlyCurrentRole = async () => {
+    const keepsStore = role === 'MERCHANT';
+    const accepted = await askConfirm({
+      title: keepsStore
+        ? tr('Remove the neighbor key from this device?', '¿Quitar de este dispositivo la clave del vecino?')
+        : tr('Remove the store key from this device?', '¿Quitar de este dispositivo la clave del almacén?'),
+      message: keepsStore
         ? tr(
-            'Remove the neighbor key from this device? Its on-chain history stays on-chain, but this device will no longer sign as that neighbor.',
-            '¿Quitar de este dispositivo la clave del vecino? Su historial on-chain sigue on-chain, pero este dispositivo ya no va a poder firmar como ese vecino.'
+            'Its on-chain history stays on-chain, but this device will no longer sign as that neighbor.',
+            'Su historial on-chain sigue on-chain, pero este dispositivo ya no va a poder firmar como ese vecino.'
           )
         : tr(
-            'Remove the store key from this device? Its on-chain history stays on-chain, but this device will no longer sign as that store, and its devnet SOL is left behind.',
-            '¿Quitar de este dispositivo la clave del almacén? Su historial on-chain sigue on-chain, pero este dispositivo ya no va a poder firmar como ese almacén, y su SOL de devnet queda atrás.'
-          );
-    if (confirm(message)) chooseDeviceRole(role);
+            'Its on-chain history stays on-chain, but this device will no longer sign as that store, and its devnet SOL is left behind.',
+            'Su historial on-chain sigue on-chain, pero este dispositivo ya no va a poder firmar como ese almacén, y su SOL de devnet queda atrás.'
+          ),
+      confirmLabel: tr('Remove key', 'Quitar clave'),
+      tone: 'danger'
+    });
+    if (accepted) chooseDeviceRole(role);
   };
 
   // Ajustar tab al cambiar de rol
@@ -149,6 +157,7 @@ export function App() {
   return (
     <TefiProvider>
       <MainContent />
+      <ConfirmDialog />
     </TefiProvider>
   );
 }

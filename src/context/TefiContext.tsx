@@ -32,6 +32,7 @@ import {
   computeReceiptHash,
   encodeCosignUrl,
   encodeNeighborUrl,
+  hasCosignRequest,
   inspectCosignTransaction,
   parseCosignUrl,
   parseNeighborUrl,
@@ -67,6 +68,15 @@ export interface IncomingCosign {
 
 type ActionResult<T = {}> = ({ success: true } & T) | { success: false; error: string };
 
+// Pregunta de confirmación que la app muestra con su propio estilo
+export interface ConfirmRequest {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  /** 'danger' para acciones que no se pueden deshacer */
+  tone?: 'default' | 'danger';
+}
+
 interface TefiContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
@@ -100,6 +110,9 @@ interface TefiContextType {
   resetDevice: () => Promise<void>;
   notification: AppNotification | null;
   dismissNotification: () => void;
+  confirmRequest: ConfirmRequest | null;
+  askConfirm: (request: ConfirmRequest) => Promise<boolean>;
+  answerConfirm: (accepted: boolean) => void;
 
   // Teléfono del almacén
   neighbors: NeighborContact[];
@@ -203,7 +216,7 @@ const deviceRoleOf = (role: UserRole): DeviceRole => (role === 'MERCHANT' ? 'mer
 // de una versión anterior que guardaba las dos claves) tiene que elegirlo.
 function detectInitialRole(): UserRole | null {
   try {
-    if (new URLSearchParams(window.location.search).has('cosign')) return 'CUSTOMER';
+    if (hasCosignRequest(new URLSearchParams(window.location.search))) return 'CUSTOMER';
     const stored = localStorage.getItem(STORAGE.role);
     if (stored === 'MERCHANT' || stored === 'CUSTOMER') return stored;
   } catch (e) {
@@ -445,6 +458,25 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNotification(null);
   }, []);
 
+  // Preguntas de confirmación: se muestran en un cuadro de la app y se responden con una promesa
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
+  const confirmResolverRef = useRef<((accepted: boolean) => void) | null>(null);
+
+  const askConfirm = useCallback((request: ConfirmRequest) => {
+    // Una pregunta anterior que quedó sin responder cuenta como rechazada
+    confirmResolverRef.current?.(false);
+    setConfirmRequest(request);
+    return new Promise<boolean>(resolve => {
+      confirmResolverRef.current = resolve;
+    });
+  }, []);
+
+  const answerConfirm = useCallback((accepted: boolean) => {
+    confirmResolverRef.current?.(accepted);
+    confirmResolverRef.current = null;
+    setConfirmRequest(null);
+  }, []);
+
   const clearPendingCosignUrl = useCallback(() => {
     setPendingCosignUrl(null);
   }, []);
@@ -569,13 +601,14 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.has('cosign')) {
+      const isCosign = hasCosignRequest(params);
+      if (isCosign) {
         setPendingCosignUrl(window.location.href);
       } else if (params.has('neighbor') && chosenRole === 'MERCHANT') {
         const identity = parseNeighborUrl(window.location.href);
         if (identity) addNeighborContact(identity.address, identity.name);
       }
-      if (params.has('cosign') || params.has('neighbor')) {
+      if (isCosign || params.has('neighbor')) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     } catch (e) {
@@ -764,7 +797,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return {
       ...draft,
       nonce: built.nonce,
-      url: encodeCosignUrl(baseUrl, { tx: built.tx, storeName: ownNames.merchant, ticket }),
+      url: encodeCosignUrl(baseUrl, { tx: built.tx, storeName: ownNames.merchant, ticket, nonce: built.nonce }),
       attempts: [...previousAttempts, { signature: built.signature, fiadoAddress }],
       expiresAt: Date.now() + COSIGN_QR_TTL_MS,
       includesProfileSetup: built.includesProfileSetup
@@ -913,7 +946,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!customerKeypair) return { success: false, error: tr('Switch to neighbor mode first.', 'Pasá a modo vecino primero.') };
 
     try {
-      const envelope = parseCosignUrl(scannedText);
+      const envelope = parseCosignUrl(scannedText, customerKeypair.publicKey);
       if (!envelope) {
         return { success: false, error: tr('That QR is not a Tefi fiado or repayment.', 'Ese QR no es un fiado ni un repago de Tefi.') };
       }
@@ -1079,6 +1112,9 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetDevice,
         notification,
         dismissNotification,
+        confirmRequest,
+        askConfirm,
+        answerConfirm,
         neighbors,
         addNeighbor,
         fetchNeighborProfile,

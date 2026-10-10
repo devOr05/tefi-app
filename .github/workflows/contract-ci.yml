@@ -103,8 +103,45 @@ jobs:
           # Run dynamic tests against the active validator
           anchor test --skip-local-validator --skip-build --skip-deploy
 
+      # The validator started above keeps running: the built PWA is pointed at it and driven by four isolated
+      # browser profiles (two stores, two neighbors) that scan each other's QR through a simulated camera.
+      - name: Run Two-Phone End-to-End Test Against Local Validator
+        env:
+          VITE_SOLANA_DEVNET_RPC_URL: http://127.0.0.1:8899
+          TEFI_RPC_URL: http://127.0.0.1:8899
+          TEFI_BASE_URL: http://127.0.0.1:4173
+          TEFI_BROWSER_CHANNEL: chromium
+        run: |
+          npm run build
+          npx vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/tefi-preview.log 2>&1 &
+
+          # Browser driver, QR decoder and the Chromium they drive
+          npm ci --prefix e2e
+          (cd e2e && npx playwright-core install --with-deps chromium)
+
+          # A funded wallet for the test stores
+          solana-keygen new --no-bip39-passphrase --force -s -o /tmp/tefi-e2e-funder.json
+          solana airdrop 5 "$(solana-keygen pubkey /tmp/tefi-e2e-funder.json)" --url http://127.0.0.1:8899
+
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4173/ > /dev/null && break
+            sleep 1
+          done
+          node e2e/two-phones-devnet.mjs /tmp/tefi-e2e-funder.json
+
+      - name: Upload End-to-End Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tefi-e2e-two-phones
+          path: |
+            e2e/shots/*.png
+            e2e/shots/report.json
+          if-no-files-found: ignore
+
       - name: Diagnostic Logs on Failure
         if: failure()
         run: |
           cat contracts/tefi_program/.anchor/test-ledger/test-ledger-log.txt || true
           cat contracts/tefi_program/.anchor/test-ledger/validator.log || true
+          cat /tmp/tefi-preview.log || true
