@@ -8,7 +8,9 @@ Pull request [devOr05/tefi-app#1](https://github.com/devOr05/tefi-app/pull/1), w
 
 ### Added
 
-- **Two-phone co-signing.** Each phone holds only the key of its role. The store builds `issue_fiado` or `repay_fiado` as fee payer, signs it first and shows the partially signed transaction as a QR code or link. The neighbor's phone verifies the store signature, refuses anything that is not exactly a Tefi fiado or repayment addressed to its own key, checks the receipt against the signed hash, adds the second signature and submits ([`src/solana/cosign.ts`](src/solana/cosign.ts)).
+- **Two-phone co-signing.** Each phone holds only the key of its role. The store builds `issue_fiado` or `repay_fiado` as fee payer, signs it first and shows the request as a QR code or link. The neighbor's phone verifies the store signature, refuses anything that is not exactly a Tefi fiado or repayment addressed to its own key, checks the receipt against the signed hash, adds the second signature and submits ([`src/solana/cosign.ts`](src/solana/cosign.ts)).
+- **Compact co-sign QR.** The QR carries the store's signature and the fields of the request instead of the serialized transaction: about 420 characters and 61 modules per side for a first fiado, down from 830 characters and 97 modules. Both phones build the message with the same fixed account order, so the neighbor's phone rebuilds exactly what the store signed. The serialized transaction remains as a fallback format.
+- **Camera scanner that decodes at camera resolution** ([`src/services/qrDecoder.ts`](src/services/qrDecoder.ts)), using the phone's own barcode detector where the browser has one and jsQR elsewhere. It replaces `html5-qrcode` and makes the app bundle 200 kB smaller.
 - **Store as fee payer.** The store pays the fee and rent of every transaction, including the neighbor's profile inside their first fiado, so a neighbor never needs SOL.
 - **Devnet deployment under a new program id**, [`9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ`](https://explorer.solana.com/address/9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ?cluster=devnet). The deployed bytes are the `tefi_program-sbf` artifact built by CI (282,728 bytes, SHA-256 `d34303c5…6ca2e7`).
 - **One role per phone.** On first use a phone is set up as the store or as a neighbor and creates only that key. A phone coming from the previous version, which stored both keys, is asked once and keeps only the key of the role it chooses.
@@ -19,8 +21,8 @@ Pull request [devOr05/tefi-app#1](https://github.com/devOr05/tefi-app/pull/1), w
 - **Request pacing under the RPC rate limit.** The public devnet node accepts about 40 requests per 10 seconds per IP, shared by every phone on the same network, and counts rejected requests too. On a `429` the app repeats the request and spaces out all the requests of that phone until the node accepts again ([`src/solana/rpcRetry.ts`](src/solana/rpcRetry.ts)).
 - **`VITE_SOLANA_DEVNET_RPC_URL`** build variable to use another devnet endpoint.
 - **Lender read script**: `npm run read:history -- <neighbor public key>` prints a neighbor's profile and fiados straight from the chain.
-- **End-to-end run against devnet**: `npm run e2e:devnet` drives the built PWA with four isolated browser profiles (two stores, two neighbors) and verifies every step on-chain. 44 checks ([`e2e/two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs)).
-- **Unit tests that import the real modules**: 66 Vitest tests for the co-signature protocol, instruction building and account decoding, RPC error classification, request pacing, the debt ledger, the passbook view and translation completeness.
+- **End-to-end run against devnet**: `npm run e2e:devnet` drives the built PWA with four isolated browser profiles (two stores, two neighbors) that scan each other's QR through a simulated camera, and verifies every step on-chain. 45 checks ([`e2e/two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs)).
+- **Unit tests that import the real modules**: 77 Vitest tests for the co-signature protocol and its compact format, instruction building and account decoding, RPC error classification, request pacing, QR decoding, the debt ledger, the passbook view and translation completeness.
 - **Anchor tests**: 14, adding a store-sponsored profile for a neighbor with 0 SOL, rejection of a plaintext receipt and a two-device partial-signing round trip.
 - **"Roadmap · not built yet" card** listing what the app does not do yet.
 
@@ -48,6 +50,7 @@ Pull request [devOr05/tefi-app#1](https://github.com/devOr05/tefi-app/pull/1), w
 - Purchase details were written on-chain in plain text through `receipt_hash`.
 - Both keys lived in the same browser and the QR carried no signature, so a fiado could be recorded from a single phone without saying so.
 - Every store was called "Almacén Don Tito" and every neighbor "Matías González".
+- The in-app scanner could not read a co-sign QR: it shrank the camera image to the size of the viewfinder, a couple of hundred pixels for a code of 97 modules per side.
 - A rate-limited RPC request failed the operation on the first rejection instead of being retried.
 - CI tested the unstripped program binary (444 KB) instead of the stripped one that gets deployed (283 KB).
 
@@ -58,13 +61,13 @@ Produced by the end-to-end run on 10 Oct 2026. The "phones" are isolated browser
 | Step | Transaction |
 | :--- | :--- |
 | Deployment | [`5AJEhGf3…XjuiR`](https://explorer.solana.com/tx/5AJEhGf3mYkMxPz1NZkGMY6s8Snei6kwRWU1Ynw7zwXK4APffcgwbd2J1QTTupQ8kPqSu1fWvZ8K8F3KHGeXjuiR?cluster=devnet) |
-| `issue_fiado`, store + neighbor | [`3Vz3F87x…PbHqr`](https://explorer.solana.com/tx/3Vz3F87xWHKK2eFcGwek4dszKkBQy9doYqbkZq8tSAffurYXn5m6SZnP5tF2aYc3BcBpeVMUhusFCwBZSXyPbHqr?cluster=devnet) |
-| `repay_fiado`, store + neighbor | [`2qMhMNXX…mQVC3`](https://explorer.solana.com/tx/2qMhMNXXGHhg8WgNZifS3x9zKPcFGXFJviVBaDtQYNqEma97YKjVJEsWXMMcycjEMeLNhUfPernvGJzBXyKmQVC3?cluster=devnet) |
-| `issue_fiado`, second store + same neighbor | [`3wTwH8L3…ak5h3`](https://explorer.solana.com/tx/3wTwH8L3JPKGoDSask92qV5hy56XgBQR1jsGcyykAPd491nZwhqacy3nvxahmf1iH7v2wz8yV9W49eaLbTeak5h3?cluster=devnet) |
-| Two counters in parallel | [`4L6QB4fL…8RC4b`](https://explorer.solana.com/tx/4L6QB4fL2CbzpcNZA1n6cLqihbfyTHbqoRyymtWrPt5cSMejeDdtogdhHATB1n6RPxVAZ1yZVtja2LSEr1y8RC4b?cluster=devnet) · [`BzkPayy7…47ZrG`](https://explorer.solana.com/tx/BzkPayy772DM9i7XJ2vNmxv5iewmX3uLSd949SUm8doe4tdUPhzPJbN2QvZfLfYdkWg6zCzUYecoF9oDqs47ZrG?cluster=devnet) |
+| `issue_fiado`, store + neighbor | [`4niTarxJ…KYBzy`](https://explorer.solana.com/tx/4niTarxJ5MXWLK8JtyJSTUHtGoEXZJ4jMQ6dfe5K88N2qk5rTt4NvEyqCnrEUa9w2n9YwcX1bL3mtGKywNsKYBzy?cluster=devnet) |
+| `repay_fiado`, store + neighbor | [`5SZ1BdpU…odrSR`](https://explorer.solana.com/tx/5SZ1BdpUVZd114DLdaH776BJpsWyUsnmXenp1RVMzsJhUCv7c8EAcf9uQdjDdT4KCir71NYfXBevyaMjAHQodrSR?cluster=devnet) |
+| `issue_fiado`, second store + same neighbor | [`5RKrusTT…RvB35`](https://explorer.solana.com/tx/5RKrusTTmjvW7FEk18pDQ3E5wYYBeb6j4bBxeybz1YsivU9zuk8Zh5meGhHiHDbLSK4SbpWbK4Nck4f899xRvB35?cluster=devnet) |
+| Two counters in parallel | [`2kmS3rBj…S5pPz`](https://explorer.solana.com/tx/2kmS3rBjVnEGCdakZnE3NKr9Ngv2SHUNuntWovvBWrhyowJJDQUxjSsvLAHXG17ZHVtqjC4cBTWtTeHZTvXS5pPz?cluster=devnet) · [`BjAZwHt3…ZnBeJ`](https://explorer.solana.com/tx/BjAZwHt3WNyi3NXjuQt4d2NCupna9c9GtEm4qfC6TGHjRSmRmJPsKsQDVjrxbuwGvvSkK9hYtHDeYsgNxkZnBeJ?cluster=devnet) |
 
 ### Known limitations
 
-- Scanning the co-sign QR with the camera of a second physical phone has not been verified. *Send link* does not depend on the camera.
+- Scanning has been verified through a simulated camera (a video of the QR tilted, blurred and noisy), not with two physical phones. *Send link* does not depend on the camera.
 - Signing keys are kept in the browser's `localStorage`: acceptable for a devnet prototype, not for a pilot with real neighbors.
 - Tefi records the debt and its repayment. USDC amounts are a unit of account, not token transfers.
