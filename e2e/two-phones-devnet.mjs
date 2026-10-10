@@ -1,7 +1,8 @@
 // End-to-end run against Solana Devnet with isolated phones (one browser context = one phone, with its own
-// storage and therefore its own key). The only thing that goes from one phone to another is what its camera
-// would read: the content of the QR code the other phone shows. After each step the script checks on-chain,
-// outside the app, what was recorded and who signed it.
+// storage and therefore its own key). The only thing that goes from one phone to another is the QR code the
+// other phone shows: either the app scans it through a simulated camera (a video of that QR, tilted, blurred
+// and noisy), or the link it contains is opened, as when it is sent by message. After each step the script
+// checks on-chain, outside the app, what was recorded and who signed it.
 //
 // Usage:  node e2e/two-phones-devnet.mjs <keypair.json holding devnet SOL, used to fund the test stores>
 //   TEFI_BASE_URL         where the PWA is served (default http://localhost:4173, the `vite preview` port)
@@ -12,7 +13,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import jsQR from 'jsqr';
 import { PNG } from 'pngjs';
-import { BASE, SHOTS, check, launch, newDevice, rpcSummary, setUpPhone } from './devices.mjs';
+import { BASE, CAMERA_FEED, SHOTS, check, launch, newDevice, rpcSummary, setUpPhone } from './devices.mjs';
+import { pointCameraAt } from './fake-camera.mjs';
 
 // web3.js, Anchor and the IDL are the ones the PWA itself uses
 const require = createRequire(new URL('../package.json', import.meta.url));
@@ -91,13 +93,67 @@ const deviceAddress = async (device, role) =>
     }, role).then(bytes => Uint8Array.from(bytes))
   );
 
-// Reads the QR code shown on screen, as the camera of the other phone would
-async function readQrOnScreen(device, alt) {
-  const src = await device.page.locator(`img[alt="${alt}"]`).getAttribute('src');
-  const png = PNG.sync.read(Buffer.from(src.split(',')[1], 'base64'));
+// The QR code a phone is showing: its image, what it says and how dense it is
+async function qrOnScreen(device, alt) {
+  const image = await device.page.locator(`img[alt="${alt}"]`).getAttribute('src');
+  const png = PNG.sync.read(Buffer.from(image.split(',')[1], 'base64'));
   const decoded = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
   if (!decoded) throw new Error('The QR on screen could not be decoded');
-  return decoded.data;
+  return { image, text: decoded.data, modules: 17 + 4 * decoded.version };
+}
+
+// Compact co-sign requests travel as base32; these two helpers let the run tamper with one
+const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function fromBase32(text) {
+  const bytes = [];
+  let bits = 0;
+  let value = 0;
+  for (const char of text.toUpperCase()) {
+    value = ((value << 5) | BASE32.indexOf(char)) & 0xfff;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(bytes);
+}
+function toBase32(bytes) {
+  let bits = 0;
+  let value = 0;
+  let text = '';
+  for (const byte of bytes) {
+    value = ((value << 8) | byte) & 0xffff;
+    bits += 8;
+    while (bits >= 5) {
+      text += BASE32[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  return bits > 0 ? text + BASE32[(value << (5 - bits)) & 31] : text;
+}
+
+// Rewrites the amount in pesos a request shows to the neighbor and leaves everything the store signed untouched
+function withShownAmount(qrText, amountArs) {
+  const url = new URL(qrText);
+  const bytes = fromBase32(url.searchParams.get('Q'));
+  let offset = 2 + 32 + 4 + 64 + 32; // version and flags, store key, neighbor fingerprint, store signature, blockhash
+  const skipVarint = () => {
+    while (bytes[offset++] & 0x80);
+  };
+  skipVarint(); // fiado number
+  skipVarint(); // amount in USDC
+  skipVarint(); // due date
+  offset += 32; // receipt hash
+  const start = offset;
+  skipVarint(); // amount in pesos shown to the neighbor
+  const shown = [];
+  for (let rest = amountArs; ; rest >>= 7) {
+    shown.push(rest > 0x7f ? (rest & 0x7f) | 0x80 : rest);
+    if (rest <= 0x7f) break;
+  }
+  url.searchParams.set('Q', toBase32(Buffer.concat([bytes.subarray(0, start), Buffer.from(shown), bytes.subarray(offset)])));
+  return url.toString();
 }
 
 async function fund(address, sol) {
@@ -125,17 +181,20 @@ async function setUpNeighbor(browser, deviceName, neighborName) {
   await setUpPhone(neighbor, 'neighbor', neighborName);
   const address = await deviceAddress(neighbor, 'customer');
   await neighbor.page.getByText('My Tefi QR · show it to a store the first time').click();
-  const idQr = await readQrOnScreen(neighbor, 'My Tefi QR');
+  const idQr = await qrOnScreen(neighbor, 'My Tefi QR');
   await neighbor.page.getByRole('button', { name: 'Done' }).click();
   return { ...neighbor, address, idQr, ownName: neighborName };
 }
 
-// The store saves the neighbor from what their QR says (pasting it is equivalent to scanning it)
-async function storeAddsNeighbor(store, neighbor) {
+// The store saves the neighbor from their QR: scanning it with its camera, or pasting the link it contains
+async function storeAddsNeighbor(store, neighbor, { withCamera = false } = {}) {
   await store.page.locator('nav').getByRole('button', { name: 'Neighbors' }).click();
+  if (withCamera) pointCameraAt(neighbor.idQr.image, CAMERA_FEED, { qrSide: 300 });
   await store.page.getByRole('button', { name: 'Add' }).click();
-  await store.page.getByPlaceholder('...or paste the link here').fill(neighbor.idQr);
-  await store.page.getByRole('button', { name: 'Open' }).click();
+  if (!withCamera) {
+    await store.page.getByPlaceholder('...or paste the link here').fill(neighbor.idQr.text);
+    await store.page.getByRole('button', { name: 'Open' }).click();
+  }
   await store.page.locator('main').getByText(neighbor.ownName).first().waitFor();
 }
 
@@ -146,10 +205,13 @@ async function storeIssuesFiado(store, neighbor, { ars, items }) {
   await store.page.getByRole('button', { name: new RegExp(neighbor.ownName) }).first().click();
   await store.page.getByPlaceholder('1500').fill(String(ars));
   await store.page.getByPlaceholder('e.g. 1 Milk, 1 Yerba, 500g cheese').fill(items);
-  await store.page.getByRole('button', { name: 'Store Receipt' }).click();
+  // Receipt photo taken with the phone camera
+  await store.page.getByRole('button', { name: 'Open Camera' }).click();
+  await store.page.waitForFunction(() => document.querySelector('video')?.videoWidth > 0);
+  await store.page.getByRole('button', { name: 'Take Photo' }).click();
   await store.page.getByRole('button', { name: 'Sign & Show QR to the Neighbor' }).click();
   await store.page.getByText('Fiado signed by the store').waitFor({ timeout: 90000 });
-  return readQrOnScreen(store, 'Tefi co-sign QR');
+  return qrOnScreen(store, 'Tefi co-sign QR');
 }
 
 // The store confirms it was paid: it signs its part of the repayment and shows the QR
@@ -157,15 +219,22 @@ async function storeRegistersPayment(store) {
   await store.page.locator('nav').getByRole('button', { name: 'Store' }).click();
   await store.page.getByRole('button', { name: 'Register payment' }).first().click();
   await store.page.getByText('Repayment signed by the store').waitFor({ timeout: 90000 });
-  return readQrOnScreen(store, 'Tefi co-sign QR');
+  return qrOnScreen(store, 'Tefi co-sign QR');
 }
 
 const ISSUE = { expectTitle: 'Accept this fiado?', button: 'Sign & accept fiado', doneText: 'Fiado added to your passbook' };
 const REPAY = { expectTitle: 'Confirm this repayment?', button: 'Sign & settle fiado', doneText: 'Fiado settled' };
 
-// The neighbor opens what the QR said, reviews it and signs with their own key
-async function neighborSigns(neighbor, qrText, { expectTitle, button, doneText }) {
-  await neighbor.page.goto(qrText);
+// The neighbor gets the request onto their phone, reviews it and signs with their own key. `qr` is the QR on
+// the store's screen: with `camera` the app scans it through the simulated camera (`camera.qrSide` is how many
+// pixels of the 1280x720 frame it covers); without it the link inside the QR is opened.
+async function neighborSigns(neighbor, qr, { expectTitle, button, doneText }, camera) {
+  if (camera) {
+    pointCameraAt(qr.image, CAMERA_FEED, camera);
+    await neighbor.page.getByRole('button', { name: 'Scan QR', exact: true }).click();
+  } else {
+    await neighbor.page.goto(qr.text);
+  }
   await neighbor.page.getByText(expectTitle).waitFor({ timeout: 60000 });
   const reviewText = await neighbor.page.locator('.fixed.inset-0').innerText();
   await neighbor.page.getByRole('button', { name: button }).click();
@@ -193,18 +262,23 @@ try {
   };
   check(!(await store.storageKeys()).includes('tefi_keypair_customer'), 'the store phone has no neighbor key');
   check(!(await matias.storageKeys()).includes('tefi_keypair_merchant'), 'the neighbor phone has no store key');
-  check(matias.idQr.includes(matias.address.toBase58()) && !matias.idQr.includes('cosign'), "the neighbor's QR carries only a public key and a name");
-  await storeAddsNeighbor(store, matias);
-  check(true, 'the store saved the neighbor under the name the neighbor typed on their own phone');
+  check(matias.idQr.text.includes(matias.address.toBase58()) && !/[?&](cosign|Q)=/i.test(matias.idQr.text), "the neighbor's QR carries only a public key and a name");
+  await storeAddsNeighbor(store, matias, { withCamera: true });
+  check(true, "the store scanned the neighbor's QR with its camera and saved them under the name typed on the neighbor's phone");
 
   // ------------------------------------------------------------------
   console.log('\n== 2. Fiado: the store signs, the neighbor completes it from their own phone ==');
   const issueQr = await storeIssuesFiado(store, matias, { ars: 1500, items: 'Yerba 500g + 1 Pan' });
   await store.shot('01-store-issue-qr');
-  check(issueQr.startsWith(`${BASE}/?cosign=`), `the QR on the store screen is a co-sign request (${issueQr.length} characters)`);
+  check(
+    issueQr.text.startsWith(`${BASE.toUpperCase()}/?Q=`) && issueQr.modules <= 65,
+    `the QR on the store screen is a compact co-sign request (${issueQr.text.length} characters, ${issueQr.modules} modules per side)`
+  );
   check((await readAccount('CustomerProfile', customerProfilePda(matias.address))) === null, 'nothing is on-chain before the neighbor signs');
 
-  const issued = await neighborSigns(matias, issueQr, ISSUE);
+  // The neighbor scans it with the camera: the QR covers 380 of the 720 pixels of the frame height
+  const issued = await neighborSigns(matias, issueQr, ISSUE, { qrSide: 380 });
+  check(true, "the neighbor's phone read the QR through its camera");
   await matias.shot('02-neighbor-issue-done');
   check(
     issued.reviewText.includes('Yerba 500g + 1 Pan') && issued.reviewText.includes('1,500 ARS') && issued.reviewText.includes('Almacén Don Tito'),
@@ -246,20 +320,18 @@ try {
   report.accounts.neighbor2 = carla.address.toBase58();
 
   // (a) A QR issued for one neighbor is useless on another neighbor's phone
-  await carla.page.goto(issueQr);
+  await carla.page.goto(issueQr.text);
   await carla.page.getByText('This QR was issued for a different neighbor.').waitFor({ timeout: 60000 });
   check(true, "a QR issued for neighbor-1 is rejected on neighbor-2's phone");
   await carla.shot('04-wrong-neighbor-rejected');
 
   // (b) If someone changes the amount shown in the link, the hash the store signed no longer matches
-  const tampered = new URL(issueQr);
-  tampered.searchParams.set('ars', '150');
-  await matias.page.goto(tampered.toString());
+  await matias.page.goto(withShownAmount(issueQr.text, 150));
   await matias.page.getByText('The receipt in this QR does not match what the store signed. Do not sign it.').waitFor({ timeout: 60000 });
   check(true, 'a tampered receipt is rejected before signing');
 
   // (c) The same QR cannot be used twice
-  await matias.page.goto(issueQr);
+  await matias.page.goto(issueQr.text);
   await matias.page.getByText('Accept this fiado?').waitFor({ timeout: 60000 });
   await matias.page.getByRole('button', { name: 'Sign & accept fiado' }).click();
   await matias.page.locator('.fixed.inset-0 .text-rose-700').waitFor({ timeout: 90000 });
@@ -276,7 +348,8 @@ try {
   const repayQr = await storeRegistersPayment(store);
   await store.shot('06-store-repay-qr');
 
-  const repaid = await neighborSigns(matias, repayQr, REPAY);
+  // Scanned from further away: the repayment QR is smaller and covers 300 pixels of the frame
+  const repaid = await neighborSigns(matias, repayQr, REPAY, { qrSide: 300 });
   await matias.shot('07-neighbor-repay-done');
   const repayTx = await inspectTransaction(repaid.signature);
   report.transactions.push({ step: 'repay_fiado (store-1 + neighbor-1)', signature: repaid.signature, ...repayTx });

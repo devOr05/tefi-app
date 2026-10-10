@@ -4,10 +4,13 @@ import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { pointCameraAtNothing } from './fake-camera.mjs';
 
 export const BASE = process.env.TEFI_BASE_URL || 'http://localhost:4173';
 export const SHOTS = path.join(path.dirname(fileURLToPath(import.meta.url)), 'shots');
 mkdirSync(SHOTS, { recursive: true });
+// What the camera of every phone is looking at (see fake-camera.mjs)
+export const CAMERA_FEED = path.join(SHOTS, 'camera.y4m');
 
 const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 
@@ -15,16 +18,17 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isM
 // ("chromium" is the one downloaded by `npx playwright-core install chromium`).
 export async function launch() {
   const channel = process.env.TEFI_BROWSER_CHANNEL || 'chrome';
+  pointCameraAtNothing(CAMERA_FEED);
   return chromium.launch({
     ...(channel === 'chromium' ? {} : { channel }),
     headless: true,
-    // The fake camera lets the store take the receipt photo without a real camera
-    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream']
+    // The camera of the phones is a video file this run rewrites, so the app scans through its real camera code
+    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${CAMERA_FEED}`]
   });
 }
 
 export async function newDevice(browser, name) {
-  const context = await browser.newContext({ ...PHONE, locale: 'en-US', permissions: ['clipboard-read', 'clipboard-write'] });
+  const context = await browser.newContext({ ...PHONE, locale: 'en-US', permissions: ['camera', 'clipboard-read', 'clipboard-write'] });
   const page = await context.newPage();
   const errors = [];
   page.on('console', m => {
