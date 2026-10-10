@@ -15,10 +15,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Rust Toolchain v1.75.0
-        uses: dtolnay/rust-toolchain@master
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.75.0
           components: rustfmt, clippy
 
       - name: Setup Node.js 20
@@ -48,7 +47,9 @@ jobs:
       - name: Build Anchor SBF Program Binary
         run: |
           cd contracts/tefi_program
-          rm -f Cargo.lock
+          cargo generate-lockfile
+          cargo update -p zeroize_derive --precise 1.4.2
+          sed -i 's/version = 4/version = 3/' Cargo.lock
           cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml
           mkdir -p target/deploy target/idl
           cp target/sbf-solana-solana/release/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || cp target/deploy/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || true
