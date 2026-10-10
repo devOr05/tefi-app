@@ -50,6 +50,7 @@ import { reconcileCustomerWithFiados } from '../services/financialLedger';
 import { FiadoLocalDetail, FiadoLocalDetails, buildLibreta } from '../services/libreta';
 import { fetchLiveUsdcRate, ExchangeRateData, ExchangeRateQuote, FALLBACK_RATE } from '../services/oracle';
 import { Language, translations } from '../i18n/translations';
+import { languageFromPath, PAGE_TITLES } from '../site/language';
 
 // Pedido de co-firma tal como lo ve el vecino después de escanear el QR del almacén
 export interface IncomingCosign {
@@ -228,13 +229,14 @@ function detectInitialRole(): UserRole | null {
 const TefiContext = createContext<TefiContextType | undefined>(undefined);
 
 export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Idioma (English / Español) - Comienza en inglés ('en') por defecto
+  // Idioma (English / Español). Manda lo que eligió la persona; si todavía no eligió, la dirección con la que
+  // abrió la app (/es/ es la versión en español) y, si no, inglés
   const [language, setLanguageState] = useState<Language>(() => {
     const stored = localStorage.getItem('tefi_language_v2');
     if (stored === 'es' || stored === 'en') {
       return stored;
     }
-    return 'en';
+    return languageFromPath(window.location.pathname) ?? 'en';
   });
 
   const setLanguage = useCallback((lang: Language) => {
@@ -283,10 +285,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     updateStatusBarColor(theme);
     document.documentElement.lang = language;
-    document.title =
-      language === 'en'
-        ? 'Tefi.app - The corner store credit notebook, co-signed on Solana'
-        : 'Tefi.app - La libreta del fiado del almacén, co-firmada en Solana';
+    document.title = PAGE_TITLES[language];
   }, [theme, language, updateStatusBarColor]);
 
   // Accesibilidad para personas con capacidades reducidas

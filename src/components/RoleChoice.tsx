@@ -3,6 +3,7 @@ import { useTefi } from '../context/TefiContext';
 import { UserRole } from '../types/tefi';
 import { hasRoleKeypair } from '../solana/connection';
 import { LanguageSwitch } from './LanguageSwitch';
+import { VersionTag } from './VersionTag';
 import { Store, User, ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Primer uso en un teléfono: se elige el rol (el dispositivo queda solo con la clave de ESE rol) y el nombre
@@ -168,6 +169,10 @@ export const RoleChoice: React.FC = () => {
 
         <div className="flex justify-center">
           <LanguageSwitch />
+        </div>
+
+        <div className="flex justify-center">
+          <VersionTag />
         </div>
       </div>
     </div>

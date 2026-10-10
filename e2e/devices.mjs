@@ -60,9 +60,16 @@ export async function newDevice(browser, name) {
   return { name, context, page, errors, rpc, shot, storageKeys };
 }
 
+/** The version of the app a phone shows on the screen it is on (every screen has it). */
+export const shownVersion = async device => (await device.page.getByTestId('tefi-version').innerText()).trim();
+
+/** The version the build under test says it is: version.json is written by the same build. */
+export const publishedVersion = async () => (await fetch(`${BASE.replace(/\/$/, '')}/version.json`)).json();
+
 /** First use of a phone: choose the role and type the name of the store or of the neighbor. */
 export async function setUpPhone(device, role, ownName) {
   await device.page.goto(BASE);
+  device.versionAtFirstUse = await shownVersion(device);
   await device.page.getByText(role === 'store' ? "I'm the store" : "I'm a neighbor").click();
   await device.page.getByRole('textbox').fill(ownName);
   await device.page.getByRole('button', { name: 'Continue' }).click();

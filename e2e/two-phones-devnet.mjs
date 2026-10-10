@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import jsQR from 'jsqr';
 import { PNG } from 'pngjs';
-import { BASE, CAMERA_FEED, SHOTS, check, launch, newDevice, rpcSummary, setUpPhone } from './devices.mjs';
+import { BASE, CAMERA_FEED, SHOTS, check, launch, newDevice, publishedVersion, rpcSummary, setUpPhone, shownVersion } from './devices.mjs';
 import { pointCameraAt } from './fake-camera.mjs';
 
 // web3.js, Anchor and the IDL are the ones the PWA itself uses
@@ -260,6 +260,12 @@ try {
     neighbor1: matias.address.toBase58(),
     neighbor1Profile: customerProfilePda(matias.address).toBase58()
   };
+  const published = await publishedVersion();
+  const versions = [store.versionAtFirstUse, matias.versionAtFirstUse, await shownVersion(store), await shownVersion(matias)];
+  check(
+    versions.every(text => text.includes(`Version ${published.version}`) && text.includes(published.commit.slice(0, 7))),
+    `both phones show the version of the app they run, on first use and afterwards (${versions[2]})`
+  );
   check(!(await store.storageKeys()).includes('tefi_keypair_customer'), 'the store phone has no neighbor key');
   check(!(await matias.storageKeys()).includes('tefi_keypair_merchant'), 'the neighbor phone has no store key');
   check(matias.idQr.text.includes(matias.address.toBase58()) && !/[?&](cosign|Q)=/i.test(matias.idQr.text), "the neighbor's QR carries only a public key and a name");
