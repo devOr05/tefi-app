@@ -1,124 +1,51 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { FiadoQrPayload } from '../types/tefi';
 import { useTefi } from '../context/TefiContext';
-import { X, Camera, AlertCircle, Upload, Sparkles, RefreshCw } from 'lucide-react';
+import { X, Camera, AlertCircle, Upload, RefreshCw, ClipboardPaste } from 'lucide-react';
 
 interface QrScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onScanSuccess: (payload: FiadoQrPayload) => void;
+  title: string;
+  subtitle: string;
+  // Recibe el texto leído; devuelve un mensaje de error si no sirve o null si fue aceptado
+  onScan: (text: string) => Promise<string | null>;
 }
 
-export const QrScannerModal: React.FC<QrScannerModalProps> = ({
-  isOpen,
-  onClose,
-  onScanSuccess
-}) => {
-  const { language } = useTefi();
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose, title, subtitle, onScan }) => {
+  const { tr } = useTefi();
+  const [scanError, setScanError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pastedText, setPastedText] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // El callback de la cámara se registra una sola vez: el estado en curso se lee de un ref
+  const processingRef = useRef(false);
 
-  const parseScannedText = (decodedText: string): FiadoQrPayload | null => {
-    try {
-      // Caso 1: URL compacta (?f=...&ars=...&usdc=...)
-      if (decodedText.includes('f=') || decodedText.includes('ars=') || decodedText.includes('usdc=')) {
-        const url = new URL(decodedText.startsWith('http') ? decodedText : `https://tefi.app/${decodedText}`);
-        const fId = url.searchParams.get('f') || `f-${Date.now().toString().slice(-4)}`;
-        const ars = parseFloat(url.searchParams.get('ars') || '15000');
-        const usdc = parseFloat(url.searchParams.get('usdc') || (ars / 1615).toFixed(2));
-        const merchantName = url.searchParams.get('n') || 'Almacén Don Tito';
-        const merchantId = url.searchParams.get('m') || 'merch-tito-01';
-        const itemsDescription = url.searchParams.get('d') || 'Compra de almacén';
-        return {
-          protocol: 'tefi',
-          version: '1.0',
-          action: 'FIADO_REQUEST',
-          data: {
-            id: fId,
-            merchantId,
-            merchantName: decodeURIComponent(merchantName),
-            customerId: 'cust-matias-01',
-            customerName: 'Matías González',
-            amountArs: ars,
-            amountUsdc: usdc,
-            itemsDescription: decodeURIComponent(itemsDescription),
-            photoReceiptUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
-            createdAt: new Date().toISOString(),
-            dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-            nonce: 3
-          }
-        };
-      }
-
-      // Caso 2: Es una URL con parámetro ?fiado= o #fiado=
-      if (decodedText.includes('fiado=')) {
-        const url = new URL(decodedText.startsWith('http') ? decodedText : `https://tefi.app/${decodedText}`);
-        const fiadoParam = url.searchParams.get('fiado') || new URLSearchParams(url.hash.replace('#', '')).get('fiado');
-        if (fiadoParam) {
-          const parsed = JSON.parse(decodeURIComponent(fiadoParam));
-          if (parsed.protocol === 'tefi') return parsed;
-          return {
-            protocol: 'tefi',
-            version: '1.0',
-            action: 'FIADO_REQUEST',
-            data: parsed.data || parsed
-          };
-        }
-      }
-
-      // Caso 3: Es un JSON directo
-      const parsed = JSON.parse(decodedText);
-      if (parsed.protocol === 'tefi') return parsed;
-      if (parsed.data && parsed.data.amountUsdc) {
-        return {
-          protocol: 'tefi',
-          version: '1.0',
-          action: 'FIADO_REQUEST',
-          data: parsed.data
-        };
-      }
-      if (parsed.amountUsdc || parsed.amountArs) {
-        return {
-          protocol: 'tefi',
-          version: '1.0',
-          action: 'FIADO_REQUEST',
-          data: parsed
-        };
-      }
-    } catch (e) {
-      console.warn('Error al decodificar texto QR:', e);
-    }
-    return null;
-  };
-
-  const handleSuccessfulScan = (decodedText: string) => {
-    if (isProcessing) return;
+  const handleScannedText = async (text: string) => {
+    if (processingRef.current) return;
+    processingRef.current = true;
     setIsProcessing(true);
+    setScanError(null);
 
     if (navigator.vibrate) {
       navigator.vibrate(100);
     }
 
-    const payload = parseScannedText(decodedText);
-    if (payload) {
-      stopScanner().then(() => {
-        onScanSuccess(payload);
-      });
-    } else {
-      setCameraError('El código QR no corresponde a un fiado válido de Tefi.');
+    const error = await onScan(text);
+    if (error) {
+      setScanError(error);
       setTimeout(() => {
+        processingRef.current = false;
         setIsProcessing(false);
-        setCameraError(null);
-      }, 3000);
+      }, 2500);
+    } else {
+      await stopScanner();
     }
   };
 
   const startScanner = async () => {
-    setCameraError(null);
+    setScanError(null);
     try {
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode('tefi-qr-reader', {
@@ -129,7 +56,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         });
       }
 
-      // Escanear área amplia (85% del visor) para que nunca corte esquinas en pantallas
+      // Escanear área amplia (88% del visor) para que nunca corte esquinas en pantallas
       const qrboxCalc = (viewfinderWidth: number, viewfinderHeight: number) => {
         const edge = Math.min(viewfinderWidth, viewfinderHeight);
         const size = Math.floor(edge * 0.88);
@@ -141,22 +68,24 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         {
           fps: 15,
           qrbox: qrboxCalc,
-          aspectRatio: 1.0
+          // El QR de co-firma lleva una transacción entera (denso): se pide video en HD para poder leerlo
+          videoConstraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
         },
         (decodedText) => {
-          handleSuccessfulScan(decodedText);
+          handleScannedText(decodedText);
         },
         () => {
           // Errores de frame ignorados
         }
       );
-      setIsScanning(true);
     } catch (err: any) {
       console.warn('No se pudo iniciar la cámara:', err);
-      setCameraError(
-        'No se pudo acceder a la cámara. Revisa los permisos de tu navegador o sube una foto del QR.'
+      setScanError(
+        tr(
+          'Could not access the camera. Check the browser permissions, upload a photo of the QR or paste the link.',
+          'No se pudo acceder a la cámara. Revisá los permisos del navegador, subí una foto del QR o pegá el link.'
+        )
       );
-      setIsScanning(false);
     }
   };
 
@@ -168,21 +97,22 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
       }
     } catch (e) {
       console.warn('Error al detener scanner:', e);
-    } finally {
-      setIsScanning(false);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
+      processingRef.current = false;
       setIsProcessing(false);
+      setPastedText('');
       // Dar un tick para que el elemento del DOM exista
       const timer = setTimeout(() => {
         startScanner();
       }, 250);
-      return () => clearTimeout(timer);
-    } else {
-      stopScanner();
+      return () => {
+        clearTimeout(timer);
+        stopScanner();
+      };
     }
   }, [isOpen]);
 
@@ -196,36 +126,15 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         scannerRef.current = new Html5Qrcode('tefi-qr-reader');
       }
       const decodedResult = await scannerRef.current.scanFile(file, true);
-      handleSuccessfulScan(decodedResult);
+      handleScannedText(decodedResult);
     } catch (err) {
-      setCameraError('No se encontró un código QR válido en la imagen subida.');
+      setScanError(tr('No QR code was found in the uploaded image.', 'No se encontró un código QR en la imagen subida.'));
     }
   };
 
-  // Cargar Fiado de Demostración Instantáneo
-  const handleLoadDemoFiado = () => {
-    const demoPayload: FiadoQrPayload = {
-      protocol: 'tefi',
-      version: '1.0',
-      action: 'FIADO_REQUEST',
-      data: {
-        id: `f-${Date.now().toString().slice(-4)}`,
-        merchantId: 'merch-tito-01',
-        merchantName: 'Almacén Don Tito',
-        customerId: 'cust-matias-01',
-        customerName: 'Matías González',
-        amountArs: 15000,
-        amountUsdc: 9.28,
-        itemsDescription: '1kg Yerba Playadito + 500g Queso Mar del Plata + 1 Pan',
-        photoReceiptUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
-        createdAt: new Date().toISOString(),
-        dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        nonce: 3
-      }
-    };
-    stopScanner().then(() => {
-      onScanSuccess(demoPayload);
-    });
+  const handlePasteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pastedText.trim()) handleScannedText(pastedText.trim());
   };
 
   if (!isOpen) return null;
@@ -234,11 +143,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
       <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-sm w-full p-5 text-center shadow-2xl relative border border-gray-100 dark:border-gray-800 my-auto">
         <button
-          onClick={() => {
-            stopScanner();
-            onClose();
-          }}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors z-20"
+          onClick={onClose}
+          aria-label={tr('Close', 'Cerrar')}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full bg-gray-100 dark:bg-gray-800 transition-colors z-20 cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -247,14 +154,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           <Camera className="w-6 h-6" />
         </div>
 
-        <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
-          {language === 'en' ? "Scan Don Tito's QR" : 'Escanear QR de Don Tito'}
-        </h3>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-          {language === 'en'
-            ? "Point your camera at the merchant's screen to receive the credit"
-            : 'Apunta tu cámara a la pantalla del almacenero para recibir el fiado'}
-        </p>
+        <h3 className="text-base font-extrabold text-gray-900 dark:text-white">{title}</h3>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>
 
         {/* Viewport de Cámara */}
         <div className="my-3.5 relative rounded-2xl overflow-hidden bg-gray-950 aspect-square border-2 border-emerald-500/80 shadow-inner flex items-center justify-center">
@@ -263,37 +164,54 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           {/* Guía visual de escaneo */}
           <div className="absolute inset-8 pointer-events-none border-2 border-dashed border-emerald-400/70 rounded-2xl animate-pulse flex items-center justify-center">
             <span className="text-[10px] text-emerald-300 font-bold bg-black/60 px-2 py-0.5 rounded-full">
-              {language === 'en' ? 'Center QR code' : 'Centrar código QR'}
+              {tr('Center QR code', 'Centrar código QR')}
             </span>
           </div>
 
-          {isProcessing && (
+          {isProcessing && !scanError && (
             <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white z-10 p-4">
               <RefreshCw className="w-8 h-8 animate-spin text-emerald-400 mb-2" />
-              <p className="text-xs font-bold">{language === 'en' ? 'QR Detected!' : '¡QR Detectado!'}</p>
-              <p className="text-[10px] text-gray-300">
-                {language === 'en' ? 'Decoding on-chain credit...' : 'Decodificando fiado on-chain...'}
-              </p>
+              <p className="text-xs font-bold">{tr('QR detected', 'QR detectado')}</p>
+              <p className="text-[10px] text-gray-300">{tr('Reading and verifying...', 'Leyendo y verificando...')}</p>
             </div>
           )}
         </div>
 
-        {cameraError && (
+        {scanError && (
           <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-center gap-2 text-left">
             <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-            <span className="text-[11px] leading-tight">{cameraError}</span>
+            <span className="text-[11px] leading-tight">{scanError}</span>
           </div>
         )}
 
-        {/* Opciones de Respaldo: Archivo o Demo */}
-        <div className="space-y-2 pt-1 border-t border-gray-100">
+        {/* Alternativas a la cámara: foto del QR o link recibido por mensaje */}
+        <div className="space-y-2 pt-3 border-t border-gray-100">
+          <form onSubmit={handlePasteSubmit} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={pastedText}
+              onChange={e => setPastedText(e.target.value)}
+              placeholder={tr('...or paste the link here', '...o pegá el link acá')}
+              aria-label={tr('Paste link', 'Pegar link')}
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-[11px] text-gray-900 focus:outline-none focus:border-emerald-500"
+            />
+            <button
+              type="submit"
+              disabled={!pastedText.trim() || isProcessing}
+              className="flex items-center gap-1.5 py-2 px-3 rounded-xl gradient-tefi text-white font-bold text-[11px] disabled:opacity-50 cursor-pointer shrink-0"
+            >
+              <ClipboardPaste className="w-3.5 h-3.5" />
+              <span>{tr('Open', 'Abrir')}</span>
+            </button>
+          </form>
+
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-[11px] bg-gray-50 hover:bg-white active:scale-95 transition-all"
+              className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-[11px] bg-gray-50 hover:bg-white active:scale-95 transition-all cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5 text-gray-500" />
-              <span>{language === 'en' ? 'Upload QR Photo' : 'Subir Foto QR'}</span>
+              <span>{tr('Upload QR Photo', 'Subir Foto QR')}</span>
             </button>
             <input
               type="file"
@@ -304,23 +222,12 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             />
 
             <button
-              onClick={handleLoadDemoFiado}
-              className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-bold text-[11px] active:scale-95 transition-all"
+              onClick={onClose}
+              className="py-2 rounded-xl bg-gray-100 text-gray-600 font-bold text-[11px] hover:bg-gray-200 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              <span>{language === 'en' ? 'Simulate Don Tito' : 'Simular Don Tito'}</span>
+              {tr('Cancel', 'Cancelar')}
             </button>
           </div>
-
-          <button
-            onClick={() => {
-              stopScanner();
-              onClose();
-            }}
-            className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-600 font-bold text-xs hover:bg-gray-200 transition-colors cursor-pointer"
-          >
-            {language === 'en' ? 'Cancel' : 'Cancelar'}
-          </button>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { FiadoRecord, CustomerProfile, FiadoStatus } from '../types/tefi';
 
 /**
  * MOTOR FINANCIERO CANÓNICO DE AUDITORÍA Y RECONCILIACIÓN (TEFI.APP)
- * 
+ *
  * Regla única de negocio:
  * 1. La deuda activa (activeDebt) es SIEMPRE la suma exacta de los registros cuyo status es 'ACTIVE'.
  * 2. Un fiado con status 'PAID', 'DEFAULTED' o 'INSURANCE_CLAIMED' NO suma a la deuda activa.
@@ -68,14 +68,14 @@ export function validateFiadoIntegrity(fiado: Partial<FiadoRecord>): FiadoValida
     return { valid: false, error: `Importe inválido en USDC: ${fiado.amountUsdc}. Debe ser un número mayor a cero.` };
   }
   const validStatuses: FiadoStatus[] = ['ACTIVE', 'PAID', 'DEFAULTED', 'INSURANCE_CLAIMED'];
-  if (fiado.status && !validStatuses.includes(fiado.status)) {
+  if (!fiado.status || !validStatuses.includes(fiado.status)) {
     return { valid: false, error: `Estado de fiado desconocido: ${fiado.status}.` };
   }
   return { valid: true };
 }
 
 /**
- * Sanea, desduplica y valida una lista de fiados cruda (ej. leída desde localStorage).
+ * Sanea, desduplica y valida una lista de fiados cruda (ej. la copia local leída desde localStorage).
  */
 export function sanitizeAndValidateFiados(raw: any[]): { fiados: FiadoRecord[]; issues: string[] } {
   const issues: string[] = [];
@@ -108,29 +108,25 @@ export function sanitizeAndValidateFiados(raw: any[]): { fiados: FiadoRecord[]; 
 
     const amtUsdc = +(Math.round(Number(item.amountUsdc) * 100) / 100).toFixed(2);
     const amtArs = Number(item.amountArs);
-    const validArs = Number.isFinite(amtArs) && amtArs > 0 ? amtArs : Math.round(amtUsdc * 1615);
-
-    const isSeedDemo = Boolean(item.isDemo || ['f-100', 'f-101', 'f-102'].includes(item.id));
 
     sanitized.push({
       id: String(item.id),
-      merchantId: String(item.merchantId || 'merch-tito-01'),
-      merchantName: String(item.merchantName || 'Almacén Don Tito'),
-      customerId: String(item.customerId || 'cust-matias-01'),
-      customerName: String(item.customerName || 'Matías González'),
+      merchantId: String(item.merchantId || ''),
+      merchantName: String(item.merchantName || ''),
+      customerId: String(item.customerId || ''),
+      customerName: String(item.customerName || ''),
       amountUsdc: amtUsdc,
-      amountArs: validArs,
-      itemsDescription: String(item.itemsDescription || 'Compra de almacén'),
+      amountArs: Number.isFinite(amtArs) && amtArs > 0 ? amtArs : 0,
+      itemsDescription: String(item.itemsDescription || ''),
       photoReceiptUrl: String(item.photoReceiptUrl || ''),
-      createdAt: item.createdAt || new Date().toISOString(),
-      dueDate: item.dueDate || new Date().toISOString(),
+      createdAt: typeof item.createdAt === 'string' ? item.createdAt : '',
+      dueDate: typeof item.dueDate === 'string' ? item.dueDate : '',
       status: item.status as FiadoStatus,
       nonce: typeof item.nonce === 'number' ? item.nonce : undefined,
+      receiptHash: typeof item.receiptHash === 'string' ? item.receiptHash : undefined,
       txSignature: typeof item.txSignature === 'string' && item.txSignature ? item.txSignature : undefined,
-      repaidAt: typeof item.repaidAt === 'string' ? item.repaidAt : undefined,
-      paymentMethod: item.paymentMethod,
-      isDemo: isSeedDemo,
-      settlementStatus: item.settlementStatus || (item.txSignature ? 'confirmed' : (isSeedDemo ? 'confirmed' : 'unknown'))
+      repayTxSignature: typeof item.repayTxSignature === 'string' && item.repayTxSignature ? item.repayTxSignature : undefined,
+      repaidAt: typeof item.repaidAt === 'string' ? item.repaidAt : undefined
     });
   }
 

@@ -136,7 +136,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, initial
     <div className="w-full">
       <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
         <span>📸 {t('cameraPhotoTicket')}</span>
-        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">{t('immutableOnChain')}</span>
+        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">{t('photoStaysOnPhone')}</span>
       </label>
 
       {/* Input nativo de cámara para celulares */}
@@ -178,7 +178,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, initial
         </div>
       ) : photoUrl ? (
         <div className="relative rounded-2xl overflow-hidden aspect-4/3 border border-emerald-200 dark:border-emerald-800 shadow-xs group bg-gray-50 dark:bg-gray-800">
-          <img src={photoUrl} alt="Comprobante" className="w-full h-full object-cover" />
+          <img src={photoUrl} alt={t('cameraPhotoTicket')} className="w-full h-full object-cover" />
           <div className="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
             <CheckCircle className="w-3 h-3" />
             {t('photoLoaded')}

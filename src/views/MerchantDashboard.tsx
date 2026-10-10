@@ -1,33 +1,37 @@
 import React, { useState } from 'react';
 import { useTefi } from '../context/TefiContext';
-import { FiadoRecord } from '../types/tefi';
-import { DollarSign, ShieldAlert, Users, Clock, AlertTriangle, CheckCircle, Image as ImageIcon, ChevronRight, Plus } from 'lucide-react';
-import { QrModal } from '../components/QrModal';
-import { RepayModal } from '../components/RepayModal';
+import { FiadoRecord, PendingCosign } from '../types/tefi';
+import { Clock, CheckCircle2, Image as ImageIcon, ExternalLink, Loader2, AlertCircle, HandCoins, Receipt } from 'lucide-react';
+import { CosignQrModal } from '../components/CosignQrModal';
 import { GoldFiarCoin } from '../components/GoldFiarCoin';
+import { StoreFundingNotice } from '../components/StoreFundingNotice';
+import { ChainSyncStatus } from '../components/ChainSyncStatus';
+import { calculateTotalActiveDebt } from '../services/financialLedger';
+import { getSolanaAccountUrl, getSolanaExplorerUrl } from '../solana/connection';
 
 export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ onNavigateToNew }) => {
-  const { merchant, fiados, claimInsurance, exchangeRate, t, language } = useTefi();
-  const [selectedFiadoForQr, setSelectedFiadoForQr] = useState<FiadoRecord | null>(null);
+  const { merchant, fiados, createRepayRequest, exchangeRate, t, tr, language } = useTefi();
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
-  const [payingFiado, setPayingFiado] = useState<FiadoRecord | null>(null);
+  const [repayRequest, setRepayRequest] = useState<PendingCosign | null>(null);
+  const [preparingId, setPreparingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const activeFiados = fiados.filter(f => f.status === 'ACTIVE');
   const paidFiados = fiados.filter(f => f.status === 'PAID');
-  const totalPendingUsdc = activeFiados.reduce((acc, f) => acc + f.amountUsdc, 0);
+  const totalPendingUsdc = calculateTotalActiveDebt(fiados);
   const rate = exchangeRate.rate || 1615;
+  const locale = language === 'en' ? 'en-US' : 'es-AR';
 
-  const handleClaim = (fiadoId: string) => {
-    const confirmMsg = language === 'en'
-      ? 'Do you want to claim insurance for this credit default? The Solana guarantee pool will reimburse the funds, but your store risk premium will adjust.'
-      : '¿Deseas reclamar el seguro de este fiado? El fondo de garantía de Solana te reembolsará el monto, pero tu prima de riesgo del comercio aumentará.';
-    if (confirm(confirmMsg)) {
-      const res = claimInsurance(fiadoId);
-      if (res.success) {
-        alert(language === 'en'
-          ? `Insurance payout credited! $${res.payoutAmount} USDC reimbursed to your wallet from the Pool.`
-          : `¡Seguro acreditado! Se indemnizaron $${res.payoutAmount} USDC a tu wallet desde el Pool.`);
-      }
+  // El almacén confirma que cobró: firma su parte del repay_fiado y el vecino la completa desde su teléfono
+  const handleRegisterPayment = async (fiado: FiadoRecord) => {
+    setError(null);
+    setPreparingId(fiado.id);
+    const res = await createRepayRequest(fiado);
+    setPreparingId(null);
+    if (res.success) {
+      setRepayRequest(res.request);
+    } else {
+      setError(res.error);
     }
   };
 
@@ -36,14 +40,15 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
       {/* Banner Principal de Caja */}
       <div className="gradient-tefi text-white rounded-3xl p-5 shadow-sm relative overflow-hidden">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-black text-white truncate mb-1.5">{merchant.name}</h2>
             <span className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wider">{t('totalPendingFiados')}</span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-3xl font-extrabold tracking-tight">${totalPendingUsdc.toFixed(2)}</span>
               <span className="text-sm font-semibold text-emerald-200">USDC</span>
             </div>
             <p className="text-[11px] text-emerald-100/90 mt-1">
-              {t('equivArs')} ${(totalPendingUsdc * rate).toLocaleString(language === 'en' ? 'en-US' : 'es-AR')} ARS
+              {t('equivArs')} ${Math.round(totalPendingUsdc * rate).toLocaleString(locale)} ARS
             </p>
           </div>
 
@@ -61,7 +66,7 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
         <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-emerald-400/30 text-center">
           <div>
             <span className="text-[10px] text-emerald-200 block">{t('salesOnCredit')}</span>
-            <span className="text-sm font-bold">${merchant.totalSalesUsdc}</span>
+            <span className="text-sm font-bold">${merchant.totalSalesUsdc.toFixed(2)}</span>
           </div>
           <div>
             <span className="text-[10px] text-emerald-200 block">{t('collected')}</span>
@@ -74,57 +79,24 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
         </div>
       </div>
 
-      {/* Indicador de Seguro y Tasa Dinámica */}
-      <div className="glass-card rounded-3xl p-4 border border-gray-100 dark:border-gray-800 shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-              merchant.currentInsuranceFee > 5 ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
-            }`}>
-              <ShieldAlert className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold text-gray-800 dark:text-white">
-                {language === 'en' ? 'Actuarial Collection Insurance' : 'Seguro de Cobro Actuarial'}
-              </h3>
-              <p className="text-[10px] text-gray-400">
-                {language === 'en' ? 'Default loss protection' : 'Protección contra incobrables'}
-              </p>
-            </div>
-          </div>
+      <StoreFundingNotice />
+      <ChainSyncStatus />
 
-          <div className="text-right">
-            <span className="text-[10px] text-gray-400 block font-medium">
-              {language === 'en' ? 'Premium Rate' : 'Tasa de Prima'}
-            </span>
-            <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full ${
-              merchant.currentInsuranceFee > 5 ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300' : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
-            }`}>
-              {merchant.currentInsuranceFee}%
-            </span>
-          </div>
+      {error && (
+        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
         </div>
+      )}
 
-        {/* Explicación del modelo actuarial dinámico y cobrabilidad */}
-        <div className="mt-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl p-2.5 text-[11px] text-gray-600 dark:text-gray-300 flex items-start gap-2 border border-gray-100 dark:border-gray-700">
-          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-          <p className="leading-snug">
-            <strong>{t('dynamicRiskRate')}:</strong>{' '}
-            {language === 'en'
-              ? `Your current premium is ${merchant.currentInsuranceFee}% (historical default: ${merchant.defaultRate}%). It varies with your store collection index: when neighbors pay on time, your rate drops to the 2.5% floor; if defaults rise, it increases progressively.`
-              : `Tu prima actual es ${merchant.currentInsuranceFee}% (mora histórica: ${merchant.defaultRate}%). Varía según el índice de cobrabilidad de tu almacén: si cuidas a quién fías y cobras a término, tu tasa baja hacia el piso del 2.5%; si aumentan los incobrables, sube progresivamente.`}
-          </p>
-        </div>
-      </div>
-
-      {/* Lista de Fiados Activos con Foto */}
+      {/* Lista de Fiados Activos */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
             {t('fiadosToCollect')} ({activeFiados.length})
           </h3>
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-            {language === 'en' ? 'On-chain photo proof' : 'Con foto on-chain'}
+            {tr('Co-signed on-chain', 'Co-firmados on-chain')}
           </span>
         </div>
 
@@ -135,97 +107,108 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
               onClick={onNavigateToNew}
               className="mt-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
             >
-              {language === 'en' ? '+ Record first store credit' : '+ Registrar primer fiado'}
+              {tr('+ Record a fiado', '+ Registrar un fiado')}
             </button>
           </div>
         ) : (
           activeFiados.map(f => (
             <div key={f.id} className="glass-card rounded-2xl p-3.5 border border-gray-100 dark:border-gray-800 shadow-xs flex flex-col gap-2.5">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2.5">
-                  {/* Thumbnail de foto del ticket/mercaderia */}
-                  <button
-                    onClick={() => setViewingPhoto(f.photoReceiptUrl)}
-                    aria-label={t('viewTicketPhoto')}
-                    className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 group cursor-pointer"
-                  >
-                    <img src={f.photoReceiptUrl} alt="Ticket" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ImageIcon className="w-3.5 h-3.5 text-white" />
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Foto del ticket: existe solo en este teléfono */}
+                  {f.photoReceiptUrl ? (
+                    <button
+                      onClick={() => setViewingPhoto(f.photoReceiptUrl)}
+                      aria-label={t('viewTicketPhoto')}
+                      className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 group cursor-pointer"
+                    >
+                      <img src={f.photoReceiptUrl} alt={t('viewTicketPhoto')} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ImageIcon className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 shrink-0 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400">
+                      <Receipt className="w-5 h-5" />
                     </div>
-                  </button>
+                  )}
 
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="text-xs font-bold text-gray-900 dark:text-white">{f.customerName}</h4>
-                      <span className="text-[9px] bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-extrabold px-1.5 py-0.2 rounded-md">DID</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 max-w-[170px]">{f.itemsDescription}</p>
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">{f.customerName}</h4>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1">
+                      {f.itemsDescription || tr('Details kept on the phone that recorded it', 'Detalle guardado en el teléfono que lo registró')}
+                    </p>
                     <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">
                       <Clock className="w-3 h-3 text-amber-500" />
-                      <span>{t('dueOn')}: {new Date(f.dueDate).toLocaleDateString(language === 'en' ? 'en-US' : 'es-AR')}</span>
+                      <span>{t('dueOn')}: {new Date(f.dueDate).toLocaleDateString(locale)}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-sm font-extrabold text-gray-900 dark:text-white block">${f.amountUsdc} USDC</span>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500">${f.amountArs.toLocaleString(language === 'en' ? 'en-US' : 'es-AR')} ARS</span>
+                <div className="text-right shrink-0">
+                  <span className="text-sm font-extrabold text-gray-900 dark:text-white block">${f.amountUsdc.toFixed(2)} USDC</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">${Math.round(f.amountArs).toLocaleString(locale)} ARS</span>
                 </div>
               </div>
 
               {/* Botonera de acciones */}
               <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-gray-800 text-[11px]">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setSelectedFiadoForQr(f)}
-                    className="text-gray-500 dark:text-gray-400 font-semibold hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1 cursor-pointer"
-                  >
-                    {language === 'en' ? 'View QR' : 'Ver QR'}
-                  </button>
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-100 dark:border-emerald-800">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>{language === 'en' ? 'Live Webhook' : 'Webhook Activo'}</span>
-                  </div>
-                </div>
+                <a
+                  href={f.txSignature ? getSolanaExplorerUrl(f.txSignature) : getSolanaAccountUrl(f.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-purple-600 dark:text-purple-400 font-semibold hover:underline flex items-center gap-1"
+                >
+                  <span>Solana Explorer</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setPayingFiado(f)}
-                    className="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors text-[10px] cursor-pointer"
-                    title={language === 'en' ? 'If client pays in cash' : 'Si el cliente te entrega billetes en mano'}
-                  >
-                    {language === 'en' ? 'Cash' : 'Efectivo'}
-                  </button>
-
-                  <button
-                    onClick={() => handleClaim(f.id)}
-                    className="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors flex items-center gap-0.5 text-[10px] cursor-pointer"
-                  >
-                    <ShieldAlert className="w-3 h-3" />
-                    {language === 'en' ? 'Insurance' : 'Seguro'}
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleRegisterPayment(f)}
+                  disabled={preparingId !== null}
+                  className="px-3 py-1.5 rounded-xl gradient-tefi text-white font-bold shadow-xs active:scale-95 transition-transform flex items-center gap-1.5 text-[11px] disabled:opacity-60 cursor-pointer"
+                  title={tr('The neighbor paid you: co-sign the repayment', 'El vecino te pagó: co-firmar el repago')}
+                >
+                  {preparingId === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <HandCoins className="w-3.5 h-3.5" />}
+                  <span>{tr('Register payment', 'Registrar pago')}</span>
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Modal Cobro / Repayment */}
-      <RepayModal
-        isOpen={!!payingFiado}
-        onClose={() => setPayingFiado(null)}
-        fiado={payingFiado}
-      />
-
-      {/* Modal QR */}
-      {selectedFiadoForQr && (
-        <QrModal
-          fiado={selectedFiadoForQr}
-          onClose={() => setSelectedFiadoForQr(null)}
-        />
+      {/* Fiados ya cobrados (repay_fiado co-firmado) */}
+      {paidFiados.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-1">
+            {t('filterPaid')} ({paidFiados.length})
+          </h3>
+          {paidFiados.map(f => (
+            <div key={f.id} className="glass-card rounded-2xl p-3 border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <div className="min-w-0">
+                  <span className="font-bold text-gray-900 dark:text-white block truncate">{f.customerName}</span>
+                  <a
+                    href={f.repayTxSignature ? getSolanaExplorerUrl(f.repayTxSignature) : getSolanaAccountUrl(f.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+                  >
+                    <span>Solana Explorer</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+              </div>
+              <span className="font-extrabold text-gray-900 dark:text-white shrink-0">${f.amountUsdc.toFixed(2)} USDC</span>
+            </div>
+          ))}
+        </div>
       )}
+
+      {/* QR de co-firma del repago */}
+      {repayRequest && <CosignQrModal request={repayRequest} onClose={() => setRepayRequest(null)} />}
 
       {/* Modal Zoom Foto */}
       {viewingPhoto && (
@@ -234,7 +217,7 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
           onClick={() => setViewingPhoto(null)}
         >
           <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl p-2 border border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
-            <img src={viewingPhoto} alt="Comprobante ampliado" className="w-full rounded-2xl max-h-[70vh] object-contain" />
+            <img src={viewingPhoto} alt={tr('Enlarged receipt photo', 'Foto del comprobante ampliada')} className="w-full rounded-2xl max-h-[70vh] object-contain" />
             <button
               onClick={() => setViewingPhoto(null)}
               className="w-full mt-2 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold text-xs cursor-pointer touch-target-accessible"

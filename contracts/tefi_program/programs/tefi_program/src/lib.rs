@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 
-declare_id!("3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc");
+declare_id!("9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ");
 
-pub const GRACE_PERIOD_SECONDS: i64 = 30 * 86400; // 30 días de gracia obligatorios antes de seguro
+pub const GRACE_PERIOD_SECONDS: i64 = 30 * 86400; // 30 días de gracia obligatorios antes de declarar un fiado incobrable
 pub const BASE_INSURANCE_FEE_BPS: u16 = 250; // 2.50% base
 pub const MAX_INSURANCE_FEE_BPS: u16 = 1200; // 12.00% tope actuarial
 
@@ -32,7 +32,8 @@ pub mod tefi_program {
         Ok(())
     }
 
-    /// 2. Inicializar perfil de cliente (Vecino) con crédito base
+    /// 2. Inicializar perfil de cliente (Vecino) con crédito base.
+    /// El rent lo paga `payer` (el almacén que lo da de alta): el vecino solo firma y no necesita SOL.
     pub fn initialize_customer(
         ctx: Context<InitializeCustomer>,
     ) -> Result<()> {
@@ -47,7 +48,8 @@ pub mod tefi_program {
         Ok(())
     }
 
-    /// 3. Emitir fiado con foto y consentimiento bilateral (ambos firman)
+    /// 3. Emitir fiado con consentimiento bilateral (ambos firman).
+    /// `receipt_hash` es el SHA-256 (hex) del ticket: el detalle de la compra nunca se guarda on-chain.
     pub fn issue_fiado(
         ctx: Context<IssueFiado>,
         amount_usdc: u64,
@@ -56,6 +58,10 @@ pub mod tefi_program {
     ) -> Result<()> {
         require!(amount_usdc > 0, TefiError::InvalidAmount);
         require!(receipt_hash.len() <= 64, TefiError::ReceiptHashTooLong);
+        require!(
+            receipt_hash.len() == 64 && receipt_hash.bytes().all(|b| b.is_ascii_hexdigit()),
+            TefiError::InvalidReceiptHash
+        );
 
         let clock = Clock::get()?;
         require!(due_timestamp > clock.unix_timestamp, TefiError::InvalidDueDate);
@@ -133,9 +139,10 @@ pub mod tefi_program {
         Ok(())
     }
 
-    /// 5. Reclamar indemnización del Pool de Seguro por mora:
+    /// 5. Declarar incobrable un fiado en mora (base de un futuro fondo de garantía, hoy en roadmap).
+    /// No mueve fondos ni existe un pool: solo registra el default, penaliza el score del vecino
+    /// y recalcula la tasa de riesgo del comercio para desincentivar fraudes.
     /// Requiere período de gracia de 30 días posteriores al vencimiento.
-    /// Incrementa la prima de seguro actuarial del comercio para desincentivar fraudes.
     pub fn claim_insurance(ctx: Context<ClaimInsurance>) -> Result<()> {
         let fiado = &mut ctx.accounts.fiado_record;
         let merchant = &mut ctx.accounts.merchant_profile;
@@ -197,10 +204,11 @@ pub struct InitializeMerchant<'info> {
 #[derive(Accounts)]
 pub struct InitializeCustomer<'info> {
     #[account(mut)]
-    pub customer: Signer<'info>,
+    pub payer: Signer<'info>, // <-- Patrocina el rent del perfil (el almacén); puede ser el propio vecino
+    pub customer: Signer<'info>, // <-- El vecino consiente el alta con su firma, sin pagar nada
     #[account(
         init,
-        payer = customer,
+        payer = payer,
         space = 8 + 32 + 1 + 8 + 8 + 8 + 4 + 1,
         seeds = [b"customer", customer.key().as_ref()],
         bump
@@ -213,7 +221,6 @@ pub struct InitializeCustomer<'info> {
 pub struct IssueFiado<'info> {
     #[account(mut)]
     pub merchant: Signer<'info>,
-    #[account(mut)]
     pub customer: Signer<'info>, // <-- Firma obligatoria del cliente para consentir la deuda
     #[account(mut, seeds = [b"merchant", merchant.key().as_ref()], bump = merchant_profile.bump)]
     pub merchant_profile: Account<'info, MerchantProfile>,
@@ -234,7 +241,6 @@ pub struct IssueFiado<'info> {
 pub struct RepayFiado<'info> {
     #[account(mut)]
     pub merchant: Signer<'info>, // <-- Firma del almacenero que confirma la recepción del pago
-    #[account(mut)]
     pub customer: Signer<'info>,
     #[account(mut, seeds = [b"customer", customer.key().as_ref()], bump = customer_profile.bump)]
     pub customer_profile: Account<'info, CustomerProfile>,
@@ -347,4 +353,6 @@ pub enum TefiError {
     GracePeriodNotExpired,
     #[msg("El comercio firmante no coincide con el almacén que otorgó el fiado.")]
     UnauthorizedMerchant,
+    #[msg("El comprobante debe ser un hash SHA-256 en hexadecimal (64 caracteres), no texto legible.")]
+    InvalidReceiptHash,
 }

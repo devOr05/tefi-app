@@ -1,0 +1,11 @@
+{
+  "name": "tefi-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Two-phone end-to-end run of the Tefi PWA against Solana Devnet",
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "playwright-core": "^1.64.0",
+    "pngjs": "^7.0.0"
+  }
+}

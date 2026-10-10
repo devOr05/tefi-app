@@ -1,7 +1,7 @@
 [package]
 name = "tefi_program"
 version = "0.1.0"
-description = "Tefi - Decentralized trust-based microcredit & risk pool on Solana"
+description = "Tefi - Corner store credit ledger co-signed by store and neighbor on Solana"
 edition = "2021"
 
 [lib]

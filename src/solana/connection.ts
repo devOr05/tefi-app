@@ -1,38 +1,59 @@
 // Conexión y utilidades reales para Solana Devnet con @solana/web3.js
-import { Buffer } from 'buffer';
 import {
   Connection,
   PublicKey,
   Keypair,
   LAMPORTS_PER_SOL,
   Transaction,
-  TransactionInstruction,
   SystemProgram,
   sendAndConfirmTransaction
 } from '@solana/web3.js';
 
-export const SOLANA_DEVNET_RPC = 'https://api.devnet.solana.com';
-export const PROGRAM_ID_STR = '3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc';
-export const TEFI_PROGRAM_ID = new PublicKey(PROGRAM_ID_STR);
-export const INSURANCE_VAULT_PDA = 'HvmJdEQD7ZrU6jMVZjpUyLkNtJmQitRGxDPJsRhX3rE6';
+import { withRateLimitRetry } from './rpcRetry';
 
-// Instancia de conexión RPC a Solana Devnet con timeout rápido anti-bloqueo
+export { PROGRAM_ID_STR, TEFI_PROGRAM_ID } from './program';
+
+// Por defecto, el nodo público de devnet. Si muchos teléfonos van a usar la app desde la misma red, se puede
+// apuntar a un nodo de devnet propio definiendo VITE_SOLANA_DEVNET_RPC_URL al compilar (ver README).
+export const SOLANA_DEVNET_RPC = import.meta.env.VITE_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
+
+// Instancia de conexión RPC a Solana Devnet. Los rechazos por límite de uso (429) se reintentan en
+// rpcRetry.ts, por eso se desactiva el reintento propio de web3.js.
 export const solanaConnection = new Connection(SOLANA_DEVNET_RPC, {
   commitment: 'confirmed',
-  disableRetryOnRateLimit: true
+  disableRetryOnRateLimit: true,
+  fetch: withRateLimitRetry((input, init) => fetch(input, init))
 });
 
 export function getSolanaExplorerUrl(signature: string): string {
-  return `https://solscan.io/tx/${signature}?cluster=devnet`;
+  return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 }
 
 export function getSolanaAccountUrl(pubkey: string): string {
-  return `https://solscan.io/account/${pubkey}?cluster=devnet`;
+  return `https://explorer.solana.com/address/${pubkey}?cluster=devnet`;
 }
 
-// Billetera criptográfica embebida en el dispositivo (Keypair real persistente)
-export function getOrCreateRoleKeypair(role: 'merchant' | 'customer'): Keypair {
-  const storageKey = `tefi_keypair_${role}`;
+// -------------------------------------------------------------
+// CLAVES DEL DISPOSITIVO
+// -------------------------------------------------------------
+// Cada teléfono guarda SOLO la clave del rol que usa: el del almacén la del almacén y el del vecino
+// la del vecino. La clave de un rol se crea recién la primera vez que ese rol se usa en el dispositivo.
+// Prototipo en devnet: las claves viven en localStorage, no apto para dinero ni datos reales.
+
+export type DeviceRole = 'merchant' | 'customer';
+
+const keypairStorageKey = (role: DeviceRole) => `tefi_keypair_${role}`;
+
+export function hasRoleKeypair(role: DeviceRole): boolean {
+  try {
+    return typeof window !== 'undefined' && !!window.localStorage.getItem(keypairStorageKey(role));
+  } catch (e) {
+    return false;
+  }
+}
+
+export function getOrCreateRoleKeypair(role: DeviceRole): Keypair {
+  const storageKey = keypairStorageKey(role);
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const existing = window.localStorage.getItem(storageKey);
@@ -56,6 +77,22 @@ export function getOrCreateRoleKeypair(role: 'merchant' | 'customer'): Keypair {
   return newKeypair;
 }
 
+export function storeRoleKeypair(role: DeviceRole, keypair: Keypair): void {
+  window.localStorage.setItem(keypairStorageKey(role), JSON.stringify(Array.from(keypair.secretKey)));
+}
+
+export function forgetRoleKeypair(role: DeviceRole): void {
+  try {
+    window.localStorage.removeItem(keypairStorageKey(role));
+  } catch (e) {
+    console.warn('No se pudo borrar el keypair de localStorage:', e);
+  }
+}
+
+// -------------------------------------------------------------
+// SALDO Y FONDEO EN DEVNET
+// -------------------------------------------------------------
+
 // Consultar saldo de SOL en Devnet
 export async function getDevnetBalance(publicKey: PublicKey): Promise<number> {
   try {
@@ -67,8 +104,11 @@ export async function getDevnetBalance(publicKey: PublicKey): Promise<number> {
   }
 }
 
+// Motivo por el que el faucet no entregó SOL; el texto para el usuario lo arma la interfaz según el idioma
+export type AirdropFailure = 'RATE_LIMITED' | 'TIMEOUT' | 'UNAVAILABLE';
+
 // Solicitar Airdrop de 1 SOL en Devnet (con control rápido de timeout y rate limits)
-export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ success: boolean; signature?: string; error?: string }> {
+export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ success: boolean; signature?: string; error?: AirdropFailure }> {
   try {
     const airdropPromise = (async () => {
       const sig = await solanaConnection.requestAirdrop(publicKey, 1 * LAMPORTS_PER_SOL);
@@ -90,111 +130,28 @@ export async function requestDevnetAirdrop(publicKey: PublicKey): Promise<{ succ
   } catch (err: any) {
     console.warn('[Solana Devnet Faucet] Respuesta del faucet:', err?.message || err);
     const msg = err?.message || '';
-    let friendlyError = 'Límite de airdrop alcanzado o faucet de Devnet ocupado.';
+    let failure: AirdropFailure = 'UNAVAILABLE';
     if (msg.includes('429') || msg.includes('limit') || msg.includes('Internal error')) {
-      friendlyError = 'Límite diario del faucet de Solana alcanzado (máx. 1-2 SOL por día por IP).';
+      failure = 'RATE_LIMITED';
     } else if (msg.includes('TIMEOUT_DEVNET')) {
-      friendlyError = 'El nodo de Solana tardó en responder. Reintentá en unos momentos.';
+      failure = 'TIMEOUT';
     }
-    return { success: false, error: friendlyError };
+    return { success: false, error: failure };
   }
 }
 
-// Transferir SOL entre billeteras en Solana Devnet (para auto-fondear gas del cliente)
-export async function transferDevnetSol(
-  fromKeypair: Keypair,
-  toPubkey: PublicKey,
-  amountSol: number
-): Promise<{ success: boolean; signature?: string; error?: string }> {
+// Mover todo el SOL de devnet de una clave a otra (al renovar la identidad del almacén en un reset)
+export async function sweepDevnetSol(fromKeypair: Keypair, toPubkey: PublicKey): Promise<string | null> {
+  const FEE_LAMPORTS = 5000;
   try {
-    const lamports = Math.round(amountSol * LAMPORTS_PER_SOL);
+    const lamports = (await solanaConnection.getBalance(fromKeypair.publicKey)) - FEE_LAMPORTS;
+    if (lamports <= 0) return null;
     const tx = new Transaction().add(
-      SystemProgram.transfer({
-        fromPubkey: fromKeypair.publicKey,
-        toPubkey,
-        lamports
-      })
+      SystemProgram.transfer({ fromPubkey: fromKeypair.publicKey, toPubkey, lamports })
     );
-    const signature = await sendAndConfirmTransaction(solanaConnection, tx, [fromKeypair], {
-      commitment: 'confirmed'
-    });
-    console.log(`[Tefi on-chain] Transferencia de ${amountSol} SOL exitosa: ${signature}`);
-    return { success: true, signature };
-  } catch (err: any) {
-    console.error('Error in transferDevnetSol:', err);
-    return { success: false, error: err?.message || String(err) };
-  }
-}
-
-// Health check para Solana Devnet
-export async function pingSolanaDevnet(): Promise<boolean> {
-  try {
-    const res = await fetch(SOLANA_DEVNET_RPC, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'getHealth'
-      })
-    });
-    const data = await res.json();
-    return data.result === 'ok';
-  } catch (e) {
-    return false;
-  }
-}
-
-// Transmitir evento real a Solana Devnet (usando SPL Memo Program con firma y patrocinio de gas)
-export async function broadcastSolanaFiadoEvent(
-  payer: Keypair,
-  eventData: { type: 'NEW_FIADO' | 'REPAY' | 'INSURANCE_CLAIM'; fiadoId: string; amountUsdc: number },
-  sponsorKeypair?: Keypair
-): Promise<string | null> {
-  try {
-    let effectiveFeePayer = payer;
-    const balance = await getDevnetBalance(payer.publicKey);
-
-    // Si el payer no tiene saldo, usar el sponsor (ej: almacén financia al vecino)
-    if (balance < 0.002) {
-      if (sponsorKeypair) {
-        const sponsorBalance = await getDevnetBalance(sponsorKeypair.publicKey);
-        if (sponsorBalance >= 0.002) {
-          effectiveFeePayer = sponsorKeypair;
-        }
-      }
-    }
-
-    const memoProgramId = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
-    const memoInstruction = new TransactionInstruction({
-      keys: [{ pubkey: payer.publicKey, isSigner: true, isWritable: true }],
-      programId: memoProgramId,
-      data: Buffer.from(
-        JSON.stringify({
-          app: 'tefi.app',
-          event: eventData.type,
-          fiadoId: eventData.fiadoId,
-          usdc: eventData.amountUsdc,
-          timestamp: Date.now()
-        })
-      )
-    });
-
-    const tx = new Transaction().add(memoInstruction);
-    tx.feePayer = effectiveFeePayer.publicKey;
-
-    const signers = effectiveFeePayer.publicKey.equals(payer.publicKey)
-      ? [payer]
-      : [payer, effectiveFeePayer];
-
-    const signature = await sendAndConfirmTransaction(solanaConnection, tx, signers, {
-      commitment: 'confirmed'
-    });
-    console.log(`[Tefi on-chain] Transacción real confirmada en Devnet: ${signature}`);
-    return signature;
+    return await sendAndConfirmTransaction(solanaConnection, tx, [fromKeypair], { commitment: 'confirmed' });
   } catch (err) {
-    console.warn('[Tefi on-chain] Error al transmitir transacción en Devnet:', err);
+    console.warn('No se pudo trasladar el SOL de devnet a la nueva clave:', err);
     return null;
   }
 }
-

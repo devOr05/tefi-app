@@ -1,12 +1,18 @@
 import React from 'react';
+import { PublicKey } from '@solana/web3.js';
 import { useTefi } from '../context/TefiContext';
-import { ShieldCheck, TrendingUp, Fingerprint, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
+import { TrendingUp, Fingerprint, CheckCircle2, ExternalLink, Sparkles } from 'lucide-react';
+import { getSolanaAccountUrl } from '../solana/connection';
+import { getCustomerProfilePda } from '../solana/program';
+import { tierLabel } from '../i18n/translations';
 
 export const CreditScoreCard: React.FC = () => {
-  const { customer, language } = useTefi();
+  const { customer, language, tr } = useTefi();
 
   const availableLimit = Math.max(0, +(customer.maxCreditLimit - customer.currentDebt).toFixed(1));
   const debtPercentage = Math.min(100, Math.round((customer.currentDebt / (customer.maxCreditLimit || 1)) * 100));
+  // La cuenta que lee un prestamista: el CustomerProfile PDA derivado de la clave pública del vecino
+  const profilePda = customer.walletAddress ? getCustomerProfilePda(new PublicKey(customer.walletAddress)).toBase58() : '';
 
   // Color del score
   const getScoreColor = (score: number) => {
@@ -53,12 +59,12 @@ export const CreditScoreCard: React.FC = () => {
           </span>
           <span className="text-xs font-extrabold text-amber-900 dark:text-amber-300 bg-gradient-to-r from-amber-100 dark:from-amber-950/80 via-amber-50 dark:via-amber-900/40 to-amber-100 dark:to-amber-950/80 border border-amber-300/80 dark:border-amber-700/60 px-2.5 py-0.5 rounded-full mt-0.5 flex items-center gap-1 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            {language === 'en' ? 'Tier' : 'Nivel'} {customer.tier}
+            {language === 'en' ? 'Tier' : 'Nivel'} {tierLabel(customer.tier, language)}
           </span>
         </div>
       </div>
 
-      {/* Identidad Criptográfica en Solana (Ed25519) */}
+      {/* Cuenta on-chain que respalda el score */}
       <div className="mt-4 bg-purple-50/70 dark:bg-purple-950/30 rounded-2xl p-3 border border-purple-100/90 dark:border-purple-800/40 space-y-2">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -68,20 +74,20 @@ export const CreditScoreCard: React.FC = () => {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">
                 <span className="text-xs font-bold text-purple-950 dark:text-purple-200 leading-tight">
-                  {language === 'en' ? 'Solana Devnet Wallet' : 'Billetera en Solana Devnet'}
+                  CustomerProfile PDA · Solana Devnet
                 </span>
-                <span title="Ed25519 Activa">
+                {customer.hasOnChainProfile && (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                </span>
+                )}
               </div>
               <p className="text-[10px] text-purple-700/80 dark:text-purple-300/70 font-mono truncate">
-                {customer.walletAddress}
+                {profilePda}
               </p>
             </div>
           </div>
 
           <a
-            href={`https://explorer.solana.com/address/${customer.walletAddress}?cluster=devnet`}
+            href={getSolanaAccountUrl(profilePda)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white shadow-xs transition-all shrink-0 flex items-center gap-1 cursor-pointer"
@@ -92,7 +98,20 @@ export const CreditScoreCard: React.FC = () => {
         </div>
 
         <p className="text-[10px] text-purple-800/80 dark:text-purple-300/80 border-t border-purple-100/80 dark:border-purple-800/40 pt-1.5 leading-snug">
-          🔒 <strong>{language === 'en' ? 'On-Chain Portability:' : 'Portabilidad On-Chain:'}</strong> {language === 'en' ? 'Your credit score and history are stored directly in your Solana CustomerProfile PDA.' : 'Tu historial crediticio y reputación residen en tu cuenta PDA CustomerProfile en Solana Devnet.'}
+          {customer.hasOnChainProfile ? (
+            <>
+              🔒 <strong>{tr('Portable history:', 'Historial portable:')}</strong>{' '}
+              {tr(
+                'score, limit and repayments on this screen are read from this account. Any lender can read the same account without asking Tefi.',
+                'el score, el límite y los repagos de esta pantalla se leen de esta cuenta. Cualquier prestamista puede leer la misma cuenta sin pedirle nada a Tefi.'
+              )}
+            </>
+          ) : (
+            tr(
+              'This account does not exist yet. It is created with your first fiado (rent paid by the store) with the starting values shown here: score 65 and a 50 USDC limit.',
+              'Esta cuenta todavía no existe. Se crea con tu primer fiado (rent a cargo del almacén) con los valores iniciales que ves acá: score 65 y límite de 50 USDC.'
+            )
+          )}
         </p>
       </div>
 
@@ -119,7 +138,7 @@ export const CreditScoreCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Métricas de Lealtad & Comportamiento de Pago */}
+      {/* Totales acumulados en el perfil on-chain */}
       <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50/60 dark:bg-gray-800/40">
           <TrendingUp className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -132,12 +151,12 @@ export const CreditScoreCard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50/60 dark:bg-gray-800/40">
-          <ShieldCheck className="w-4 h-4 text-purple-500 shrink-0" />
+          <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
           <div className="min-w-0">
             <span className="text-[10px] text-gray-400 dark:text-gray-500 block truncate">
-              {language === 'en' ? 'Punctual rate' : 'Tasa puntualidad'}
+              {tr('Loyalty points', 'Puntos de lealtad')}
             </span>
-            <span className="text-xs font-bold text-gray-800 dark:text-gray-200">100% {language === 'en' ? 'on-time' : 'a término'}</span>
+            <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{customer.loyaltyPoints} pts</span>
           </div>
         </div>
       </div>

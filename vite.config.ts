@@ -18,9 +18,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon.svg'],
       manifest: {
-        name: 'Tefi.app - El Fiado Digital en Solana',
+        name: 'Tefi.app - Corner store credit notebook on Solana',
         short_name: 'Tefi',
-        description: 'Microcréditos descentralizados de confianza y pool de seguro en Solana',
+        description: 'Corner store credit (el fiado) co-signed by store and neighbor on Solana, building a portable repayment history',
         theme_color: '#00A650',
         background_color: '#F5F5F5',
         display: 'standalone',
