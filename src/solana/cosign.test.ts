@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
+import QRCode from 'qrcode';
 import {
   CosignError,
   ReceiptTicket,
@@ -220,6 +221,27 @@ describe('co-firma entre dos teléfonos', () => {
 });
 
 describe('formato del QR', () => {
+  it('el pedido más grande (primer fiado, detalle de 80 caracteres y foto) entra en un QR legible por la cámara de un teléfono', async () => {
+    const merchant = Keypair.generate();
+    const customer = Keypair.generate().publicKey;
+    const longTicket: ReceiptTicket = { amountArs: 123456.78, items: 'Ñ'.repeat(80), photoSha256: 'ab'.repeat(32) };
+    const receiptHash = await computeReceiptHash({ merchant: merchant.publicKey, customer, amountMicroUsdc: 50_000_000n, dueTimestamp: DUE, ticket: longTicket });
+    const { tx } = buildStoreSignedTransaction({
+      merchant,
+      instructions: [
+        initializeCustomerIx(merchant.publicKey, customer),
+        issueFiadoIx({ merchant: merchant.publicKey, customer, nonce: 123456, amountMicroUsdc: 50_000_000n, dueTimestamp: DUE, receiptHash })
+      ],
+      blockhash: BLOCKHASH,
+      lastValidBlockHeight: 100
+    });
+    const url = encodeCosignUrl(BASE_URL, { tx, storeName: 'Almacén & Fiambrería Don Tito', ticket: longTicket });
+
+    // Un QR admite hasta la versión 40 (177 módulos por lado); este pedido queda en la 24 (113 módulos)
+    expect(QRCode.create(url, { errorCorrectionLevel: 'L' }).version).toBeLessThanOrEqual(26);
+    expect(parseCosignUrl(url)!.ticket).toEqual(longTicket);
+  });
+
   it('ignora links que no son pedidos de co-firma y rechaza transacciones corruptas', () => {
     expect(parseCosignUrl('https://tef-iapp.vercel.app/')).toBeNull();
     expect(parseCosignUrl('hola')).toBeNull();

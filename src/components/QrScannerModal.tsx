@@ -68,7 +68,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose,
         {
           fps: 15,
           qrbox: qrboxCalc,
-          aspectRatio: 1.0
+          // El QR de co-firma lleva una transacción entera (denso): se pide video en HD para poder leerlo
+          videoConstraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
         },
         (decodedText) => {
           handleScannedText(decodedText);
