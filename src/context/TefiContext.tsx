@@ -68,6 +68,15 @@ export interface IncomingCosign {
 
 type ActionResult<T = {}> = ({ success: true } & T) | { success: false; error: string };
 
+// Pregunta de confirmación que la app muestra con su propio estilo
+export interface ConfirmRequest {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  /** 'danger' para acciones que no se pueden deshacer */
+  tone?: 'default' | 'danger';
+}
+
 interface TefiContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
@@ -101,6 +110,9 @@ interface TefiContextType {
   resetDevice: () => Promise<void>;
   notification: AppNotification | null;
   dismissNotification: () => void;
+  confirmRequest: ConfirmRequest | null;
+  askConfirm: (request: ConfirmRequest) => Promise<boolean>;
+  answerConfirm: (accepted: boolean) => void;
 
   // Teléfono del almacén
   neighbors: NeighborContact[];
@@ -444,6 +456,25 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const dismissNotification = useCallback(() => {
     setNotification(null);
+  }, []);
+
+  // Preguntas de confirmación: se muestran en un cuadro de la app y se responden con una promesa
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
+  const confirmResolverRef = useRef<((accepted: boolean) => void) | null>(null);
+
+  const askConfirm = useCallback((request: ConfirmRequest) => {
+    // Una pregunta anterior que quedó sin responder cuenta como rechazada
+    confirmResolverRef.current?.(false);
+    setConfirmRequest(request);
+    return new Promise<boolean>(resolve => {
+      confirmResolverRef.current = resolve;
+    });
+  }, []);
+
+  const answerConfirm = useCallback((accepted: boolean) => {
+    confirmResolverRef.current?.(accepted);
+    confirmResolverRef.current = null;
+    setConfirmRequest(null);
   }, []);
 
   const clearPendingCosignUrl = useCallback(() => {
@@ -1081,6 +1112,9 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetDevice,
         notification,
         dismissNotification,
+        confirmRequest,
+        askConfirm,
+        answerConfirm,
         neighbors,
         addNeighbor,
         fetchNeighborProfile,

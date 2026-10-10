@@ -16,6 +16,7 @@ export const Header: React.FC = () => {
     solanaBalance,
     requestAirdrop,
     isAirdropLoading,
+    askConfirm,
     language,
     theme,
     toggleTheme,
@@ -36,19 +37,19 @@ export const Header: React.FC = () => {
   };
 
   // Usar el otro rol en este mismo teléfono crea también su clave acá: deja de ser una co-firma entre dos dispositivos
-  const handleRoleSwitch = (next: UserRole) => {
+  const handleRoleSwitch = async (next: UserRole) => {
     if (next === role) return;
     const alreadyOnDevice = hasRoleKeypair(next === 'MERCHANT' ? 'merchant' : 'customer');
-    if (
-      !alreadyOnDevice &&
-      !confirm(
-        tr(
-          'This phone only holds the key of its current role. Using the other role here too puts both keys on one device (single-device demo). Continue?',
-          'Este teléfono solo tiene la clave de su rol actual. Usar acá también el otro rol deja las dos claves en un mismo dispositivo (demo en un solo dispositivo). ¿Continuar?'
-        )
-      )
-    ) {
-      return;
+    if (!alreadyOnDevice) {
+      const accepted = await askConfirm({
+        title: tr('Use both roles on this device?', '¿Usar los dos roles en este dispositivo?'),
+        message: tr(
+          'This phone only holds the key of its current role. Using the other role here too puts both keys on one device (single-device demo).',
+          'Este teléfono solo tiene la clave de su rol actual. Usar acá también el otro rol deja las dos claves en un mismo dispositivo (demo en un solo dispositivo).'
+        ),
+        confirmLabel: tr('Continue', 'Continuar')
+      });
+      if (!accepted) return;
     }
     setRole(next);
   };
@@ -59,22 +60,23 @@ export const Header: React.FC = () => {
     setTimeout(() => setAirdropFeedback(null), 5000);
   };
 
-  const handleReset = () => {
-    if (
-      confirm(
-        role === 'MERCHANT'
-          ? tr(
-              'Reset this store? It gets a brand-new identity (new key, empty passbook) and its devnet SOL moves to the new key. What is already on-chain stays on-chain under the old key.',
-              '¿Reiniciar este almacén? Queda con una identidad nueva (clave nueva, libreta vacía) y su SOL de devnet pasa a la clave nueva. Lo que ya está on-chain sigue on-chain bajo la clave anterior.'
-            )
-          : tr(
-              'Reset this neighbor? It gets a brand-new identity (new key, empty passbook, starting score). What is already on-chain stays on-chain under the old key.',
-              '¿Reiniciar este vecino? Queda con una identidad nueva (clave nueva, libreta vacía, score inicial). Lo que ya está on-chain sigue on-chain bajo la clave anterior.'
-            )
-      )
-    ) {
-      resetDevice();
-    }
+  const handleReset = async () => {
+    const isStore = role === 'MERCHANT';
+    const accepted = await askConfirm({
+      title: isStore ? tr('Reset this store?', '¿Reiniciar este almacén?') : tr('Reset this neighbor?', '¿Reiniciar este vecino?'),
+      message: isStore
+        ? tr(
+            'It gets a brand-new identity (new key, empty passbook) and its devnet SOL moves to the new key. What is already on-chain stays on-chain under the old key.',
+            'Queda con una identidad nueva (clave nueva, libreta vacía) y su SOL de devnet pasa a la clave nueva. Lo que ya está on-chain sigue on-chain bajo la clave anterior.'
+          )
+        : tr(
+            'It gets a brand-new identity (new key, empty passbook, starting score). What is already on-chain stays on-chain under the old key.',
+            'Queda con una identidad nueva (clave nueva, libreta vacía, score inicial). Lo que ya está on-chain sigue on-chain bajo la clave anterior.'
+          ),
+      confirmLabel: tr('Reset', 'Reiniciar'),
+      tone: 'danger'
+    });
+    if (accepted) resetDevice();
   };
 
   return (

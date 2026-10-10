@@ -33,6 +33,7 @@ Pull request [devOr05/tefi-app#1](https://github.com/devOr05/tefi-app/pull/1), w
 - **`receipt_hash`** is the SHA-256 of the receipt (amount, items, photo hash). The purchase details and the photo stay on the phones.
 - **Co-sign QR** renews itself with a fresh blockhash before it expires, and the store phone follows the transaction by its own signature. Confirmation uses polling instead of WebSockets.
 - **A QR that was already used** is reported as such instead of as "out of date".
+- **Confirmation dialogs** (using both roles on one device, resetting, removing a key) open in a dialog of the app, in its language and theme, instead of the browser's `confirm` box.
 - **`npm test`** runs Vitest. The previous scripts searched the source code for strings.
 - **CI** reads the program id from `Anchor.toml`, checks it against `lib.rs` and the IDL, publishes the stripped SBF binary as an artifact and, after the Anchor tests, runs the two-phone end-to-end test against the same local validator.
 - **README** rewritten to match the code: Anchor 0.29.0, the two-phone flow, the store as fee payer, hashed receipts, real test counts, live transaction links and the business model stated as a hypothesis.
@@ -51,6 +52,7 @@ Pull request [devOr05/tefi-app#1](https://github.com/devOr05/tefi-app/pull/1), w
 - Both keys lived in the same browser and the QR carried no signature, so a fiado could be recorded from a single phone without saying so.
 - Every store was called "Almacén Don Tito" and every neighbor "Matías González".
 - The in-app scanner could not read a co-sign QR: it shrank the camera image to the size of the viewfinder, a couple of hundred pixels for a code of 97 modules per side.
+- Chrome and Edge ignored the app's scrollbar style and drew a flat purple bar. Scrollbars now use the green of the app in every browser, and the page behind an open dialog no longer scrolls.
 - A rate-limited RPC request failed the operation on the first rejection instead of being retried.
 - CI tested the unstripped program binary (444 KB) instead of the stripped one that gets deployed (283 KB).
 
