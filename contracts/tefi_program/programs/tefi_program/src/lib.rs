@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 declare_id!("9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ");
 
-pub const GRACE_PERIOD_SECONDS: i64 = 30 * 86400; // 30 días de gracia obligatorios antes de seguro
+pub const GRACE_PERIOD_SECONDS: i64 = 30 * 86400; // 30 días de gracia obligatorios antes de declarar un fiado incobrable
 pub const BASE_INSURANCE_FEE_BPS: u16 = 250; // 2.50% base
 pub const MAX_INSURANCE_FEE_BPS: u16 = 1200; // 12.00% tope actuarial
 
@@ -139,9 +139,10 @@ pub mod tefi_program {
         Ok(())
     }
 
-    /// 5. Reclamar indemnización del Pool de Seguro por mora:
+    /// 5. Declarar incobrable un fiado en mora (base de un futuro fondo de garantía, hoy en roadmap).
+    /// No mueve fondos ni existe un pool: solo registra el default, penaliza el score del vecino
+    /// y recalcula la tasa de riesgo del comercio para desincentivar fraudes.
     /// Requiere período de gracia de 30 días posteriores al vencimiento.
-    /// Incrementa la prima de seguro actuarial del comercio para desincentivar fraudes.
     pub fn claim_insurance(ctx: Context<ClaimInsurance>) -> Result<()> {
         let fiado = &mut ctx.accounts.fiado_record;
         let merchant = &mut ctx.accounts.merchant_profile;

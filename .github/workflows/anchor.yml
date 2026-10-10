@@ -25,5 +25,5 @@ jobs:
       - name: Verify TypeScript & Build PWA
         run: npm run build
 
-      - name: Execute Anchor Contract & PDA Integrity Tests
+      - name: Run Unit Tests (vitest, imports the real modules)
         run: npm test
