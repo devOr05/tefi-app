@@ -43,7 +43,7 @@ interface TefiContextType {
   acceptScannedFiado: (payload: FiadoQrPayload) => { success: boolean; error?: string; fiado?: FiadoRecord };
   pendingFiadoFromUrl: FiadoQrPayload | null;
   clearPendingFiadoFromUrl: () => void;
-  repayFiado: (fiadoId: string, paymentMethod?: PaymentMethod) => { success: boolean; signature?: string };
+  repayFiado: (fiadoId: string, paymentMethod?: PaymentMethod) => Promise<{ success: boolean; signature?: string; error?: string }>;
   claimInsurance: (fiadoId: string) => { success: boolean; payoutAmount?: number; signature?: string };
   requestAirdrop: () => Promise<{ success: boolean; signature?: string; error?: string; note?: string }>;
   refreshBalance: () => Promise<void>;
@@ -649,133 +649,135 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true, fiado: newFiado };
   };
 
-  // 2. Cliente paga su deuda (Repayment)
-  const repayFiado = (fiadoId: string, paymentMethod: PaymentMethod = 'SOLANA_USDC') => {
+  // 2. Cliente paga su deuda (Repayment bilateral estricto)
+  const repayFiado = async (
+    fiadoId: string, 
+    paymentMethod: PaymentMethod = 'SOLANA_USDC'
+  ): Promise<{ success: boolean; signature?: string; error?: string }> => {
     const target = fiados.find(f => f.id === fiadoId);
-    if (!target || target.status !== 'ACTIVE') return { success: false };
+    if (!target) return { success: false, error: 'Fiado no encontrado' };
+    if (target.status !== 'ACTIVE') return { success: false, error: 'Este fiado ya se encuentra saldado' };
 
-    setFiados(prev =>
-      prev.map(f =>
-        f.id === fiadoId
-          ? {
-              ...f,
-              status: 'PAID',
-              repaidAt: new Date().toISOString(),
-              paymentMethod
-            }
-          : f
-      )
-    );
+    try {
+      // 1. Ejecutar instrucción real repay_fiado co-firmada del programa Anchor en Solana Devnet
+      // Exige co-firma bilateral estricta (almacén + cliente). Sin rutas alternativas ni atajos.
+      const res = await executeOnChainRepayFiado(
+        merchantKeypair,
+        customerKeypair,
+        target.nonce ?? 0
+      );
 
-    // Ejecutar instrucción real repay_fiado co-firmada del programa Anchor en Solana Devnet
-    executeOnChainRepayFiado(
-      merchantKeypair,
-      customerKeypair,
-      target.nonce ?? 0
-    ).then(res => {
-      if (res && res.signature) {
-        setFiados(curr =>
-          curr.map(f => (f.id === fiadoId ? { ...f, txSignature: res.signature } : f))
-        );
-        fetchOnChainCustomerProfile(customerKeypair.publicKey).then(onChainProfile => {
-          if (onChainProfile) {
-            setCustomer(prev => ({
+      if (!res || !res.signature) {
+        throw new Error('La transacción no devolvió una firma válida');
+      }
+
+      const txSignature = res.signature;
+
+      // 2. Solo tras confirmación on-chain exitosa, actualizar el registro local del fiado
+      setFiados(curr =>
+        curr.map(f =>
+          f.id === fiadoId
+            ? {
+                ...f,
+                status: 'PAID',
+                txSignature,
+                repaidAt: new Date().toISOString(),
+                paymentMethod
+              }
+            : f
+        )
+      );
+
+      // 3. Reconciliar el estado financiero directamente desde la cuenta PDA CustomerProfile en Devnet
+      try {
+        const onChainProfile = await fetchOnChainCustomerProfile(customerKeypair.publicKey);
+        if (onChainProfile) {
+          setCustomer(prev => {
+            const newTier = calculateTier(onChainProfile.creditScore);
+            return {
               ...prev,
               creditScore: onChainProfile.creditScore,
               currentDebt: onChainProfile.activeDebtUsdc,
               maxCreditLimit: onChainProfile.creditLimitUsdc,
-              loyaltyPoints: onChainProfile.loyaltyPoints
-            }));
-          }
-        });
-      }
-    }).catch(err => {
-      console.warn('[Anchor repayFiado] Fallback a broadcastSolanaFiadoEvent:', err);
-      broadcastSolanaFiadoEvent(customerKeypair, {
-        type: 'REPAY',
-        fiadoId,
-        amountUsdc: target.amountUsdc
-      }, merchantKeypair).then(realSig => {
-        if (realSig) {
-          setFiados(curr =>
-            curr.map(f => (f.id === fiadoId ? { ...f, txSignature: realSig } : f))
-          );
+              loyaltyPoints: onChainProfile.loyaltyPoints,
+              totalRepaid: onChainProfile.totalRepaidUsdc,
+              tier: newTier
+            };
+          });
+        } else {
+          // Reconciliación local basada estrictamente en la deuda saldada
+          setCustomer(prev => {
+            const newDebt = Math.max(0, +(prev.currentDebt - target.amountUsdc).toFixed(2));
+            const newScore = Math.min(100, prev.creditScore + 5);
+            const pointsEarned = Math.round(target.amountUsdc * 20);
+            const newTier = calculateTier(newScore);
+            const newLimit = +(prev.maxCreditLimit + 5).toFixed(0);
+
+            return {
+              ...prev,
+              currentDebt: newDebt,
+              creditScore: newScore,
+              totalRepaid: +(prev.totalRepaid + target.amountUsdc).toFixed(2),
+              loyaltyPoints: prev.loyaltyPoints + pointsEarned,
+              tier: newTier,
+              maxCreditLimit: newLimit
+            };
+          });
         }
-      });
-    });
-
-    setCustomer(prev => {
-      const newDebt = Math.max(0, +(prev.currentDebt - target.amountUsdc).toFixed(2));
-      const newScore = Math.min(100, prev.creditScore + 5);
-      const pointsEarned = Math.round(target.amountUsdc * 20); // 20 pts por USDC sincronizado con Anchor
-      const newTier = calculateTier(newScore);
-      const newLimit = +(prev.maxCreditLimit + 5).toFixed(0);
-
-      let newSavingsUsdc = prev.abundanceSavingsUsdc || 0;
-      let newSavingsSol = prev.abundanceSavingsSol || 0;
-
-      if (paymentMethod === 'ABUNDANCE_FOUNTAIN') {
-        newSavingsUsdc = Math.max(0, +(newSavingsUsdc - target.amountUsdc).toFixed(2));
-        newSavingsSol = Math.max(0, +(newSavingsSol - (target.amountUsdc / 155)).toFixed(4));
+      } catch (profileErr) {
+        console.warn('[repayFiado] Error al reconciliar CustomerProfile on-chain:', profileErr);
       }
 
-      return {
-        ...prev,
-        currentDebt: newDebt,
-        abundanceSavingsUsdc: newSavingsUsdc,
-        abundanceSavingsSol: newSavingsSol,
-        creditScore: newScore,
-        totalRepaid: +(prev.totalRepaid + target.amountUsdc).toFixed(2),
-        loyaltyPoints: prev.loyaltyPoints + pointsEarned,
-        tier: newTier,
-        maxCreditLimit: newLimit
+      // 4. Notificación de liquidación confirmada
+      const methodLabels: Record<PaymentMethod, string> = language === 'en' ? {
+        MERCADO_PAGO: 'Mercado Pago (Transfer)',
+        CUENTA_DNI: 'Cuenta DNI (Transfer)',
+        CASH: 'Cash at Counter',
+        SOLANA_USDC: 'Solana USDC (On-Chain)',
+        ABUNDANCE_FOUNTAIN: 'Abundance Fountain (Collateral)'
+      } : {
+        MERCADO_PAGO: 'Mercado Pago (Transferencia)',
+        CUENTA_DNI: 'Cuenta DNI (Transferencia)',
+        CASH: 'Efectivo en Mostrador',
+        SOLANA_USDC: 'Solana USDC (On-Chain)',
+        ABUNDANCE_FOUNTAIN: 'Fuente de la Abundancia (Fondos Retenidos)'
       };
-    });
 
-    // Notificación en tiempo real
-    const methodLabels: Record<PaymentMethod, string> = language === 'en' ? {
-      MERCADO_PAGO: 'Mercado Pago (Transfer)',
-      CUENTA_DNI: 'Cuenta DNI (Transfer)',
-      CASH: 'Cash at Counter',
-      SOLANA_USDC: 'Solana USDC (On-Chain)',
-      ABUNDANCE_FOUNTAIN: 'Abundance Fountain (Collateral)'
-    } : {
-      MERCADO_PAGO: 'Mercado Pago (Transferencia)',
-      CUENTA_DNI: 'Cuenta DNI (Transferencia)',
-      CASH: 'Efectivo en Mostrador',
-      SOLANA_USDC: 'Solana USDC (On-Chain)',
-      ABUNDANCE_FOUNTAIN: 'Fuente de la Abundancia (Fondos Retenidos)'
-    };
+      const notifTitle = language === 'en'
+        ? (paymentMethod === 'ABUNDANCE_FOUNTAIN'
+          ? '💧 Credit Settled with Fountain'
+          : (paymentMethod === 'CASH' ? 'Cash Payment Registered' : 'On-Chain Repayment Settled ⚡'))
+        : (paymentMethod === 'ABUNDANCE_FOUNTAIN'
+          ? '💧 Fiado Saldado con la Fuente'
+          : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Repago Liquidado On-Chain ⚡'));
 
-    const notifTitle = language === 'en'
-      ? (paymentMethod === 'ABUNDANCE_FOUNTAIN'
-        ? '💧 Credit Settled with Fountain'
-        : (paymentMethod === 'CASH' ? 'Cash Payment Registered' : 'On-Chain Repayment Settled ⚡'))
-      : (paymentMethod === 'ABUNDANCE_FOUNTAIN'
-        ? '💧 Fiado Saldado con la Fuente'
-        : (paymentMethod === 'CASH' ? 'Pago Presencial Registrado' : 'Repago Liquidado On-Chain ⚡'));
+      const notifMessage = language === 'en'
+        ? `Payment of $${target.amountArs.toLocaleString('en-US')} ARS (${target.amountUsdc} USDC) confirmed from ${target.customerName} via ${methodLabels[paymentMethod]}. Settlement recorded on Solana Devnet.`
+        : `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) confirmado de ${target.customerName} vía ${methodLabels[paymentMethod]}! Liquidación registrada en Solana Devnet.`;
 
-    const notifMessage = language === 'en'
-      ? `Payment of $${target.amountArs.toLocaleString('en-US')} ARS (${target.amountUsdc} USDC) confirmed from ${target.customerName} via ${methodLabels[paymentMethod]}. Settlement recorded on Solana Devnet.`
-      : `¡Pago de $${target.amountArs.toLocaleString('es-AR')} ARS (${target.amountUsdc} USDC) confirmado de ${target.customerName} vía ${methodLabels[paymentMethod]}! Liquidación registrada en Solana Devnet.`;
+      const notif: WebhookNotification = {
+        id: `wh-${Date.now()}`,
+        title: notifTitle,
+        message: notifMessage,
+        amountArs: target.amountArs,
+        amountUsdc: target.amountUsdc,
+        method: paymentMethod,
+        customerName: target.customerName,
+        timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
 
-    const notif: WebhookNotification = {
-      id: `wh-${Date.now()}`,
-      title: notifTitle,
-      message: notifMessage,
-      amountArs: target.amountArs,
-      amountUsdc: target.amountUsdc,
-      method: paymentMethod,
-      customerName: target.customerName,
-      timestamp: new Date().toLocaleTimeString(language === 'en' ? 'en-US' : 'es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    };
+      setWebhookNotification(notif);
+      setTimeout(() => {
+        setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
+      }, 7000);
 
-    setWebhookNotification(notif);
-    setTimeout(() => {
-      setWebhookNotification(prev => (prev?.id === notif.id ? null : prev));
-    }, 7000);
-
-    return { success: true };
+      return { success: true, signature: txSignature };
+    } catch (err: any) {
+      console.error('[Anchor repayFiado Error]:', err);
+      // En caso de fallo on-chain: el fiado permanece con status 'ACTIVE' y la deuda no se altera.
+      const errorMsg = err?.message || 'Error en la liquidación bilateral del repago en Solana Devnet';
+      return { success: false, error: errorMsg };
+    }
   };
 
   // 3. Comercio reclama seguro por incobrable

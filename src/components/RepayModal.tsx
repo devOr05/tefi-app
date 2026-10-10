@@ -19,6 +19,8 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
   const [isSuccess, setIsSuccess] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   if (!isOpen || !fiado) return null;
 
   const rate = exchangeRate.rate || 1615;
@@ -36,28 +38,38 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     setIsProcessing(true);
+    setErrorMessage(null);
     setProcessStep(
       language === 'en'
         ? 'Settling repay_fiado co-signed on Solana Devnet...'
         : 'Liquidando repay_fiado co-firmado en Solana Devnet...'
     );
 
-    const res = repayFiado(fiado.id, selectedMethod);
-    setIsProcessing(false);
-    setProcessStep('');
+    try {
+      const res = await repayFiado(fiado.id, selectedMethod);
+      setIsProcessing(false);
+      setProcessStep('');
 
-    if (res.success) {
-      setIsSuccess(true);
-      if (res.signature) setTxSignature(res.signature);
-      if (onRepaySuccess) onRepaySuccess();
+      if (res.success) {
+        setIsSuccess(true);
+        if (res.signature) setTxSignature(res.signature);
+        if (onRepaySuccess) onRepaySuccess();
+      } else {
+        setErrorMessage(res.error || (language === 'en' ? 'Transaction failed on Solana Devnet' : 'La transacción no pudo confirmarse en Solana Devnet'));
+      }
+    } catch (err: any) {
+      setIsProcessing(false);
+      setProcessStep('');
+      setErrorMessage(err?.message || (language === 'en' ? 'Network or signing error' : 'Error de red o co-firma'));
     }
   };
 
   const handleClose = () => {
     setIsSuccess(false);
     setIsProcessing(false);
+    setErrorMessage(null);
     setTxSignature(null);
     onClose();
   };
@@ -391,6 +403,15 @@ export const RepayModal: React.FC<RepayModalProps> = ({ isOpen, onClose, fiado, 
                 </div>
               </div>
             </div>
+
+            {/* Mensaje de Error Explícito si falla la transacción */}
+            {errorMessage && (
+              <div className="bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-2xl p-3 text-left animate-in fade-in">
+                <p className="text-xs font-bold text-rose-700 dark:text-rose-300 leading-snug">
+                  ⚠️ {errorMessage}
+                </p>
+              </div>
+            )}
 
             {/* Botón de Confirmación */}
             <button

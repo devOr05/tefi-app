@@ -1,0 +1,100 @@
+name: Anchor Contract Compilation & Localnet Tests
+
+on:
+  push:
+    branches: [ main, 'test/**', 'fix/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-contract:
+    name: Build & Test Anchor Program
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain v1.75.0
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.75.0
+          components: rustfmt, clippy
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Solana CLI v1.18.26 & Generate Wallet
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v1.18.26/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+          mkdir -p ~/.config/solana
+          solana-keygen new --no-bip39-passphrase --force -s -o ~/.config/solana/id.json
+          solana config set --url http://127.0.0.1:8899 -k ~/.config/solana/id.json
+
+      - name: Install Anchor CLI v0.29.0
+        run: |
+          npm install -g @coral-xyz/anchor-cli@0.29.0
+
+      - name: Install Project & Contract Dependencies
+        run: |
+          npm ci
+          cd contracts/tefi_program && npm install
+
+      - name: Build Anchor SBF Program Binary
+        run: |
+          cd contracts/tefi_program
+          cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml || true
+          cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml
+          mkdir -p target/deploy target/idl
+          cp target/sbf-solana-solana/release/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || cp target/deploy/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || true
+          ls -la target/deploy/
+          node -e '
+            const fs = require("fs");
+            const idl = JSON.parse(fs.readFileSync("../../src/solana/idl.json", "utf8"));
+            idl.metadata = { address: "3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc" };
+            fs.writeFileSync("target/idl/tefi_program.json", JSON.stringify(idl, null, 2));
+            console.log("IDL ready at target/idl/tefi_program.json with program address");
+          '
+
+      - name: Run Dynamic Anchor Tests Against Local Validator
+        run: |
+          cd contracts/tefi_program
+          mkdir -p .anchor/test-ledger
+          # Launch local validator with canonical Program ID and compiled SBF binary
+          solana-test-validator \
+            --ledger .anchor/test-ledger \
+            --bpf-program 3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc target/deploy/tefi_program.so \
+            --reset > .anchor/test-ledger/validator.log 2>&1 &
+          VALIDATOR_PID=$!
+
+          # Wait for validator RPC to be responsive
+          for i in $(seq 1 30); do
+            if solana cluster-version --url http://127.0.0.1:8899 >/dev/null 2>&1; then
+              echo "Solana test validator is active and healthy!"
+              break
+            fi
+            echo "Waiting for validator to boot ($i/30)..."
+            sleep 1
+          done
+
+          # Verify the program is loaded at the canonical address
+          solana program dump 3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc /tmp/tefi_verified.so --url http://127.0.0.1:8899
+          ls -lh /tmp/tefi_verified.so
+
+          # Export provider variables
+          export ANCHOR_PROVIDER_URL="http://127.0.0.1:8899"
+          export ANCHOR_WALLET="$HOME/.config/solana/id.json"
+
+          # Run dynamic tests against the active validator
+          anchor test --skip-local-validator --skip-build --skip-deploy
+
+      - name: Diagnostic Logs on Failure
+        if: failure()
+        run: |
+          cat contracts/tefi_program/.anchor/test-ledger/test-ledger-log.txt || true
+          cat contracts/tefi_program/.anchor/test-ledger/validator.log || true
