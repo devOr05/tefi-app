@@ -20,5 +20,9 @@ wallet = "~/.config/solana/id.json"
 [test]
 startup_wait = 15000
 
+[[test.genesis]]
+address = "3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc"
+program = "target/deploy/tefi_program.so"
+
 [scripts]
 test = "node --loader ts-node/esm ./node_modules/mocha/bin/mocha.js -t 1000000 \"tests/**/*.ts\""
