@@ -8,8 +8,6 @@ resolver = "2"
 overflow-checks = true
 lto = "fat"
 codegen-units = 1
-# Optimizar por tamaño: el rent del programa on-chain es proporcional al tamaño del binario
-opt-level = "z"
 
 [profile.release.build-override]
 opt-level = 3

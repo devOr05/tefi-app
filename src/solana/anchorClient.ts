@@ -1,7 +1,7 @@
 // Cliente del programa Anchor de Tefi sobre Solana Devnet: lecturas de estado y armado/envío de transacciones.
 import { Buffer } from 'buffer';
 import { utils } from '@coral-xyz/anchor';
-import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
+import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
 import { solanaConnection } from './connection';
 import { buildStoreSignedTransaction } from './cosign';
 import {
@@ -59,6 +59,42 @@ export async function fetchOnChainFiados(party: { merchant: PublicKey } | { cust
 }
 
 // -------------------------------------------------------------
+// ENVÍO Y CONFIRMACIÓN
+// -------------------------------------------------------------
+
+const CONFIRMATION_TIMEOUT_MS = 60_000;
+const CONFIRMATION_POLL_MS = 1_500;
+
+/** Estado de una o varias transacciones: devuelve la que ya entró a la cadena, si alguna entró. */
+export async function findLandedSignature(signatures: string[]): Promise<{ signature: string; failed: boolean } | null> {
+  if (signatures.length === 0) return null;
+  const { value } = await solanaConnection.getSignatureStatuses(signatures);
+  for (let i = 0; i < value.length; i++) {
+    const status = value[i];
+    if (status && (status.confirmationStatus === 'confirmed' || status.confirmationStatus === 'finalized')) {
+      return { signature: signatures[i], failed: !!status.err };
+    }
+  }
+  return null;
+}
+
+// Envía una transacción ya firmada y espera su confirmación consultando su estado (sin WebSocket)
+async function sendAndConfirm(rawTransaction: Buffer): Promise<string> {
+  const signature = await solanaConnection.sendRawTransaction(rawTransaction, { preflightCommitment: 'confirmed' });
+
+  const deadline = Date.now() + CONFIRMATION_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const landed = await findLandedSignature([signature]).catch(() => null);
+    if (landed) {
+      if (landed.failed) throw new Error(`La transacción ${signature} fue rechazada por el programa.`);
+      return signature;
+    }
+    await new Promise(resolve => setTimeout(resolve, CONFIRMATION_POLL_MS));
+  }
+  throw new Error('Blockhash not found: la transacción no se confirmó a tiempo.');
+}
+
+// -------------------------------------------------------------
 // TELÉFONO DEL ALMACÉN (WRITE STATE)
 // -------------------------------------------------------------
 
@@ -73,10 +109,12 @@ export async function ensureMerchantInitialized(merchant: Keypair, businessName:
   const existing = await solanaConnection.getAccountInfo(getMerchantProfilePda(merchant.publicKey));
   if (existing) return;
 
-  const tx = new Transaction().add(
+  const latest = await solanaConnection.getLatestBlockhash('confirmed');
+  const tx = new Transaction({ feePayer: merchant.publicKey, ...latest }).add(
     initializeMerchantIx(merchant.publicKey, truncateUtf8(businessName, 50), truncateUtf8(category, 30))
   );
-  await sendAndConfirmTransaction(solanaConnection, tx, [merchant], { commitment: 'confirmed' });
+  tx.sign(merchant);
+  await sendAndConfirm(tx.serialize());
 }
 
 export interface StoreSignedRequest {
@@ -129,40 +167,13 @@ export async function buildRepayFiadoRequest(params: {
   return { tx, signature, fiadoRecord: repay.keys[3].pubkey, nonce, includesProfileSetup: false };
 }
 
-/** Estado de los QR emitidos: devuelve la transacción que ya entró a la cadena, si alguna entró. */
-export async function findLandedSignature(signatures: string[]): Promise<{ signature: string; failed: boolean } | null> {
-  if (signatures.length === 0) return null;
-  const { value } = await solanaConnection.getSignatureStatuses(signatures);
-  for (let i = 0; i < value.length; i++) {
-    const status = value[i];
-    if (status && (status.confirmationStatus === 'confirmed' || status.confirmationStatus === 'finalized')) {
-      return { signature: signatures[i], failed: !!status.err };
-    }
-  }
-  return null;
-}
-
 // -------------------------------------------------------------
 // TELÉFONO DEL VECINO (WRITE STATE)
 // -------------------------------------------------------------
 
-const CONFIRMATION_TIMEOUT_MS = 60_000;
-const CONFIRMATION_POLL_MS = 1_500;
-
 /** Envía la transacción con las dos firmas y espera su confirmación on-chain. */
 export async function submitCosignedTransaction(rawTransaction: Buffer): Promise<string> {
-  const signature = await solanaConnection.sendRawTransaction(rawTransaction, { preflightCommitment: 'confirmed' });
-
-  const deadline = Date.now() + CONFIRMATION_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const landed = await findLandedSignature([signature]).catch(() => null);
-    if (landed) {
-      if (landed.failed) throw new Error(`La transacción ${signature} fue rechazada por el programa.`);
-      return signature;
-    }
-    await new Promise(resolve => setTimeout(resolve, CONFIRMATION_POLL_MS));
-  }
-  throw new Error('Blockhash not found: la transacción no se confirmó a tiempo.');
+  return sendAndConfirm(rawTransaction);
 }
 
 // -------------------------------------------------------------

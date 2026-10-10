@@ -123,6 +123,8 @@ const FIADO_TERM_DAYS = 15;
 // El blockhash de Solana vence en ~1 minuto: el QR se regenera antes para que el vecino tenga tiempo de firmar
 const COSIGN_QR_TTL_MS = 40_000;
 const CHAIN_SYNC_INTERVAL_MS = 20_000;
+// Un pedido que el vecino no firmó en este tiempo se da por abandonado (el QR ya venció hace rato)
+const ABANDONED_REQUEST_MS = 10 * 60 * 1000;
 
 const STORAGE = {
   role: 'tefi_role',
@@ -404,6 +406,28 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
+  // El almacén guarda el detalle al mostrar el QR. Si el vecino firmó, el fiado ya está on-chain y el
+  // detalle queda; si el pedido se abandonó, el detalle (con su foto) se descarta.
+  const settlePendingDetails = useCallback((onChainAddresses: Set<string>) => {
+    setDetails(prev => {
+      const next = { ...prev };
+      let changed = false;
+      for (const [address, detail] of Object.entries(prev)) {
+        if (detail.pendingSince === undefined) continue;
+        if (onChainAddresses.has(address)) {
+          next[address] = { ...detail, pendingSince: undefined };
+          changed = true;
+        } else if (Date.now() - detail.pendingSince > ABANDONED_REQUEST_MS) {
+          delete next[address];
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      writeJson(STORAGE.details, next);
+      return next;
+    });
+  }, []);
+
   const syncFromChain = useCallback(async () => {
     if (!activeKeypair || !chosenRole) return;
     const owner = activeKeypair.publicKey;
@@ -422,6 +446,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const next: ChainSnapshot = { owner: ownerAddress, merchantProfile, customerProfile, fiados: onChainFiados };
       setSnapshot(next);
       writeJson(STORAGE.snapshot(ownerAddress), next);
+      if (chosenRole === 'MERCHANT') settlePendingDetails(new Set(onChainFiados.map(f => f.address)));
       setSolanaBalance(balance);
       setSyncFailed(false);
       setHasSynced(true);
@@ -431,7 +456,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsSyncing(false);
     }
-  }, [activeKeypair, chosenRole]);
+  }, [activeKeypair, chosenRole, settlePendingDetails]);
 
   // Al cambiar de rol o de identidad: mostrar la última copia local y volver a leer la cadena
   useEffect(() => {
@@ -651,7 +676,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         amountArs: draft.amountArs,
         itemsDescription: draft.itemsDescription,
         photoReceiptUrl: draft.photoReceiptUrl,
-        counterpartyName: draft.neighbor.name
+        counterpartyName: draft.neighbor.name,
+        pendingSince: Date.now()
       });
     }
 
@@ -779,7 +805,9 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const now = new Date().toISOString();
     saveDetail(
       attempt.fiadoAddress,
-      request.kind === 'issue' ? { txSignature: signature, createdAt: now } : { repayTxSignature: signature, repaidAt: now }
+      request.kind === 'issue'
+        ? { txSignature: signature, createdAt: now, pendingSince: undefined }
+        : { repayTxSignature: signature, repaidAt: now }
     );
     await syncFromChain();
     return { state: 'confirmed', signature };

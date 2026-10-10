@@ -14,6 +14,8 @@ export interface FiadoLocalDetail {
   repaidAt?: string;
   txSignature?: string;
   repayTxSignature?: string;
+  // Momento en que el almacén mostró el QR; se borra al verse el fiado on-chain
+  pendingSince?: number;
 }
 
 export type FiadoLocalDetails = Record<string, FiadoLocalDetail>;
