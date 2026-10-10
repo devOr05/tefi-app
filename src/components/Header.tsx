@@ -62,10 +62,15 @@ export const Header: React.FC = () => {
   const handleReset = () => {
     if (
       confirm(
-        tr(
-          'Reset this device? It gets a brand-new identity (new keys, empty passbook). What is already on-chain stays on-chain under the old keys.',
-          '¿Reiniciar este dispositivo? Queda con una identidad nueva (claves nuevas, libreta vacía). Lo que ya está on-chain sigue on-chain bajo las claves anteriores.'
-        )
+        role === 'MERCHANT'
+          ? tr(
+              'Reset this store? It gets a brand-new identity (new key, empty passbook) and its devnet SOL moves to the new key. What is already on-chain stays on-chain under the old key.',
+              '¿Reiniciar este almacén? Queda con una identidad nueva (clave nueva, libreta vacía) y su SOL de devnet pasa a la clave nueva. Lo que ya está on-chain sigue on-chain bajo la clave anterior.'
+            )
+          : tr(
+              'Reset this neighbor? It gets a brand-new identity (new key, empty passbook, starting score). What is already on-chain stays on-chain under the old key.',
+              '¿Reiniciar este vecino? Queda con una identidad nueva (clave nueva, libreta vacía, score inicial). Lo que ya está on-chain sigue on-chain bajo la clave anterior.'
+            )
       )
     ) {
       resetDevice();

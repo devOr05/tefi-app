@@ -69,6 +69,7 @@ type ActionResult<T = {}> = ({ success: true } & T) | { success: false; error: s
 interface TefiContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
+  chooseDeviceRole: (role: UserRole) => void;
   needsRoleChoice: boolean;
   isSingleDeviceDemo: boolean;
   language: Language;
@@ -185,14 +186,13 @@ function calculateTier(score: number): LoyaltyTier {
 
 const deviceRoleOf = (role: UserRole): DeviceRole => (role === 'MERCHANT' ? 'merchant' : 'customer');
 
-// Un link de co-firma solo tiene sentido para un vecino; un teléfono nuevo sin rol tiene que elegirlo
+// Un link de co-firma solo tiene sentido para un vecino. Un teléfono sin rol elegido (nuevo, o que viene
+// de una versión anterior que guardaba las dos claves) tiene que elegirlo.
 function detectInitialRole(): UserRole | null {
   try {
     if (new URLSearchParams(window.location.search).has('cosign')) return 'CUSTOMER';
     const stored = localStorage.getItem(STORAGE.role);
     if (stored === 'MERCHANT' || stored === 'CUSTOMER') return stored;
-    if (hasRoleKeypair('merchant')) return 'MERCHANT';
-    if (hasRoleKeypair('customer')) return 'CUSTOMER';
   } catch (e) {
     console.warn('No se pudo determinar el rol del dispositivo:', e);
   }
@@ -321,9 +321,24 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [identityEpoch, setIdentityEpoch] = useState(0);
   const role: UserRole = chosenRole ?? 'MERCHANT';
 
+  // Cambiar de rol en el mismo dispositivo (demo en un solo dispositivo): conserva las claves que ya tenga
   const setRole = useCallback((next: UserRole) => {
     localStorage.setItem(STORAGE.role, next);
     setChosenRole(next);
+  }, []);
+
+  // Dedicar el dispositivo a un solo rol: queda únicamente la clave de ese rol
+  const chooseDeviceRole = useCallback((next: UserRole) => {
+    const other = deviceRoleOf(next === 'MERCHANT' ? 'CUSTOMER' : 'MERCHANT');
+    if (hasRoleKeypair(other)) {
+      const otherKeypair = getOrCreateRoleKeypair(other);
+      forgetRoleKeypair(other);
+      // Si el dispositivo queda como almacén, el SOL de devnet de la clave que se va sirve para las comisiones
+      if (next === 'MERCHANT') sweepDevnetSol(otherKeypair, getOrCreateRoleKeypair('merchant').publicKey);
+    }
+    localStorage.setItem(STORAGE.role, next);
+    setChosenRole(next);
+    setIdentityEpoch(epoch => epoch + 1);
   }, []);
 
   // La clave de un rol se crea recién cuando ese rol se usa en este dispositivo
@@ -930,21 +945,25 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // RESET DEL DISPOSITIVO
   // -------------------------------------------------------------
 
-  // Identidad nueva para repetir el demo desde cero: claves nuevas y libreta vacía.
+  // Identidad nueva para el rol en uso, para repetir el demo desde cero: clave nueva y libreta vacía.
   // El SOL de devnet del almacén se traslada a su clave nueva para no depender otra vez del faucet.
   const resetDevice = async () => {
-    const oldMerchant = deviceKeys.merchant;
-    if (oldMerchant) {
+    if (!chosenRole) return;
+    if (chosenRole === 'MERCHANT') {
+      const oldMerchant = deviceKeys.merchant;
       const freshMerchant = Keypair.generate();
-      const hadFunds = (await getDevnetBalance(oldMerchant.publicKey)) > 0.001;
-      const moved = await sweepDevnetSol(oldMerchant, freshMerchant.publicKey);
-      if (hadFunds && !moved) {
-        notify(tr('Reset cancelled', 'Reset cancelado'), tr('Could not move the store devnet SOL to a new key. Try again.', 'No se pudo trasladar el SOL de devnet del almacén a una clave nueva. Reintentá.'));
-        return;
+      if (oldMerchant) {
+        const hadFunds = (await getDevnetBalance(oldMerchant.publicKey)) > 0.001;
+        const moved = await sweepDevnetSol(oldMerchant, freshMerchant.publicKey);
+        if (hadFunds && !moved) {
+          notify(tr('Reset cancelled', 'Reset cancelado'), tr('Could not move the store devnet SOL to a new key. Try again.', 'No se pudo trasladar el SOL de devnet del almacén a una clave nueva. Reintentá.'));
+          return;
+        }
       }
       storeRoleKeypair('merchant', freshMerchant);
+    } else {
+      forgetRoleKeypair('customer'); // se crea una nueva al volver a calcular la clave activa
     }
-    if (deviceKeys.customer) forgetRoleKeypair('customer');
 
     Object.keys(localStorage)
       .filter(key => key.startsWith('tefi_chain_snapshot_'))
@@ -962,6 +981,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         role,
         setRole,
+        chooseDeviceRole,
         needsRoleChoice: chosenRole === null,
         isSingleDeviceDemo,
         language,

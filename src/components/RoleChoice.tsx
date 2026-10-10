@@ -1,10 +1,13 @@
 import React from 'react';
 import { useTefi } from '../context/TefiContext';
+import { hasRoleKeypair } from '../solana/connection';
 import { Store, User } from 'lucide-react';
 
-// Primer uso en un teléfono: se elige el rol y recién ahí se crea la clave de ESE rol en el dispositivo
+// Primer uso en un teléfono: se elige el rol y el dispositivo queda solo con la clave de ESE rol
 export const RoleChoice: React.FC = () => {
-  const { setRole, toggleLanguage, language, tr } = useTefi();
+  const { chooseDeviceRole, toggleLanguage, language, tr } = useTefi();
+  // Versiones anteriores de la app guardaban las claves de los dos roles en cada teléfono
+  const hasKeysFromOlderVersion = hasRoleKeypair('merchant') || hasRoleKeypair('customer');
 
   return (
     <div className="min-h-screen bg-tefi-bg dark:bg-[#0c0f17] text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-6">
@@ -26,7 +29,7 @@ export const RoleChoice: React.FC = () => {
           </span>
 
           <button
-            onClick={() => setRole('MERCHANT')}
+            onClick={() => chooseDeviceRole('MERCHANT')}
             className="w-full p-4 rounded-3xl gradient-tefi text-white text-left shadow-md active:scale-98 transition-transform flex items-center gap-3 cursor-pointer"
           >
             <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
@@ -41,7 +44,7 @@ export const RoleChoice: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setRole('CUSTOMER')}
+            onClick={() => chooseDeviceRole('CUSTOMER')}
             className="w-full p-4 rounded-3xl bg-gray-900 dark:bg-gray-800 text-white text-left shadow-md active:scale-98 transition-transform flex items-center gap-3 cursor-pointer"
           >
             <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
@@ -61,6 +64,12 @@ export const RoleChoice: React.FC = () => {
             'A signing key for the role you choose is created and kept on this phone only. Devnet prototype: do not use it for real money.',
             'Se crea una clave de firma para el rol que elijas y queda solo en este teléfono. Prototipo en devnet: no lo uses con dinero real.'
           )}
+          {hasKeysFromOlderVersion &&
+            ' ' +
+              tr(
+                'This phone has keys from an earlier version of Tefi: it will keep only the one for the role you choose.',
+                'Este teléfono tiene claves de una versión anterior de Tefi: va a conservar solo la del rol que elijas.'
+              )}
         </p>
 
         <button
