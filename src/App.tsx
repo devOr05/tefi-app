@@ -16,7 +16,7 @@ const MERCHANT_TABS = ['dashboard', 'new-fiado', 'neighbors'];
 const CUSTOMER_TABS = ['libreta', 'credit', 'history'];
 
 const MainContent: React.FC = () => {
-  const { role, needsRoleChoice, isSingleDeviceDemo, chooseDeviceRole, notification, dismissNotification, t, tr } = useTefi();
+  const { role, needsRoleChoice, needsOwnName, isSingleDeviceDemo, chooseDeviceRole, notification, dismissNotification, t, tr } = useTefi();
   const [currentTab, setCurrentTab] = useState<string>(role === 'MERCHANT' ? 'dashboard' : 'libreta');
 
   // Volver a un teléfono de un solo rol: se quita de este dispositivo la clave del otro rol
@@ -43,7 +43,8 @@ const MainContent: React.FC = () => {
     }
   }, [role]);
 
-  if (needsRoleChoice) {
+  // Primer uso (falta elegir el rol) o identidad nueva (falta el nombre del almacén o del vecino)
+  if (needsRoleChoice || needsOwnName) {
     return <RoleChoice />;
   }
 

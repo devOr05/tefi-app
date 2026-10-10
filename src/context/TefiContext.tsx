@@ -72,6 +72,8 @@ interface TefiContextType {
   setRole: (role: UserRole) => void;
   chooseDeviceRole: (role: UserRole) => void;
   needsRoleChoice: boolean;
+  needsOwnName: boolean;
+  saveOwnName: (role: UserRole, name: string) => void;
   isSingleDeviceDemo: boolean;
   language: Language;
   setLanguage: (lang: Language) => void;
@@ -117,9 +119,9 @@ interface TefiContextType {
   approveCosign: (incoming: IncomingCosign) => Promise<ActionResult<{ signature: string }>>;
 }
 
-const DEFAULT_STORE_NAME = 'Almacén Don Tito';
-const DEFAULT_STORE_CATEGORY = 'Almacén de Barrio';
-const DEFAULT_NEIGHBOR_NAME = 'Matías González';
+const STORE_CATEGORY = 'Almacén de Barrio';
+// Nombre con el que el dispositivo se presenta. El del almacén se guarda en su perfil on-chain (hasta 50 bytes).
+const MAX_OWN_NAME_LENGTH = 40;
 const FIADO_TERM_DAYS = 15;
 // El blockhash de Solana vence en ~1 minuto: el QR se regenera antes para que el vecino tenga tiempo de firmar
 const COSIGN_QR_TTL_MS = 40_000;
@@ -129,6 +131,7 @@ const ABANDONED_REQUEST_MS = 10 * 60 * 1000;
 
 const STORAGE = {
   role: 'tefi_role',
+  ownName: (role: DeviceRole) => `tefi_name_${role}`,
   neighbors: 'tefi_neighbors_v2',
   details: 'tefi_fiado_details_v2',
   snapshot: (address: string) => `tefi_chain_snapshot_${address}`
@@ -162,6 +165,14 @@ function readJson<T>(key: string, fallback: T): T {
   } catch (e) {
     console.warn(`Error al cargar ${key} de localStorage:`, e);
     return fallback;
+  }
+}
+
+function readText(key: string): string {
+  try {
+    return localStorage.getItem(key) ?? '';
+  } catch (e) {
+    return '';
   }
 }
 
@@ -323,13 +334,32 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [identityEpoch, setIdentityEpoch] = useState(0);
   const role: UserRole = chosenRole ?? 'MERCHANT';
 
+  // Nombre que la persona le puso a este dispositivo en cada rol (el almacén, o el vecino)
+  const [ownNames, setOwnNames] = useState<Record<DeviceRole, string>>(() => ({
+    merchant: readText(STORAGE.ownName('merchant')),
+    customer: readText(STORAGE.ownName('customer'))
+  }));
+
+  const saveOwnName = useCallback((forRole: UserRole, name: string) => {
+    const deviceRole = deviceRoleOf(forRole);
+    const clean = name.trim().replace(/\s+/g, ' ').slice(0, MAX_OWN_NAME_LENGTH);
+    try {
+      localStorage.setItem(STORAGE.ownName(deviceRole), clean);
+    } catch (e) {
+      console.warn('No se pudo guardar el nombre en localStorage:', e);
+    }
+    setOwnNames(prev => ({ ...prev, [deviceRole]: clean }));
+  }, []);
+
+  const needsOwnName = chosenRole !== null && !ownNames[deviceRoleOf(chosenRole)];
+
   // Cambiar de rol en el mismo dispositivo (demo en un solo dispositivo): conserva las claves que ya tenga
   const setRole = useCallback((next: UserRole) => {
     localStorage.setItem(STORAGE.role, next);
     setChosenRole(next);
   }, []);
 
-  // Dedicar el dispositivo a un solo rol: queda únicamente la clave de ese rol
+  // Dedicar el dispositivo a un solo rol: queda únicamente la clave de ese rol (y su nombre)
   const chooseDeviceRole = useCallback((next: UserRole) => {
     const other = deviceRoleOf(next === 'MERCHANT' ? 'CUSTOMER' : 'MERCHANT');
     if (hasRoleKeypair(other)) {
@@ -338,6 +368,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Si el dispositivo queda como almacén, el SOL de devnet de la clave que se va sirve para las comisiones
       if (next === 'MERCHANT') sweepDevnetSol(otherKeypair, getOrCreateRoleKeypair('merchant').publicKey);
     }
+    localStorage.removeItem(STORAGE.ownName(other));
+    setOwnNames(prev => ({ ...prev, [other]: '' }));
     localStorage.setItem(STORAGE.role, next);
     setChosenRole(next);
     setIdentityEpoch(epoch => epoch + 1);
@@ -453,17 +485,21 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
+  const syncsInFlightRef = useRef(0);
+
   const syncFromChain = useCallback(async () => {
     if (!activeKeypair || !chosenRole) return;
     const owner = activeKeypair.publicKey;
     const ownerAddress = owner.toBase58();
     setIsSyncing(true);
+    syncsInFlightRef.current += 1;
     try {
       const [merchantProfile, customerProfile, onChainFiados, balance] = await Promise.all([
         chosenRole === 'MERCHANT' ? fetchOnChainMerchantProfile(owner) : null,
         chosenRole === 'CUSTOMER' ? fetchOnChainCustomerProfile(owner) : null,
         fetchOnChainFiados(chosenRole === 'MERCHANT' ? { merchant: owner } : { customer: owner }),
-        getDevnetBalance(owner)
+        // El saldo solo importa en el almacén, que paga comisiones y rent: el vecino no gasta ese pedido
+        chosenRole === 'MERCHANT' ? getDevnetBalance(owner) : 0
       ]);
       // El rol o la identidad cambiaron mientras se consultaba: se descarta la respuesta
       if (activeAddressRef.current !== ownerAddress) return;
@@ -479,6 +515,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('No se pudo sincronizar con Solana Devnet:', e);
       if (activeAddressRef.current === ownerAddress) setSyncFailed(true);
     } finally {
+      syncsInFlightRef.current -= 1;
       setIsSyncing(false);
     }
   }, [activeKeypair, chosenRole, settlePendingDetails]);
@@ -492,7 +529,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     syncFromChain();
 
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') syncFromChain();
+      // Si la lectura anterior sigue esperando al nodo no se le suma otra
+      if (document.visibilityState === 'visible' && syncsInFlightRef.current === 0) syncFromChain();
     }, CHAIN_SYNC_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [activeAddress, syncFromChain]);
@@ -522,10 +560,10 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Demo en un solo dispositivo: el vecino de este mismo navegador queda agendado en el almacén
   useEffect(() => {
-    if (deviceKeys.merchant && deviceKeys.customer) {
-      addNeighborContact(deviceKeys.customer.publicKey.toBase58(), DEFAULT_NEIGHBOR_NAME);
+    if (deviceKeys.merchant && deviceKeys.customer && ownNames.customer) {
+      addNeighborContact(deviceKeys.customer.publicKey.toBase58(), ownNames.customer);
     }
-  }, [deviceKeys, addNeighborContact]);
+  }, [deviceKeys, ownNames.customer, addNeighborContact]);
 
   // Links abiertos con la cámara del teléfono: pedido de co-firma (vecino) o QR de un vecino (almacén)
   useEffect(() => {
@@ -556,11 +594,11 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         onChain: snapshot.owner === activeAddress ? snapshot.fiados : [],
         details,
         viewer: deviceRoleOf(role),
-        ownName: role === 'MERCHANT' ? DEFAULT_STORE_NAME : DEFAULT_NEIGHBOR_NAME,
+        ownName: ownNames[deviceRoleOf(role)],
         contactNames,
         arsPerUsdc: exchangeRate.rate || 1615
       }),
-    [snapshot, activeAddress, details, role, contactNames, exchangeRate.rate]
+    [snapshot, activeAddress, details, role, ownNames, contactNames, exchangeRate.rate]
   );
 
   // Perfil del vecino de este dispositivo: score, límite y repagos salen de su CustomerProfile PDA
@@ -569,7 +607,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const creditScore = profile?.creditScore ?? BASE_CREDIT_SCORE;
     const base: CustomerProfile = {
       id: deviceKeys.customer?.publicKey.toBase58() ?? '',
-      name: DEFAULT_NEIGHBOR_NAME,
+      name: ownNames.customer,
       walletAddress: deviceKeys.customer?.publicKey.toBase58() ?? '',
       hasOnChainProfile: !!profile,
       creditScore,
@@ -581,19 +619,20 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     // Regla canónica: la deuda mostrada es siempre la suma de los fiados activos de la libreta
     return role === 'CUSTOMER' ? reconcileCustomerWithFiados(base, fiados).reconciledCustomer : base;
-  }, [role, snapshot, activeAddress, deviceKeys, fiados]);
+  }, [role, snapshot, activeAddress, deviceKeys, ownNames, fiados]);
 
   const merchant: MerchantProfile = useMemo(() => {
     const profile = role === 'MERCHANT' && snapshot.owner === activeAddress ? snapshot.merchantProfile : null;
     return {
       id: deviceKeys.merchant?.publicKey.toBase58() ?? '',
-      name: DEFAULT_STORE_NAME,
-      category: DEFAULT_STORE_CATEGORY,
+      // Una vez dado de alta on-chain, el nombre del almacén es el de su perfil
+      name: profile?.businessName || ownNames.merchant,
+      category: STORE_CATEGORY,
       walletAddress: deviceKeys.merchant?.publicKey.toBase58() ?? '',
       hasOnChainProfile: !!profile,
       totalSalesUsdc: profile?.totalSalesUsdc ?? 0
     };
-  }, [role, snapshot, activeAddress, deviceKeys]);
+  }, [role, snapshot, activeAddress, deviceKeys, ownNames]);
 
   // Solicitar 1 SOL de airdrop en Devnet (lo necesita solo el almacén, que paga comisiones y rent)
   const handleAirdrop = async (): Promise<{ success: boolean; signature?: string; error?: string }> => {
@@ -642,8 +681,15 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return tr('The QR expired. Scan the new one on the store screen.', 'El QR venció. Escaneá el nuevo que muestra el almacén.');
       case 'STALE':
         return tr('This request is out of date. Ask the store for a new QR.', 'Este pedido quedó desactualizado. Pedile al almacén un QR nuevo.');
+      case 'ALREADY_SENT':
+        return tr('This QR was already used: its transaction is already on Solana. Nothing was signed twice.', 'Este QR ya fue usado: su transacción ya está en Solana. No se firmó nada dos veces.');
       case 'INSUFFICIENT_SOL':
         return tr('The store wallet needs devnet SOL to pay the fee. Tap "+1 SOL" in store mode.', 'La billetera del almacén necesita SOL de devnet para pagar la comisión. Tocá "+1 SOL" en modo almacén.');
+      case 'RATE_LIMITED':
+        return tr(
+          'Solana Devnet is limiting the requests coming from this network. Nothing was recorded. Wait a few seconds and try again.',
+          'Solana Devnet está limitando los pedidos que salen de esta red. No se asentó nada. Esperá unos segundos y reintentá.'
+        );
       case 'NETWORK':
         return tr('Solana Devnet did not respond. Try again in a moment.', 'Solana Devnet no respondió. Reintentá en un momento.');
       case 'PROGRAM':
@@ -718,7 +764,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return {
       ...draft,
       nonce: built.nonce,
-      url: encodeCosignUrl(baseUrl, { tx: built.tx, storeName: DEFAULT_STORE_NAME, ticket }),
+      url: encodeCosignUrl(baseUrl, { tx: built.tx, storeName: ownNames.merchant, ticket }),
       attempts: [...previousAttempts, { signature: built.signature, fiadoAddress }],
       expiresAt: Date.now() + COSIGN_QR_TTL_MS,
       includesProfileSetup: built.includesProfileSetup
@@ -749,7 +795,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
-      await ensureMerchantInitialized(merchantKeypair, DEFAULT_STORE_NAME, DEFAULT_STORE_CATEGORY);
+      await ensureMerchantInitialized(merchantKeypair, ownNames.merchant, STORE_CATEGORY);
 
       const dueDate = new Date(Date.now() + FIADO_TERM_DAYS * 24 * 60 * 60 * 1000).toISOString();
       const itemsDescription = data.itemsDescription || tr('Store purchase', 'Compra de almacén');
@@ -858,7 +904,7 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // -------------------------------------------------------------
 
   const neighborIdUrl = deviceKeys.customer
-    ? encodeNeighborUrl(baseUrl, { address: deviceKeys.customer.publicKey.toBase58(), name: DEFAULT_NEIGHBOR_NAME })
+    ? encodeNeighborUrl(baseUrl, { address: deviceKeys.customer.publicKey.toBase58(), name: ownNames.customer })
     : '';
 
   // 3. El vecino lee el QR: se muestra lo que dice la transacción firmada por el almacén, no lo que dice la pantalla
@@ -987,11 +1033,14 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
     Object.keys(localStorage)
       .filter(key => key.startsWith('tefi_chain_snapshot_'))
       .forEach(key => localStorage.removeItem(key));
-    [STORAGE.neighbors, STORAGE.details].forEach(key => localStorage.removeItem(key));
+    // La identidad nueva vuelve a pedir su nombre
+    const deviceRole = deviceRoleOf(chosenRole);
+    [STORAGE.neighbors, STORAGE.details, STORAGE.ownName(deviceRole)].forEach(key => localStorage.removeItem(key));
 
     setNeighbors([]);
     setDetails({});
     setSnapshot(emptySnapshot(''));
+    setOwnNames(prev => ({ ...prev, [deviceRole]: '' }));
     setIdentityEpoch(epoch => epoch + 1);
   };
 
@@ -1002,6 +1051,8 @@ export const TefiProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRole,
         chooseDeviceRole,
         needsRoleChoice: chosenRole === null,
+        needsOwnName,
+        saveOwnName,
         isSingleDeviceDemo,
         language,
         setLanguage,

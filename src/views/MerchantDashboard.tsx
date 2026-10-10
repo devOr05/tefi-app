@@ -40,7 +40,8 @@ export const MerchantDashboard: React.FC<{ onNavigateToNew: () => void }> = ({ o
       {/* Banner Principal de Caja */}
       <div className="gradient-tefi text-white rounded-3xl p-5 shadow-sm relative overflow-hidden">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-black text-white truncate mb-1.5">{merchant.name}</h2>
             <span className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wider">{t('totalPendingFiados')}</span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-3xl font-extrabold tracking-tight">${totalPendingUsdc.toFixed(2)}</span>

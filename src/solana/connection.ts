@@ -9,14 +9,20 @@ import {
   sendAndConfirmTransaction
 } from '@solana/web3.js';
 
+import { withRateLimitRetry } from './rpcRetry';
+
 export { PROGRAM_ID_STR, TEFI_PROGRAM_ID } from './program';
 
-export const SOLANA_DEVNET_RPC = 'https://api.devnet.solana.com';
+// Por defecto, el nodo público de devnet. Si muchos teléfonos van a usar la app desde la misma red, se puede
+// apuntar a un nodo de devnet propio definiendo VITE_SOLANA_DEVNET_RPC_URL al compilar (ver README).
+export const SOLANA_DEVNET_RPC = import.meta.env.VITE_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
 
-// Instancia de conexión RPC a Solana Devnet con timeout rápido anti-bloqueo
+// Instancia de conexión RPC a Solana Devnet. Los rechazos por límite de uso (429) se reintentan en
+// rpcRetry.ts, por eso se desactiva el reintento propio de web3.js.
 export const solanaConnection = new Connection(SOLANA_DEVNET_RPC, {
   commitment: 'confirmed',
-  disableRetryOnRateLimit: true
+  disableRetryOnRateLimit: true,
+  fetch: withRateLimitRetry((input, init) => fetch(input, init))
 });
 
 export function getSolanaExplorerUrl(signature: string): string {

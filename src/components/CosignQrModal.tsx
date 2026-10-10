@@ -10,7 +10,7 @@ interface CosignQrModalProps {
   onClose: () => void;
 }
 
-const STATUS_POLL_MS = 2500;
+const STATUS_POLL_MS = 3000;
 
 // Teléfono del almacén: muestra la transacción ya firmada por el almacén y espera la firma del vecino
 export const CosignQrModal: React.FC<CosignQrModalProps> = ({ request, onClose }) => {
@@ -26,6 +26,7 @@ export const CosignQrModal: React.FC<CosignQrModalProps> = ({ request, onClose }
   currentRef.current = current;
   const settledRef = useRef(false);
   const refreshingRef = useRef(false);
+  const checkingRef = useRef(false);
 
   const isIssue = current.kind === 'issue';
   const locale = language === 'en' ? 'en-US' : 'es-AR';
@@ -33,8 +34,12 @@ export const CosignQrModal: React.FC<CosignQrModalProps> = ({ request, onClose }
   // El almacén conoce el id de la transacción (su propia firma): consulta si el vecino ya la envió
   useEffect(() => {
     const poll = setInterval(async () => {
-      if (settledRef.current) return;
-      const status = await checkCosignRequest(currentRef.current);
+      // Si la consulta anterior sigue esperando al nodo no se lanza otra encima
+      if (settledRef.current || checkingRef.current) return;
+      checkingRef.current = true;
+      const status = await checkCosignRequest(currentRef.current).finally(() => {
+        checkingRef.current = false;
+      });
       if (status.state === 'pending' || settledRef.current) return;
       settledRef.current = true;
       if (status.state === 'confirmed') {

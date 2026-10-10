@@ -90,6 +90,7 @@ export const CustomerLibretaView: React.FC = () => {
       {/* Banner de Consumos Totales */}
       <div className="bg-gradient-to-r from-gray-950 via-[#18112c] to-gray-900 text-white rounded-3xl p-5 shadow-sm border border-purple-900/30 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+        <h2 className="text-sm font-black text-white truncate mb-1.5 relative z-10">{customer.name}</h2>
         <span className="text-[11px] font-semibold text-purple-200/80 uppercase tracking-wider relative z-10">{t('totalConsumptions')}</span>
         <div className="flex items-baseline gap-2 mt-1 relative z-10">
           <span className="text-3xl font-extrabold tracking-tight text-white">${customer.currentDebt.toFixed(2)}</span>

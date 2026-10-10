@@ -64,6 +64,8 @@ export async function fetchOnChainFiados(party: { merchant: PublicKey } | { cust
 
 const CONFIRMATION_TIMEOUT_MS = 60_000;
 const CONFIRMATION_POLL_MS = 1_500;
+// Devnet tarda alrededor de un segundo en confirmar: consultar antes gasta un pedido del cupo del nodo
+const FIRST_CONFIRMATION_CHECK_MS = 1_000;
 
 /** Estado de una o varias transacciones: devuelve la que ya entró a la cadena, si alguna entró. */
 export async function findLandedSignature(signatures: string[]): Promise<{ signature: string; failed: boolean } | null> {
@@ -83,13 +85,15 @@ async function sendAndConfirm(rawTransaction: Buffer): Promise<string> {
   const signature = await solanaConnection.sendRawTransaction(rawTransaction, { preflightCommitment: 'confirmed' });
 
   const deadline = Date.now() + CONFIRMATION_TIMEOUT_MS;
+  let wait = FIRST_CONFIRMATION_CHECK_MS;
   while (Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, wait));
+    wait = CONFIRMATION_POLL_MS;
     const landed = await findLandedSignature([signature]).catch(() => null);
     if (landed) {
       if (landed.failed) throw new TefiChainError('REJECTED', `Transaction ${signature} was rejected by the program`);
       return signature;
     }
-    await new Promise(resolve => setTimeout(resolve, CONFIRMATION_POLL_MS));
   }
   throw new TefiChainError('EXPIRED', `Transaction ${signature} was not confirmed before its blockhash expired`);
 }
@@ -181,7 +185,16 @@ export async function submitCosignedTransaction(rawTransaction: Buffer): Promise
 // ERRORES
 // -------------------------------------------------------------
 
-export type ChainErrorCode = 'EXPIRED' | 'STALE' | 'INSUFFICIENT_SOL' | 'PROGRAM' | 'REJECTED' | 'NETWORK' | 'UNKNOWN';
+export type ChainErrorCode =
+  | 'EXPIRED'
+  | 'STALE'
+  | 'ALREADY_SENT'
+  | 'INSUFFICIENT_SOL'
+  | 'PROGRAM'
+  | 'REJECTED'
+  | 'RATE_LIMITED'
+  | 'NETWORK'
+  | 'UNKNOWN';
 
 export interface ChainError {
   code: ChainErrorCode;
@@ -205,6 +218,8 @@ export function classifyChainError(err: unknown): ChainError {
   if (err instanceof TefiChainError) return { code: err.code, detail: err.message };
   const detail = err instanceof Error ? err.message : String(err);
 
+  // La misma transacción (mismas firmas) ya entró a la cadena: el QR se usó dos veces
+  if (/already been processed/i.test(detail)) return { code: 'ALREADY_SENT', detail };
   if (/Blockhash not found|block height exceeded|BlockhashNotFound/i.test(detail)) return { code: 'EXPIRED', detail };
   if (/insufficient (lamports|funds)|no record of a prior credit/i.test(detail)) return { code: 'INSUFFICIENT_SOL', detail };
 
@@ -217,7 +232,10 @@ export function classifyChainError(err: unknown): ChainError {
     return { code: 'STALE', detail };
   }
 
-  if (/already in use|already been processed/i.test(detail)) return { code: 'STALE', detail };
-  if (/failed to fetch|networkerror|429|timed? ?out/i.test(detail)) return { code: 'NETWORK', detail };
+  if (/already in use/i.test(detail)) return { code: 'STALE', detail };
+  // web3.js arma el error de un rechazo HTTP como "<status> <statusText>: <cuerpo>"
+  if (/^429\b|too many requests|rate limits? exceeded/i.test(detail)) return { code: 'RATE_LIMITED', detail };
+  // "Load failed" es el texto de Safari cuando no hay conexión
+  if (/failed to fetch|networkerror|load failed|timed? ?out/i.test(detail)) return { code: 'NETWORK', detail };
   return { code: 'UNKNOWN', detail };
 }

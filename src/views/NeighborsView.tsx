@@ -15,6 +15,9 @@ export const NeighborsView: React.FC = () => {
   // undefined = consultando; null = sin perfil on-chain todavía
   const [profiles, setProfiles] = useState<Record<string, OnChainCustomerProfile | null | undefined>>({});
 
+  // Cambia solo cuando entra un fiado o un repago; cada sincronización rearma la lista aunque no haya nada nuevo
+  const libretaVersion = fiados.map(f => `${f.id}:${f.status}`).join('|');
+
   // Se vuelve a leer cuando cambia la libreta (un fiado o un repago nuevo mueve score y límite)
   useEffect(() => {
     let isCurrent = true;
@@ -28,7 +31,7 @@ export const NeighborsView: React.FC = () => {
     return () => {
       isCurrent = false;
     };
-  }, [neighbors, fiados, fetchNeighborProfile]);
+  }, [neighbors, libretaVersion, fetchNeighborProfile]);
 
   return (
     <div className="space-y-4 pb-20">
