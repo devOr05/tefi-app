@@ -29,3 +29,6 @@ target/
 
 # Temporary scratch directory
 scratch/
+
+# Screenshots and report of the end-to-end run
+e2e/shots/

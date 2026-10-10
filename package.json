@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "e2e:devnet": "node e2e/two-phones-devnet.mjs",
     "read:history": "node scripts/read-neighbor-history.mjs"
   },
   "dependencies": {
