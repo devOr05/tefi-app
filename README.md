@@ -210,8 +210,8 @@ The same read is available as a script: `npm run read:history -- <neighbor publi
 ---
 
 ## 📊 Field Validation in Mar del Plata
-* **12 Corner Store Interviews conducted** across working-class neighborhoods in Mar del Plata, Argentina.
-* **4 Stores actively committed** to join the 30-day pilot trial.
+* **4 Corner Store Interviews conducted** across working-class neighborhoods in Mar del Plata, Argentina.
+* **2 Stores actively confirmed** to join the 30-day pilot trial.
 * **Key Learning**: Average grocery credit ticket is $2.00 - $4.00 USD (bread, milk, deli items) settled on weekly wage days. Over 90% of stores use physical paper notebooks with zero inflation hedge and zero credit portability for neighbors.
 
 ---
