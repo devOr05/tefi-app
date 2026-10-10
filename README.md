@@ -191,7 +191,7 @@ The same read is available as a script: `npm run read:history -- <neighbor publi
 
 | Command | What it runs | Tests |
 | :--- | :--- | :---: |
-| `npm test` | Vitest suites that import the real modules: the co-signature protocol ([`cosign.test.ts`](src/solana/cosign.test.ts)), instruction building and account decoding ([`program.test.ts`](src/solana/program.test.ts)), the debt ledger ([`financialLedger.test.ts`](src/services/financialLedger.test.ts)) and the passbook view ([`libreta.test.ts`](src/services/libreta.test.ts)). | 46 |
+| `npm test` | Vitest suites that import the real modules: the co-signature protocol ([`cosign.test.ts`](src/solana/cosign.test.ts)), instruction building and account decoding ([`program.test.ts`](src/solana/program.test.ts)), the debt ledger ([`financialLedger.test.ts`](src/services/financialLedger.test.ts)), the passbook view ([`libreta.test.ts`](src/services/libreta.test.ts)) and Spanish/English completeness ([`translations.test.ts`](src/i18n/translations.test.ts)). | 50 |
 | `anchor test` (CI) | Mocha tests against the compiled program on `solana-test-validator`: both signatures required, credit limit, double repayment, unauthorized store, grace period, hashed receipts and a two-device partial-signing round trip with a 0 SOL neighbor ([`tefi_program.ts`](contracts/tefi_program/tests/tefi_program.ts)). | 14 |
 
 Both run in GitHub Actions: [`.github/workflows/anchor.yml`](.github/workflows/anchor.yml) (PWA build + `npm test`) and [`.github/workflows/contract-ci.yml`](.github/workflows/contract-ci.yml) (SBF build + Anchor tests).
@@ -202,7 +202,7 @@ Both run in GitHub Actions: [`.github/workflows/anchor.yml`](.github/workflows/a
 
 The app only shows what runs on-chain today. Everything below is **not built yet**:
 
-* [x] **Core MVP (live on Devnet)**: two-phone co-signed credit issuance and repayment with the store as fee payer, hashed receipts, on-chain score and limit, passbook read from chain, English & Spanish UI.
+* [x] **Core MVP (live on Devnet)**: two-phone co-signed credit issuance and repayment with the store as fee payer, hashed receipts, on-chain score and limit, passbook read from chain, full English & Spanish UI (flag switch).
 * [ ] **30-day pilot** with the committed stores, measuring fiados recorded and on-time repayment rate.
 * [ ] **Solana Attestation Service (SAS)**: a standard attestation per on-time repayment, readable by lenders that do not know the Tefi program.
 * [ ] **Embedded wallets**: keys out of browser storage and account recovery before any pilot with real neighbors.
