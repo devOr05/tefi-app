@@ -1,14 +1,18 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import * as anchorModule from "@coral-xyz/anchor";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { assert, expect } from "chai";
+
+// @ts-ignore
+const anchor: typeof anchorModule = (anchorModule as any).default || anchorModule;
+// @ts-ignore
+const BN = anchor.BN;
 
 describe("tefi_program", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   // @ts-ignore
-  const program = anchor.workspace.TefiProgram as Program;
+  const program = anchor.workspace.TefiProgram;
 
   const merchantKeypair = Keypair.generate();
   const customerKeypair = Keypair.generate();
@@ -74,8 +78,8 @@ describe("tefi_program", () => {
   });
 
   it("3. Issue Fiado with Bilateral Consent (Both Merchant & Customer Sign)", async () => {
-    const amountUsdc = new anchor.BN(12_000_000); // 12 USDC
-    const dueTimestamp = new anchor.BN(Math.floor(Date.now() / 1000) + 14 * 86400); // 14 días
+    const amountUsdc = new BN(12_000_000); // 12 USDC
+    const dueTimestamp = new BN(Math.floor(Date.now() / 1000) + 14 * 86400); // 14 días
     const receiptHash = "hash_yerba_leche_pan_4a8f9c";
     const nonceBuffer = Buffer.alloc(8);
     nonceBuffer.writeBigUInt64LE(BigInt(0));
@@ -114,8 +118,8 @@ describe("tefi_program", () => {
   });
 
   it("4. Reject Issue Fiado if Customer Signature is Missing", async () => {
-    const amountUsdc = new anchor.BN(5_000_000);
-    const dueTimestamp = new anchor.BN(Math.floor(Date.now() / 1000) + 7 * 86400);
+    const amountUsdc = new BN(5_000_000);
+    const dueTimestamp = new BN(Math.floor(Date.now() / 1000) + 7 * 86400);
     const nonceBuffer = Buffer.alloc(8);
     nonceBuffer.writeBigUInt64LE(BigInt(1));
 
@@ -176,8 +180,8 @@ describe("tefi_program", () => {
   });
 
   it("6. Reject Repay Fiado if Merchant Signature is Missing (Anti-Fraud / Anti-Self-Repayment)", async () => {
-    const amountUsdc = new anchor.BN(4_000_000);
-    const dueTimestamp = new anchor.BN(Math.floor(Date.now() / 1000) + 7 * 86400);
+    const amountUsdc = new BN(4_000_000);
+    const dueTimestamp = new BN(Math.floor(Date.now() / 1000) + 7 * 86400);
     const nonceBuffer = Buffer.alloc(8);
     nonceBuffer.writeBigUInt64LE(BigInt(1));
 
@@ -369,8 +373,8 @@ describe("tefi_program", () => {
   });
 
   it("11. Reject Issue Fiado if Amount Exceeds Available Credit Limit", async () => {
-    const excessAmount = new anchor.BN(150_000_000); // 150 USDC (> limit of 60 USDC)
-    const dueTimestamp = new anchor.BN(Math.floor(Date.now() / 1000) + 7 * 86400);
+    const excessAmount = new BN(150_000_000); // 150 USDC (> limit of 60 USDC)
+    const dueTimestamp = new BN(Math.floor(Date.now() / 1000) + 7 * 86400);
     const nonceBuffer = Buffer.alloc(8);
     nonceBuffer.writeBigUInt64LE(BigInt(2));
 

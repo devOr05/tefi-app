@@ -48,9 +48,11 @@ jobs:
       - name: Build Anchor SBF Program Binary
         run: |
           cd contracts/tefi_program
+          cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml || true
           cargo build-sbf --manifest-path programs/tefi_program/Cargo.toml
           mkdir -p target/deploy target/idl
           cp target/sbf-solana-solana/release/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || cp target/deploy/tefi_program.so target/deploy/tefi_program.so 2>/dev/null || true
+          ls -la target/deploy/
           node -e '
             const fs = require("fs");
             const idl = JSON.parse(fs.readFileSync("../../src/solana/idl.json", "utf8"));
