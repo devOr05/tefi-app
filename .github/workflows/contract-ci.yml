@@ -64,7 +64,34 @@ jobs:
       - name: Run Dynamic Anchor Tests Against Local Validator
         run: |
           cd contracts/tefi_program
-          anchor test --skip-build --skip-deploy
+          # Launch local validator with canonical Program ID and compiled SBF binary
+          solana-test-validator \
+            --ledger .anchor/test-ledger \
+            --bpf-program 3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc target/deploy/tefi_program.so \
+            --reset \
+            --quiet &
+          VALIDATOR_PID=$!
+
+          # Wait for validator RPC to be responsive
+          for i in $(seq 1 30); do
+            if solana cluster-version --url http://127.0.0.1:8899 >/dev/null 2>&1; then
+              echo "Solana test validator is active and healthy!"
+              break
+            fi
+            echo "Waiting for validator to boot ($i/30)..."
+            sleep 1
+          done
+
+          # Verify the program is loaded at the canonical address
+          solana program dump 3bs3SLqeGU4EMz4aXsVzuMFPjs3yxjjyhCEkB26UfRQc /tmp/tefi_verified.so --url http://127.0.0.1:8899
+          ls -lh /tmp/tefi_verified.so
+
+          # Export provider variables
+          export ANCHOR_PROVIDER_URL="http://127.0.0.1:8899"
+          export ANCHOR_WALLET="$HOME/.config/solana/id.json"
+
+          # Run dynamic tests against the active validator
+          anchor test --skip-local-validator --skip-build --skip-deploy
 
       - name: Diagnostic Logs on Failure
         if: failure()

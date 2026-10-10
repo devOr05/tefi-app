@@ -150,7 +150,9 @@ describe("tefi_program", () => {
 
       assert.fail("Should have thrown error because customer did not sign");
     } catch (err: any) {
-      expect(err.message).to.include("unknown signer");
+      expect(err.message).to.satisfy((msg: string) =>
+        msg.includes("unknown signer") || msg.includes("Signature verification failed")
+      );
     }
   });
 
