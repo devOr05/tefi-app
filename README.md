@@ -11,6 +11,7 @@
 
 * 🌐 **Live Demo Web PWA**: [https://tef-iapp.vercel.app](https://tef-iapp.vercel.app/)
 * 📦 **Solana Devnet Program**: [`9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ`](https://explorer.solana.com/address/9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ?cluster=devnet)
+* 📝 **What changed and when**: [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
