@@ -339,6 +339,7 @@ Keep the upgrade authority keypair outside the repository.
   * LinkedIn: [Mario Orostizaga](https://www.linkedin.com/in/mario-orostizaga)  
   * Focus: Grassroots merchant interviews, smart contracts, and mobile retail UX.
 
-* **Technical Guidance & Attributions**
-  * **Fran Camet** ([@FranCamet](https://github.com/FranCamet)) — Technical guidance, code review, and Solana architecture advisory.
+* **Technical Collaboration & Attributions**
+  * **Fran Camet** ([@FranCamet](https://github.com/FranCamet)) — External Technical Collaborator  
+    * Contributions: Fran contributed significantly as a technical collaborator: deploying the Anchor program to Solana Devnet (`9UmX9z1C…`), implementing the real two-phone cryptographic co-signing flow (store as fee payer, zero SOL needed for neighbors), building the Vitest test suite and automated Devnet E2E checks, and cleaning up mocked modules to strictly reflect verified on-chain functionality.
   * **AI-Assisted Development** — Built with the assistance of Anthropic Claude (Opus 5 / Claude 3.5 Sonnet) and Google Gemini for iterative pair-programming, test suite expansion (Vitest & Anchor), and documentation verification.
