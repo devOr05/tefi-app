@@ -10,6 +10,8 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 * 🌐 **Live Demo Web PWA**: [https://tef-iapp.vercel.app](https://tef-iapp.vercel.app/) · en español: [tef-iapp.vercel.app/es/](https://tef-iapp.vercel.app/es/)
+* 🎬 **Product Demo Video (1:45)**: [https://youtu.be/Q4kr51Gbqcc](https://youtu.be/Q4kr51Gbqcc)
+* 🎤 **Pitch Video (1:54)**: [https://youtu.be/BY_HupD_pCE](https://youtu.be/BY_HupD_pCE)
 * 📦 **Solana Devnet Program**: [`9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ`](https://explorer.solana.com/address/9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ?cluster=devnet)
 * 📝 **What changed and when**: [CHANGELOG.md](CHANGELOG.md)
 
