@@ -37,9 +37,47 @@ In Argentina and throughout Latin America, corner grocery stores (*almacenes de 
 * ⛽ **The neighbor needs no SOL**: The store is the fee payer of every transaction and pays the rent of the accounts, including the neighbor's profile in their first fiado.
 * 📈 **Portable repayment history**: Each on-time repayment raises the neighbor's on-chain score (+5) and credit limit (+5 USDC). Score, limit, debt and repaid total live in an account that any lender can read without asking Tefi.
 
-Tefi records the debt and its repayment; the money itself keeps moving off-chain between neighbor and store. Amounts are stored in USDC units as a stable unit of account, not as token transfers.
+> **Architecture & Settlement Clarification**: Every fiado record and repayment confirmation is co-signed on-chain by the store and the neighbor. The store sponsors transaction fees, so the neighbor does not need SOL. Repayments are made in cash or by bank transfer off-chain; the blockchain records the jointly signed confirmation, not the movement of money. Amounts are stored in USDC units as a stable unit of account, not as token transfers.
 
 ---
+
+## 🏗️ System Architecture
+
+```
+                                 TEFI.APP SYSTEM ARCHITECTURE
+                                 
+  [ PHYSICAL COMMERCE / OFF-CHAIN ]                  [ SOLANA DEVNET LEDGER ]
+  
+  ┌───────────────────────────────┐                  ┌────────────────────────────────────────┐
+  │         STORE DEVICE          │                  │       Anchor Program: 9UmX9z1C…        │
+  │ • React / Vite PWA            │                  │                                        │
+  │ • Holds Merchant Keypair      │                  │  ┌──────────────────────────────────┐  │
+  │ • ARS/USD Feed (dolarapi.com) │                  │  │ MerchantProfile PDA              │  │
+  │ • Prepares tx + partial sign  │                  │  │ seeds = ["merchant", store_pk]   │  │
+  └──────────────┬────────────────┘                  │  └──────────────────────────────────┘  │
+                 │                                   │                                        │
+     1. Dynamic QR Code                              │  ┌──────────────────────────────────┐  │
+     (Partial Tx Signature)                          │  │ CustomerProfile PDA              │  │
+                 │                                   │  │ seeds = ["customer", neighbor_pk]│  │
+                 ▼                                   │  │ • Score (0-100) & Limit (USDC)   │  │
+  ┌───────────────────────────────┐                  │  └──────────────────▲───────────────┘  │
+  │        NEIGHBOR DEVICE        │                  │                     │                  │
+  │ • React / Vite PWA            │  2. Broadcast    │  ┌──────────────────┴───────────────┐  │
+  │ • Holds Neighbor Keypair      │  Co-Signed Tx    │  │ FiadoRecord PDA                  │  │
+  │ • Zero SOL (Store = Fee Payer)├─────────────────►│  │ seeds = ["fiado", store, cust, n]│  │
+  │ • Signs & verifies receipt    │                  │  │ • Status: Active / Paid          │  │
+  └──────────────┬────────────────┘                  │  │ • receipt_hash: SHA-256 (64 hex) │  │
+                 │                                   │  └──────────────────────────────────┘  │
+                 │ 3. Physical Settlement            └────────────────────────────────────────┘
+                 │ (Cash / Bank Transfer)                                  ▲
+                 ▼                                                         │ 4. Direct RPC Read
+          [ STORE COUNTER ]                                                │ (No Tefi backend)
+                                                     ┌─────────────────────┴──────────────────┐
+                                                     │         THIRD-PARTY LENDERS            │
+                                                     │ • Mutuals / Credit Fintechs (RPC)      │
+                                                     │ • Inspect portable on-chain credit PDA │
+                                                     └────────────────────────────────────────┘
+```
 
 ## 🔏 How the Two-Phone Co-Signature Works
 

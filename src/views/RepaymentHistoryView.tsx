@@ -73,7 +73,7 @@ export const RepaymentHistoryView: React.FC = () => {
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
                     {f.repaidAt
                       ? new Date(f.repaidAt).toLocaleDateString(locale)
-                      : tr('Settled on-chain', 'Saldado on-chain')}
+                      : tr('Co-signed on-chain', 'Co-firmado on-chain')}
                   </span>
                 </div>
               </div>
