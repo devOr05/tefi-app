@@ -142,14 +142,18 @@ The program is deployed on devnet under its own id. Open any link below and chec
 | :--- | :--- | :--- |
 | **Program** | [`9UmX9z1C…EGnJQ`](https://explorer.solana.com/address/9UmX9z1Cr2FCidUBgoMJzDCRp5aeTs7xz4umKRnEGnJQ?cluster=devnet) | Executable, owned by the upgradeable BPF loader. |
 | **Deployment** (10 Oct 2026) | [`5AJEhGf3…XjuiR`](https://explorer.solana.com/tx/5AJEhGf3mYkMxPz1NZkGMY6s8Snei6kwRWU1Ynw7zwXK4APffcgwbd2J1QTTupQ8kPqSu1fWvZ8K8F3KHGeXjuiR?cluster=devnet) | The deployed bytes are the `tefi_program-sbf` artifact built by CI (282,728 bytes, SHA-256 `d34303c5…6ca2e7`). |
-| **Co-signed `issue_fiado`** (first fiado of a neighbor) | [`4niTarxJ…KYBzy`](https://explorer.solana.com/tx/4niTarxJ5MXWLK8JtyJSTUHtGoEXZJ4jMQ6dfe5K88N2qk5rTt4NvEyqCnrEUa9w2n9YwcX1bL3mtGKywNsKYBzy?cluster=devnet) | 2 signatures: store `E3MsTtDE…` (fee payer) and neighbor `2j17nfLJ…`. Instructions `InitializeCustomer` + `IssueFiado`. |
-| **Co-signed `repay_fiado`** | [`5SZ1BdpU…odrSR`](https://explorer.solana.com/tx/5SZ1BdpUVZd114DLdaH776BJpsWyUsnmXenp1RVMzsJhUCv7c8EAcf9uQdjDdT4KCir71NYfXBevyaMjAHQodrSR?cluster=devnet) | The same 2 signers. The neighbor never held SOL. |
+| **Live Demo `issue_fiado`** (2 devices in video) | [`2r5x9T9p…bGnn`](https://explorer.solana.com/tx/2r5x9T9p2CEC6yBTZNpAZw2LKK5eFCLWPdCuR2AF7uGYB8yPGKgPLMQZWFyQLp2SmqfJBCyU6nrPt2JoEaR9bGnn?cluster=devnet) | Laptop store `EUHTPsts…` (fee payer) and phone neighbor `5DJf3uo3…` (0 SOL). Receipt hash is SHA-256. |
+| **Live Demo `repay_fiado`** (2 devices in video) | [`3aFeMRvV…vYjG`](https://explorer.solana.com/tx/3aFeMRvVXJXNVBdGB7dYi7SkanSsmuC3fYnQCWBbxh5D3vkXFWuz35RHU98jTf7yEzUpF9qphNpzhXPXDcL4vYjG?cluster=devnet) | Co-signed repayment: store confirms received payment, neighbor score updates to 70 (Gold Tier), limit to 55 USDC. |
+| **Co-signed `issue_fiado`** (automated e2e) | [`4niTarxJ…KYBzy`](https://explorer.solana.com/tx/4niTarxJ5MXWLK8JtyJSTUHtGoEXZJ4jMQ6dfe5K88N2qk5rTt4NvEyqCnrEUa9w2n9YwcX1bL3mtGKywNsKYBzy?cluster=devnet) | 2 signatures: store `E3MsTtDE…` (fee payer) and neighbor `2j17nfLJ…`. Instructions `InitializeCustomer` + `IssueFiado`. |
+| **Co-signed `repay_fiado`** (automated e2e) | [`5SZ1BdpU…odrSR`](https://explorer.solana.com/tx/5SZ1BdpUVZd114DLdaH776BJpsWyUsnmXenp1RVMzsJhUCv7c8EAcf9uQdjDdT4KCir71NYfXBevyaMjAHQodrSR?cluster=devnet) | The same 2 signers. The neighbor never held SOL. |
 | **Second store, same neighbor** | [`5RKrusTT…RvB35`](https://explorer.solana.com/tx/5RKrusTTmjvW7FEk18pDQ3E5wYYBeb6j4bBxeybz1YsivU9zuk8Zh5meGhHiHDbLSK4SbpWbK4Nck4f899xRvB35?cluster=devnet) | `issue_fiado` signed by another store (`HXU7bxpn…`) and the same neighbor, with no profile setup: the history is portable. |
 | **Two counters at the same time** | [`2kmS3rBj…S5pPz`](https://explorer.solana.com/tx/2kmS3rBjVnEGCdakZnE3NKr9Ngv2SHUNuntWovvBWrhyowJJDQUxjSsvLAHXG17ZHVtqjC4cBTWtTeHZTvXS5pPz?cluster=devnet) · [`BjAZwHt3…ZnBeJ`](https://explorer.solana.com/tx/BjAZwHt3WNyi3NXjuQt4d2NCupna9c9GtEm4qfC6TGHjRSmRmJPsKsQDVjrxbuwGvvSkK9hYtHDeYsgNxkZnBeJ?cluster=devnet) | A fiado for a second neighbor at the first store while the second store collected its fiado, in parallel. |
 | **Neighbor credit profile (PDA)** | [`3j5MWAHo…XiRmK`](https://explorer.solana.com/address/3j5MWAHo18hU8cW4TczcfoVGXCoM4gbzRrVGAn8XiRmK?cluster=devnet) | After two on-time repayments at two different stores: score 75, limit 60 USDC, debt 0. |
-| **Settled fiado (PDA)** | [`22WAajsd…XZcak`](https://explorer.solana.com/address/22WAajsdMZu7AfrUhPGeTuP6dE8M7oaqApah8h5XZcak?cluster=devnet) | Status `Paid`; `receipt_hash` is a SHA-256, not the purchase. |
+| **Settled fiado (PDA)** | [`22WAajsd…XZcak`](https://explorer.solana.com/address/22WAajsdMZu7AfrUhPGeTuP6dE8M7oaqApah8h5XZcak?cluster=devnet) · [`ACmAxLDy…M5Do`](https://explorer.solana.com/address/ACmAxLDyeP2MEficuuVuQ6aeD8a4MQdwVoQTuwV6M5Do?cluster=devnet) | Status `Paid`; `receipt_hash` is a SHA-256, not the purchase details. |
 
-**How these transactions were produced.** By the end-to-end run in [`e2e/two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs) on 10 Oct 2026: four isolated browser profiles (two stores, two neighbors) driving the built PWA, each holding only its own key. The only thing passed between them is the QR code on the other screen. For the neighbor's QR, the first fiado and its repayment the app scanned it through a simulated camera (a video of that QR tilted, blurred and noisy); for the rest, the link inside the QR was opened, as when it is sent by message. After each step the script reads the chain directly to check who signed. They are browser profiles on one computer, not physical phones: a scan between two real phones is not part of that run.
+**How these transactions were produced.** Two complementary verification suites:
+1. **Live physical two-device demo**: a laptop (merchant Don Tito) and an independent smartphone (neighbor Mario) exchanging dynamic QR codes over camera, captured live in the [demo video](https://youtu.be/Q4kr51Gbqcc).
+2. **Automated end-to-end suite** in [`e2e/two-phones-devnet.mjs`](e2e/two-phones-devnet.mjs) on 10 Oct 2026: four isolated browser profiles driving the built PWA across two stores and two neighbors, verified directly on-chain after every step.
 
 Reading that neighbor's history as a lender would (`npm run read:history -- 2j17nfLJU1CETKKDvKpmJTxy43cnh3sNbRSFCE8GrCLE`):
 
@@ -203,19 +207,25 @@ The same read is available as a script: `npm run read:history -- <neighbor publi
 
 ---
 
-## 🔒 Privacy & Security
+## 🔒 Privacy, Security & Known Risks
 
 * **On-chain**: pseudonymous public keys, amounts, due dates, status and the SHA-256 of each receipt. The store's business name is public in its profile.
-* **Only on the phones**: the neighbor's name, the purchase details and the receipt photo. The program rejects a readable text in `receipt_hash`.
+* **Only on the phones**: the neighbor's name, the purchase details and the receipt photo. The program rejects readable ASCII text in `receipt_hash`.
 * **What the neighbor signs is what the transaction says**: the neighbor's phone decodes the transaction, shows its amount and due date, and refuses anything other than a Tefi fiado or repayment addressed to its own key.
-* **Devnet prototype**: signing keys are generated in the browser and kept in `localStorage`. This is acceptable for devnet and **not** for a pilot with real neighbors or real money; moving keys to an embedded wallet is on the roadmap. Clearing the browser data loses the key (the on-chain history stays, but can no longer be extended).
+* **Audit status**: The Anchor smart contract is a hackathon prototype deployed on Solana Devnet. It has **not** undergone a third-party professional security audit. It is strictly intended for demonstration and devnet testing, not for handling real mainnet funds.
+* **Known design limits & attack vectors**:
+  * **Devnet key storage**: Signing keys are generated in the browser and kept in `localStorage` without account recovery. Clearing browser storage loses the key. Embedded wallets (e.g., Privy/Turnkey) and social recovery are planned for the production roadmap before any pilot with real funds.
+  * **Score farming without store identity (G-1)**: Anyone can initialize a merchant account (`InitializeMerchant` is permissionless). In the prototype, small repeated self-transactions (1 micro-USDC) could technically increment a customer's score. Production mitigation requires merchant whitelisting, physical verification, or volume/reputation weighting.
+  * **Merchant signature dependency for repayment (G-2)**: Repayment requires the store's signature to confirm receipt of cash. If a store refuses to sign a completed repayment, after due date + 30 days the store could theoretically trigger an insurance claim. Bilateral escrow, cryptographic payment receipts, and SAS dispute mechanisms are part of the production roadmap.
+  * **Receipt privacy (G-5)**: `receipt_hash` is a SHA-256 hash without salt; the purchase line items travel off-chain in the QR code or direct messaging link.
 
 ---
 
 ## 📊 Field Validation in Mar del Plata
 * **4 Corner Store Interviews conducted** across working-class neighborhoods in Mar del Plata, Argentina.
-* **2 Stores actively confirmed** to join the 30-day pilot trial.
-* **Key Learning**: Average grocery credit ticket is $2.00 - $4.00 USD (bread, milk, deli items) settled on weekly wage days. Over 90% of stores use physical paper notebooks with zero inflation hedge and zero credit portability for neighbors.
+* **2 Stores actively confirmed** to participate in the upcoming 30-day pilot trial.
+* **Key Learning**: Average grocery ticket is $2.00 - $4.00 USD (bread, milk, deli items) settled on weekly wage days. Stores in the interview sample rely entirely on physical paper notebooks with zero inflation hedge and zero credit portability for neighbors.
+* **Business Model Note**: The proposed origination/query fee structure is an early design hypothesis to be tested and validated during the 30-day merchant trial.
 
 ---
 
@@ -321,10 +331,14 @@ Keep the upgrade authority keypair outside the repository.
 
 ---
 
-## 👥 Team
+## 👥 Team & Attributions
 
 * **Mario Orostizaga** — Founder & Full-Stack Developer  
   * Location: Mar del Plata, Argentina  
   * GitHub: [@devOr05](https://github.com/devOr05)  
   * LinkedIn: [Mario Orostizaga](https://www.linkedin.com/in/mario-orostizaga)  
   * Focus: Grassroots merchant interviews, smart contracts, and mobile retail UX.
+
+* **Technical Guidance & Attributions**
+  * **Fran Camet** ([@FranCamet](https://github.com/FranCamet)) — Technical guidance, code review, and Solana architecture advisory.
+  * **AI-Assisted Development** — Built with the assistance of Anthropic Claude (Opus 5 / Claude 3.5 Sonnet) and Google Gemini for iterative pair-programming, test suite expansion (Vitest & Anchor), and documentation verification.
